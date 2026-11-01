@@ -90,9 +90,12 @@ func TestTrustSiteForwardedFor(t *testing.T) {
 func TestGuardSiteXhttpPath(t *testing.T) {
 	siteTestDB(t)
 	inbounds := InboundService{}
+	// With the session ID and the sequence in headers Xray matches the path
+	// as it is written, without a slash added: "/sec" takes "/secret/".
 	xhttp := func(id int, path string) *model.Inbound {
 		return &model.Inbound{Id: id, Enable: true, Protocol: model.VLESS, Listen: "127.0.0.1", Port: 10000 + id, Remark: "cdn",
-			StreamSettings: `{"network":"xhttp","security":"none","xhttpSettings":{"path":"` + path + `"}}`}
+			StreamSettings: `{"network":"xhttp","security":"none","xhttpSettings":{"path":"` + path +
+				`","sessionIDPlacement":"header","seqPlacement":"header"}}`}
 	}
 	if err := inbounds.guardSiteXhttpPath(xhttp(0, "/media/v2/upload")); err != nil {
 		t.Errorf("a free path refused: %v", err)
@@ -110,6 +113,13 @@ func TestGuardSiteXhttpPath(t *testing.T) {
 	}
 	if err := inbounds.guardSiteXhttpPath(xhttp(1, "/media/v3/")); err != nil {
 		t.Errorf("an inbound clashed with itself: %v", err)
+	}
+	// With the session ID in the path "/sec" is served as "/sec/", which
+	// "/secret/" does not start with.
+	slashed := xhttp(0, "/sec")
+	slashed.StreamSettings = `{"network":"xhttp","security":"none","xhttpSettings":{"path":"/sec"}}`
+	if err := inbounds.guardSiteXhttpPath(slashed); err != nil {
+		t.Errorf("/sec/ refused: %v", err)
 	}
 	public := xhttp(0, "/secret/x")
 	public.Listen = ""
