@@ -315,7 +315,7 @@ func (m *Manager) Process(inboundID int) ProcessInfo {
 	return ProcessInfo{Running: true, PID: inst.proc.cmd.Process.Pid, StartedAt: inst.proc.startedAt}
 }
 
-// Version returns the version the binary reports, such as 3.5.14, or "" when
+// Version returns the version the binary reports, such as 3.5.16, or "" when
 // it cannot be read. The binary is asked once.
 func (m *Manager) Version() string {
 	m.versionMu.Lock()
@@ -327,7 +327,7 @@ func (m *Manager) Version() string {
 	return m.version
 }
 
-// readVersion runs binary --version, which prints "telemt 3.5.14".
+// readVersion runs binary --version, which prints "telemt 3.5.16".
 func readVersion(binary string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
