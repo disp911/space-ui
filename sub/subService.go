@@ -742,6 +742,9 @@ func (s *SubService) buildVmessExternalProxyLinks(externalProxies []any, baseObj
 		if newSecurity != "same" {
 			newObj["tls"] = newSecurity
 		}
+		for k, v := range externalProxyTLS(ep) {
+			newObj[k] = v
+		}
 		if index > 0 {
 			links.WriteString("\n")
 		}
@@ -797,11 +800,17 @@ func (s *SubService) buildExternalProxyURLLinks(
 			securityToApply = newSecurity
 		}
 
+		epParams := params
+		if own := externalProxyTLS(ep); len(own) > 0 {
+			epParams = cloneStringMap(params)
+			maps.Copy(epParams, own)
+		}
+
 		links = append(
 			links,
 			buildLinkWithParamsAndSecurity(
 				makeLink(dest, port),
-				params,
+				epParams,
 				makeRemark(ep),
 				securityToApply,
 				newSecurity == "none",
@@ -809,6 +818,34 @@ func (s *SubService) buildExternalProxyURLLinks(
 		)
 	}
 	return strings.Join(links, "\n")
+}
+
+// externalProxyTLS is the TLS an External Proxy row with Force TLS sets for
+// its links, as their sni, fp and alpn, each when given. It comes over the
+// inbound's own: a CDN reached by its address needs its own server name.
+func externalProxyTLS(ep map[string]any) map[string]string {
+	out := map[string]string{}
+	if forceTLS, _ := ep["forceTls"].(string); forceTLS != "tls" {
+		return out
+	}
+	if sni, _ := ep["sni"].(string); sni != "" {
+		out["sni"] = sni
+	}
+	if fp, _ := ep["fingerprint"].(string); fp != "" {
+		out["fp"] = fp
+	}
+	if list, ok := ep["alpn"].([]any); ok {
+		var alpn []string
+		for _, a := range list {
+			if v, ok := a.(string); ok && v != "" {
+				alpn = append(alpn, v)
+			}
+		}
+		if len(alpn) > 0 {
+			out["alpn"] = strings.Join(alpn, ",")
+		}
+	}
+	return out
 }
 
 func cloneStringMap(source map[string]string) map[string]string {
@@ -938,9 +975,10 @@ func searchKey(data any, key string) (any, bool) {
 //
 //   - x_padding_bytes=<range>  — flat param, understood by sing-box and its
 //     derivatives (Podkop, OpenWRT sing-box, Karing, NekoBox, …).
-//   - extra=<url-encoded-json> — full xhttp settings blob, which is how
-//     xray-core clients (v2rayNG, Happ, Furious, Exclave, …) pick up the
-//     obfs-mode key / header / placement / method.
+//   - extra=<url-encoded-json> — the client's side of the xhttp settings
+//     (see xhttpExtra), which is how xray-core clients (v2rayNG, Happ,
+//     Furious, Exclave, …) pick up the obfs-mode key / header / placement /
+//     method and everything else the server expects of them.
 //
 // Anything that doesn't map to a non-empty value is skipped, so simple
 // inbounds (no custom padding) produce exactly the same URL as before.
@@ -953,27 +991,88 @@ func applyXhttpPaddingParams(xhttp map[string]any, params map[string]string) {
 		params["x_padding_bytes"] = xpb
 	}
 
+	if extra := xhttpExtra(xhttp); len(extra) > 0 {
+		if b, err := json.Marshal(extra); err == nil {
+			params["extra"] = string(b)
+		}
+	}
+}
+
+// xhttpServerOnly are the xhttp settings only the server reads; a link
+// leaves them out, as it does path, host and mode, which it carries apart.
+var xhttpServerOnly = map[string]bool{
+	"path": true, "host": true, "mode": true, "scMaxBufferedPosts": true, "scStreamUpServerSecs": true,
+	"noSSEHeader": true, "serverMaxHeaderBytes": true, "h2Params": true,
+}
+
+// xhttpExtra is what a client must share with the server of an xhttp
+// inbound, for a link's extra: the padding (its key, header, placement and
+// method only in obfs mode), the headers but Host, which the link's host
+// says, and whatever else is set: where the session ID, the sequence and the
+// uplink data go, the uplink method, XMUX and the rest. A setting at Xray's
+// default is left out: an empty one, false, 0, or the 1000000 of
+// scMaxEachPostBytes. The panel's links (xhttpExtra in links.ts) do the same.
+func xhttpExtra(xhttp map[string]any) map[string]any {
 	extra := map[string]any{}
 	if xpb, ok := xhttp["xPaddingBytes"].(string); ok && len(xpb) > 0 {
 		extra["xPaddingBytes"] = xpb
 	}
 	if obfs, ok := xhttp["xPaddingObfsMode"].(bool); ok && obfs {
 		extra["xPaddingObfsMode"] = true
-		// The obfs-mode-only fields: only populate the ones the admin
-		// actually set, so xray-core falls back to its own defaults for
-		// the rest instead of seeing spurious empty strings.
 		for _, field := range []string{"xPaddingKey", "xPaddingHeader", "xPaddingPlacement", "xPaddingMethod"} {
 			if v, ok := xhttp[field].(string); ok && len(v) > 0 {
 				extra[field] = v
 			}
 		}
 	}
-
-	if len(extra) > 0 {
-		if b, err := json.Marshal(extra); err == nil {
-			params["extra"] = string(b)
+	headers := map[string]any{}
+	if h, ok := xhttp["headers"].(map[string]any); ok {
+		for k, v := range h {
+			if list, ok := v.([]any); ok {
+				v = nil
+				if len(list) > 0 {
+					v = list[0]
+				}
+			}
+			if str, ok := v.(string); ok && str != "" && k != "" && !strings.EqualFold(k, "host") {
+				headers[k] = str
+			}
 		}
 	}
+	if len(headers) > 0 {
+		extra["headers"] = headers
+	}
+	for k, v := range xhttp {
+		if xhttpServerOnly[k] || k == "headers" || strings.HasPrefix(k, "xPadding") {
+			continue
+		}
+		switch x := v.(type) {
+		case nil:
+			continue
+		case string:
+			if x == "" || x == "0" || (k == "scMaxEachPostBytes" && x == "1000000") {
+				continue
+			}
+		case bool:
+			if !x {
+				continue
+			}
+		case float64:
+			if x == 0 || (k == "scMaxEachPostBytes" && x == 1000000) {
+				continue
+			}
+		case map[string]any:
+			if len(x) == 0 {
+				continue
+			}
+		case []any:
+			if len(x) == 0 {
+				continue
+			}
+		}
+		extra[k] = v
+	}
+	return extra
 }
 
 // kcpHeaderToShareType maps the header of an mkcp-legacy mask to the

@@ -78,6 +78,33 @@ function xhttpPadding(x: Json): Json {
   return out
 }
 
+/** XHTTP settings only the server reads; a link leaves them out. */
+const xhttpServerOnly = ['path', 'host', 'mode', 'scMaxBufferedPosts', 'scStreamUpServerSecs', 'noSSEHeader', 'serverMaxHeaderBytes', 'h2Params']
+
+/**
+ * XHTTP settings a client must share with the server, for a link's extra:
+ * the padding as xhttpPadding has it, the headers but Host (the link's host
+ * says it), and whatever else is set. A setting at Xray's default is left
+ * out: an empty one, false, 0, or the 1000000 of scMaxEachPostBytes.
+ */
+export function xhttpExtra(x: Json): Json {
+  const out: Json = xhttpPadding(x)
+  const headers: Json = {}
+  for (const [k, v] of Object.entries(x.headers ?? {})) {
+    const value = Array.isArray(v) ? v[0] : v
+    if (k.toLowerCase() !== 'host' && filled(k) && filled(value)) headers[k] = value
+  }
+  if (Object.keys(headers).length) out.headers = headers
+  for (const [k, v] of Object.entries(x)) {
+    if (xhttpServerOnly.includes(k) || k === 'headers' || k.startsWith('xPadding')) continue
+    if (!filled(v) || v === false || v === 0 || v === '0') continue
+    if (typeof v === 'object' && !Object.keys(v).length) continue
+    if (k === 'scMaxEachPostBytes' && String(v) === '1000000') continue
+    out[k] = v
+  }
+  return out
+}
+
 /**
  * The transport's part of a link's query, as VLESS, Trojan and Shadowsocks
  * share it; what goes right after the type (VLESS's encryption) comes in after.
@@ -118,9 +145,9 @@ function transportParams(st: Json, params: Map<string, unknown>, after: Json = {
       set('path', s.path)
       set('host', hostOf(s))
       params.set('mode', s.mode)
-      const pad = xhttpPadding(s)
-      if (pad.xPaddingBytes) params.set('x_padding_bytes', pad.xPaddingBytes)
-      if (Object.keys(pad).length) params.set('extra', JSON.stringify(pad))
+      const extra = xhttpExtra(s)
+      if (extra.xPaddingBytes) params.set('x_padding_bytes', extra.xPaddingBytes)
+      if (Object.keys(extra).length) params.set('extra', JSON.stringify(extra))
       break
     }
   }
@@ -131,17 +158,30 @@ function transportParams(st: Json, params: Map<string, unknown>, after: Json = {
 /**
  * TLS of the inbound in a link's query, without an empty fingerprint or ALPN
  * (the client then takes chrome and the core's choice); given a flow, VLESS's
- * Vision flow over raw TCP too.
+ * Vision flow over raw TCP too. The SNI, fingerprint and ALPN an External
+ * Proxy row with Force TLS sets come over the inbound's own.
  */
-function tlsParams(st: Json, params: Map<string, unknown>, flow?: string) {
+function tlsParams(st: Json, params: Map<string, unknown>, flow?: string, ep?: Json) {
   params.set('security', 'tls')
-  if (st.security !== 'tls') return
-  const t = st.tlsSettings ?? {}
-  if (filled(t.settings?.fingerprint)) params.set('fp', t.settings.fingerprint)
-  if (t.alpn?.length > 0) params.set('alpn', t.alpn)
-  if (filled(t.serverName)) params.set('sni', t.serverName)
-  if (t.settings?.echConfigList?.length > 0) params.set('ech', t.settings.echConfigList)
-  if (flow !== undefined && st.network === 'tcp' && filled(flow)) params.set('flow', flow)
+  if (st.security === 'tls') {
+    const t = st.tlsSettings ?? {}
+    if (filled(t.settings?.fingerprint)) params.set('fp', t.settings.fingerprint)
+    if (t.alpn?.length > 0) params.set('alpn', t.alpn)
+    if (filled(t.serverName)) params.set('sni', t.serverName)
+    if (t.settings?.echConfigList?.length > 0) params.set('ech', t.settings.echConfigList)
+    if (flow !== undefined && st.network === 'tcp' && filled(flow)) params.set('flow', flow)
+  }
+  for (const [k, v] of Object.entries(epTls(ep))) params.set(k, v)
+}
+
+/** The TLS an External Proxy row with Force TLS sets, as a link's sni, fp and alpn; each when given. */
+function epTls(ep?: Json): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (ep?.forceTls !== 'tls') return out
+  if (filled(ep.sni)) out.sni = ep.sni
+  if (filled(ep.fingerprint)) out.fp = ep.fingerprint
+  if (Array.isArray(ep.alpn) && ep.alpn.length) out.alpn = ep.alpn.join(',')
+  return out
 }
 
 /** Reality of the inbound in a link's query: the first server name and the first short ID. */
@@ -172,7 +212,7 @@ const securityOf = (st: Json, forceTls: string) => (forceTls === 'same' ? st.sec
 
 // --- One link per protocol ---------------------------------------------------------
 
-function vmessLink(f: InboundForm, address: string, port: number, forceTls: string, remark: string, c: Json) {
+function vmessLink(f: InboundForm, address: string, port: number, forceTls: string, remark: string, c: Json, ep?: Json) {
   const st = f.streamSettings ?? {}
   const tls = securityOf(st, forceTls)
   const s: Json = st[`${st.network}Settings`] ?? {}
@@ -219,38 +259,39 @@ function vmessLink(f: InboundForm, address: string, port: number, forceTls: stri
     if (filled(t.serverName)) obj.sni = t.serverName
     if (filled(t.settings?.fingerprint)) obj.fp = t.settings.fingerprint
     if (t.alpn?.length > 0) obj.alpn = t.alpn.join(',')
+    Object.assign(obj, epTls(ep))
   }
   return 'vmess://' + base64(JSON.stringify(obj, null, 2))
 }
 
-function vlessLink(f: InboundForm, address: string, port: number, forceTls: string, remark: string, c: Json) {
+function vlessLink(f: InboundForm, address: string, port: number, forceTls: string, remark: string, c: Json, ep?: Json) {
   const st = f.streamSettings ?? {}
   const params = new Map<string, unknown>()
   transportParams(st, params, { encryption: f.settings.encryption ?? 'none' })
   const sec = securityOf(st, forceTls)
-  if (sec === 'tls') tlsParams(st, params, c.flow ?? '')
+  if (sec === 'tls') tlsParams(st, params, c.flow ?? '', ep)
   else if (sec === 'reality') realityParams(st, params, c.flow ?? '')
   else params.set('security', 'none')
   return urlLink(`vless://${c.id}@${address}:${port}`, params, remark)
 }
 
-function trojanLink(f: InboundForm, address: string, port: number, forceTls: string, remark: string, password: string) {
+function trojanLink(f: InboundForm, address: string, port: number, forceTls: string, remark: string, password: string, ep?: Json) {
   const st = f.streamSettings ?? {}
   const params = new Map<string, unknown>()
   transportParams(st, params)
   const sec = securityOf(st, forceTls)
-  if (sec === 'tls') tlsParams(st, params)
+  if (sec === 'tls') tlsParams(st, params, undefined, ep)
   else if (sec === 'reality') realityParams(st, params)
   else params.set('security', 'none')
   return urlLink(`trojan://${password}@${address}:${port}`, params, remark)
 }
 
-function ssLink(f: InboundForm, address: string, port: number, forceTls: string, remark: string, clientPassword = '') {
+function ssLink(f: InboundForm, address: string, port: number, forceTls: string, remark: string, clientPassword = '', ep?: Json) {
   const st = f.streamSettings ?? {}
   const s = f.settings
   const params = new Map<string, unknown>()
   transportParams(st, params)
-  if (securityOf(st, forceTls) === 'tls') tlsParams(st, params)
+  if (securityOf(st, forceTls) === 'tls') tlsParams(st, params, undefined, ep)
   const password: string[] = []
   if (isSS2022(s.method)) password.push(s.password)
   if (isSSMultiUser(s.method)) password.push(clientPassword)
@@ -298,18 +339,21 @@ function mtprotoWebLink(f: InboundForm, secret = '') {
 /** Whether the MTProto inbound's WEB proxy has what its links need. */
 const webReady = (f: InboundForm) => !!f.settings.web?.enable && filled(f.settings.web?.host) && filled(f.settings.web?.path)
 
-/** One client's link to the address and port; forceTls "same" keeps the inbound's security. */
-export function genLink(f: InboundForm, address: string, port: number, forceTls: string, remark: string, client: Json | undefined): string {
+/**
+ * One client's link to the address and port; forceTls "same" keeps the
+ * inbound's security. ep is the External Proxy row the link is for.
+ */
+export function genLink(f: InboundForm, address: string, port: number, forceTls: string, remark: string, client: Json | undefined, ep?: Json): string {
   const c = client ?? {}
   switch (f.protocol) {
     case 'vmess':
-      return vmessLink(f, address, port, forceTls, remark, c)
+      return vmessLink(f, address, port, forceTls, remark, c, ep)
     case 'vless':
-      return vlessLink(f, address, port, forceTls, remark, c)
+      return vlessLink(f, address, port, forceTls, remark, c, ep)
     case 'shadowsocks':
-      return ssLink(f, address, port, forceTls, remark, isSSMultiUser(f.settings.method) ? c.password : '')
+      return ssLink(f, address, port, forceTls, remark, isSSMultiUser(f.settings.method) ? c.password : '', ep)
     case 'trojan':
-      return trojanLink(f, address, port, forceTls, remark, c.password)
+      return trojanLink(f, address, port, forceTls, remark, c.password, ep)
     case 'hysteria':
       return hysteriaLink(f, address, port, remark, c.auth?.length > 0 ? c.auth : (f.streamSettings?.hysteriaSettings?.auth ?? ''))
     case 'mtproto':
@@ -341,7 +385,7 @@ export function allLinks(f: InboundForm, remarkModel = defaultRemarkModel, clien
     for (const ep of proxies) {
       parts.o = ep.remark ?? ''
       const r = name()
-      out.push({ remark: r, link: genLink(f, ep.dest, ep.port, ep.forceTls, r, client) })
+      out.push({ remark: r, link: genLink(f, ep.dest, ep.port, ep.forceTls, r, client, ep) })
     }
   }
   if (f.protocol === 'mtproto' && client && webReady(f)) {
