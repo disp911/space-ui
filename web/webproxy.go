@@ -22,6 +22,21 @@ var webProxyTransport = &http.Transport{
 	DisableCompression:  true,
 }
 
+// xhttpTransport carries requests to the XHTTP inbounds the website serves,
+// over h2c as Xray's XHTTP server takes them, so that the many requests of
+// one connection share a few streams instead of a socket each.
+var xhttpTransport = func() *http.Transport {
+	protocols := new(http.Protocols)
+	protocols.SetUnencryptedHTTP2(true)
+	return &http.Transport{
+		Proxy:              nil,
+		DialContext:        (&net.Dialer{Timeout: 5 * time.Second}).DialContext,
+		Protocols:          protocols,
+		IdleConnTimeout:    90 * time.Second,
+		DisableCompression: true,
+	}
+}()
+
 // webProxyBase returns the first segment of a path that has more after it:
 // "abc" for "/abc/" and "/abc/api/v1/up", nothing for "/abc".
 func webProxyBase(path string) (string, bool) {
@@ -80,27 +95,62 @@ func webClientIP(r *http.Request) string {
 }
 
 // webProxyFront is the panel's HTTPS handler. A request under the secret
-// path of a running WEB proxy goes to that proxy's telemt listener; it is
-// passed on before the panel's middleware, whose compression and sessions
-// would break the long polls and WebSockets Telegram uses. Everything else,
-// the bare secret path included, is the panel's.
+// path of a running WEB proxy goes to that proxy's telemt listener, and one
+// under the path of an XHTTP inbound the website serves goes to Xray; both
+// are passed on before the panel's middleware, whose compression and
+// sessions would break the long polls and WebSockets Telegram uses and
+// XHTTP's streamed answers. Everything else, the bare secret path included,
+// is the panel's.
 type webProxyFront struct {
 	panel http.Handler
 	// route returns the loopback port of the WEB proxy at a base path.
 	route func(basePath string) (int, bool)
+	// xhttp returns the loopback port of the XHTTP inbound a path is under.
+	xhttp func(path string) (int, bool)
 }
 
 func (f webProxyFront) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	base, ok := webProxyBase(r.URL.EscapedPath())
-	if !ok {
-		f.panel.ServeHTTP(w, r)
-		return
+	if base, ok := webProxyBase(r.URL.EscapedPath()); ok {
+		if port, ok := f.route(base); ok {
+			f.passWeb(w, r, port)
+			return
+		}
 	}
-	port, ok := f.route(base)
-	if !ok {
-		f.panel.ServeHTTP(w, r)
-		return
+	if f.xhttp != nil {
+		if port, ok := f.xhttp(r.URL.Path); ok {
+			f.passXhttp(w, r, port)
+			return
+		}
 	}
+	f.panel.ServeHTTP(w, r)
+}
+
+// passXhttp hands a request to the XHTTP inbound on a loopback port. Xray
+// believes the client address in X-Forwarded-For (see
+// trustSiteForwardedFor), which replaces whatever the client sent.
+func (f webProxyFront) passXhttp(w http.ResponseWriter, r *http.Request, port int) {
+	proxy := &httputil.ReverseProxy{
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			pr.Out.URL.Scheme = "http"
+			pr.Out.URL.Host = fmt.Sprintf("127.0.0.1:%d", port)
+			// The inbound may check the host name it is reached at.
+			pr.Out.Host = pr.In.Host
+			if ip := webClientIP(pr.In); ip != "" {
+				pr.Out.Header.Set("X-Forwarded-For", ip)
+			}
+		},
+		Transport:     xhttpTransport,
+		FlushInterval: -1,
+		// Should Xray be down, the visitor sees the site, not an error.
+		ErrorHandler: func(w http.ResponseWriter, r *http.Request, _ error) {
+			f.panel.ServeHTTP(w, r)
+		},
+	}
+	proxy.ServeHTTP(w, r)
+}
+
+// passWeb hands a request to the telemt WEB proxy on a loopback port.
+func (f webProxyFront) passWeb(w http.ResponseWriter, r *http.Request, port int) {
 	proxy := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			pr.Out.URL.Scheme = "http"

@@ -156,7 +156,7 @@ func (s *Server) startReality(panel http.Handler) error {
 		return err
 	}
 	s.siteFront = siteFront{basePath: basePath, panel: panel, site: pages}
-	s.siteHandler = asCaddy(webProxyFront{panel: s.siteFront, route: service.TelemtWebRoute})
+	s.siteHandler = asCaddy(webProxyFront{panel: s.siteFront, route: service.TelemtWebRoute, xhttp: service.XhttpSiteRoute})
 	s.siteServer = &http.Server{
 		Handler:           s.siteHandler,
 		ReadHeaderTimeout: 60 * time.Second,
@@ -240,7 +240,7 @@ func (s *Server) startOwnPort(panel http.Handler) (net.Listener, bool, error) {
 	logger.Info("Web server running", strings.ToUpper(scheme), "on", ln.Addr())
 
 	if basePath == "/" {
-		s.siteHandler = webProxyFront{panel: panel, route: service.TelemtWebRoute}
+		s.siteHandler = webProxyFront{panel: panel, route: service.TelemtWebRoute, xhttp: service.XhttpSiteRoute}
 		s.siteFront = panel
 		return ln, tlsConf != nil && port == 443, nil
 	}
@@ -264,7 +264,7 @@ func (s *Server) startOwnPort(panel http.Handler) (net.Listener, bool, error) {
 		return nil, false, err
 	}
 	s.siteFront = siteFront{basePath: basePath, panel: panel, site: pages}
-	s.siteHandler = asCaddy(webProxyFront{panel: s.siteFront, route: service.TelemtWebRoute})
+	s.siteHandler = asCaddy(webProxyFront{panel: s.siteFront, route: service.TelemtWebRoute, xhttp: service.XhttpSiteRoute})
 	service.SetSiteStatus(&service.SiteState{Scheme: scheme, Host: host, Certs: s.siteCerts, Checker: s.siteCheck})
 	siteRunning.Store(true)
 	return ln, tlsConf != nil && port == 443, nil

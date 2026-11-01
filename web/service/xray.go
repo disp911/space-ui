@@ -185,6 +185,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 			}
 
 			delete(stream, "externalProxy")
+			trustSiteForwardedFor(inbound.Listen, stream)
 
 			newStream, err := json.MarshalIndent(stream, "", "  ")
 			if err != nil {
@@ -236,6 +237,7 @@ func (s *XrayService) RestartXray(isForce bool) error {
 	if s.IsXrayRunning() {
 		if !isForce && p.GetConfig().Equals(xrayConfig) && !isNeedXrayRestart.Load() {
 			logger.Debug("It does not need to restart Xray")
+			publishXhttpSiteRoutes(xrayConfig)
 			return nil
 		}
 		p.Stop()
@@ -245,8 +247,10 @@ func (s *XrayService) RestartXray(isForce bool) error {
 	result = ""
 	err = p.Start()
 	if err != nil {
+		publishXhttpSiteRoutes(nil)
 		return err
 	}
+	publishXhttpSiteRoutes(xrayConfig)
 
 	return nil
 }
@@ -257,6 +261,7 @@ func (s *XrayService) StopXray() error {
 	defer lock.Unlock()
 	isManuallyStopped.Store(true)
 	logger.Debug("Attempting to stop Xray...")
+	publishXhttpSiteRoutes(nil)
 	if s.IsXrayRunning() {
 		return p.Stop()
 	}

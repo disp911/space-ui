@@ -233,6 +233,9 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 	if err := s.guardPanelPort(inbound); err != nil {
 		return inbound, false, err
 	}
+	if err := s.guardSiteXhttpPath(inbound); err != nil {
+		return inbound, false, err
+	}
 	exist, err := s.checkPortExist(inbound, 0)
 	if err != nil {
 		return inbound, false, err
@@ -511,6 +514,9 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 		return inbound, false, err
 	}
 	if err := s.guardPanelPort(inbound); err != nil {
+		return inbound, false, err
+	}
+	if err := s.guardSiteXhttpPath(inbound); err != nil {
 		return inbound, false, err
 	}
 
