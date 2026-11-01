@@ -185,13 +185,19 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 		extPrxy := ep.(map[string]any)
 		inbound.Listen = extPrxy["dest"].(string)
 		inbound.Port = int(extPrxy["port"].(float64))
-		newStream := stream
+		// Each address gets its own copy: the TLS one row sets must not
+		// reach the rows after it.
+		newStream := maps.Clone(stream)
+		if tls, ok := stream["tlsSettings"].(map[string]any); ok {
+			newStream["tlsSettings"] = maps.Clone(tls)
+		}
 		switch extPrxy["forceTls"].(string) {
 		case "tls":
 			if newStream["security"] != "tls" {
 				newStream["security"] = "tls"
 				newStream["tlsSettings"] = map[string]any{}
 			}
+			applyExternalProxyTLS(extPrxy, newStream["tlsSettings"].(map[string]any))
 		case "none":
 			if newStream["security"] != "none" {
 				newStream["security"] = "none"
@@ -246,6 +252,24 @@ func (s *SubJsonService) streamData(stream string) map[string]any {
 	// remove proxy protocol
 	network, _ := streamSettings["network"].(string)
 	switch network {
+	case "xhttp":
+		// The client's side only, as a link's extra has it: no settings of
+		// the server's own, no Host header (Xray takes it from "host" alone)
+		// and no header without a value.
+		if xhttp, ok := streamSettings["xhttpSettings"].(map[string]any); ok {
+			for k := range xhttp {
+				if xhttpServerOnly[k] && k != "path" && k != "host" && k != "mode" {
+					delete(xhttp, k)
+				}
+			}
+			if headers, ok := xhttp["headers"].(map[string]any); ok {
+				for k, v := range headers {
+					if strings.EqualFold(k, "host") || v == "" || v == nil {
+						delete(headers, k)
+					}
+				}
+			}
+		}
 	case "tcp":
 		streamSettings["tcpSettings"] = s.removeAcceptProxy(streamSettings["tcpSettings"])
 	case "ws":
@@ -254,6 +278,22 @@ func (s *SubJsonService) streamData(stream string) map[string]any {
 		streamSettings["httpupgradeSettings"] = s.removeAcceptProxy(streamSettings["httpupgradeSettings"])
 	}
 	return streamSettings
+}
+
+// applyExternalProxyTLS puts the SNI, fingerprint and ALPN an External Proxy
+// row with Force TLS sets into the client's TLS, over the inbound's, as the
+// row's links have them (externalProxyTLS).
+func applyExternalProxyTLS(ep map[string]any, tlsSettings map[string]any) {
+	own := externalProxyTLS(ep)
+	if sni, ok := own["sni"]; ok {
+		tlsSettings["serverName"] = sni
+	}
+	if fp, ok := own["fp"]; ok {
+		tlsSettings["fingerprint"] = fp
+	}
+	if alpn, ok := own["alpn"]; ok {
+		tlsSettings["alpn"] = strings.Split(alpn, ",")
+	}
 }
 
 func (s *SubJsonService) removeAcceptProxy(setting any) map[string]any {
