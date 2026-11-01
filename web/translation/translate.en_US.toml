@@ -857,6 +857,7 @@
 "camouflage" = "Obfuscation"
 "request" = "Request"
 "response" = "Response"
+"xhttpClients" = "For clients"
 "headerName" = "Name"
 "headerValue" = "Value"
 "method" = "Method"

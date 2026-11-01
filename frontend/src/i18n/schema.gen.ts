@@ -768,6 +768,7 @@ export interface MessageSchema {
     "camouflage": string
     "request": string
     "response": string
+    "xhttpClients": string
     "headerName": string
     "headerValue": string
     "method": string

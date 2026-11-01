@@ -77,6 +77,29 @@ func TestXHTTPInboundWithSessionIDKeysBuilds(t *testing.T) {
 	}
 }
 
+// The XHTTP settings the inbound window writes for a CDN: the client's part
+// (session table and length, XMUX, gRPC header, post interval) next to the
+// server's (header bytes, HTTP/2 params), as links hand them on. An unset
+// range is left out, as the window saves it: the core refuses an empty
+// session ID length.
+func TestXHTTPInboundWithCDNSettingsBuilds(t *testing.T) {
+	raw := `{"protocol":"vless","listen":"127.0.0.1","port":10003,"settings":` + vlessSettings + `,
+		"streamSettings":{"network":"xhttp","security":"none","xhttpSettings":{"path":"/media/v2/chunks/upload","mode":"packet-up",
+			"headers":{"Content-Type":"video/mp2t"},"uplinkHTTPMethod":"GET",
+			"sessionIDPlacement":"header","sessionIDKey":"X-Delivery-Session","sessionIDTable":"base36","sessionIDLength":"6-9",
+			"seqPlacement":"header","seqKey":"X-Chunk-Index","uplinkDataPlacement":"header","uplinkDataKey":"X-Content-Data","uplinkChunkSize":8192,
+			"serverMaxHeaderBytes":65536,"h2Params":{"MaxConcurrentStreams":250},"noGRPCHeader":true,"scMinPostsIntervalMs":"10",
+			"xmux":{"maxConcurrency":"1","maxConnections":0,"cMaxReuseTimes":1000,"hMaxRequestTimes":"40-60","hMaxReusableSecs":"30-40","hKeepAlivePeriod":5}},
+			"sockopt":{"trustedXForwardedFor":["X-Forwarded-For"]}}}`
+	if err := buildInbound(t, raw); err != nil {
+		t.Fatal(err)
+	}
+	bad := strings.Replace(raw, `"sessionIDLength":"6-9"`, `"sessionIDLength":""`, 1)
+	if err := buildInbound(t, bad); err == nil {
+		t.Error("xray-core takes an empty sessionIDLength now; the window may stop leaving it out")
+	}
+}
+
 func TestXicmpOutboundMaskBuilds(t *testing.T) {
 	raw := `{"protocol":"vless","settings":{"vnext":[{"address":"127.0.0.1","port":443,
 		"users":[{"id":"8e3a3c8e-0f57-4a57-9a6e-4b3c7f0f5e11","encryption":"none"}]}]},

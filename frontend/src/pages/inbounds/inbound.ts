@@ -274,6 +274,11 @@ export function defaultNetwork(net: string): Json {
         uplinkDataPlacement: '',
         uplinkDataKey: '',
         uplinkChunkSize: 0,
+        sessionIDTable: '',
+        sessionIDLength: '',
+        serverMaxHeaderBytes: 0,
+        noGRPCHeader: false,
+        scMinPostsIntervalMs: '',
       }
     case 'hysteria':
       return { version: 2, auth: '', udpIdleTimeout: 60 }
@@ -573,6 +578,14 @@ function finalStream(f: InboundForm, input: Json): Json | undefined {
   if (st.network === 'tcp' && net.header?.type !== 'http') net.header = { type: net.header?.type ?? 'none' }
   for (const h of [net.headers, net.header?.request?.headers, net.header?.response?.headers, net.masquerade?.headers]) cleanHeaders(h)
   if (st.network === 'hysteria' && empty(net.masquerade)) delete net.masquerade
+  if (st.network === 'xhttp') {
+    // Xray takes no empty range: an unset one is left out.
+    for (const k of ['h2Params', 'sessionIDTable', 'sessionIDLength', 'scMinPostsIntervalMs']) if (empty(net[k])) delete net[k]
+  }
+  // The TLS a link sets up for an External Proxy row goes with Force TLS only.
+  for (const ep of Array.isArray(st.externalProxy) ? st.externalProxy : []) {
+    for (const k of ['sni', 'fingerprint', 'alpn']) if (ep.forceTls !== 'tls' || empty(ep[k])) delete ep[k]
+  }
 
   const fm = st.finalmask
   if (fm) {

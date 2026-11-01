@@ -857,6 +857,7 @@
 "camouflage" = "Маскировка"
 "request" = "Запрос"
 "response" = "Ответ"
+"xhttpClients" = "Для клиентов"
 "headerName" = "Имя"
 "headerValue" = "Значение"
 "method" = "Метод"

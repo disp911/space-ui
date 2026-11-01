@@ -2,12 +2,13 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  XDivider, XField, XFieldGrid, XInlineButton, XInput, XListHead, XNest, XNestCard, XNumber, XSection, XSelect, XSwitch, XTagInput, type Option,
+  XDivider, XField, XFieldGrid, XInlineButton, XInput, XListHead, XNestCard, XNumber, XSection, XSelect, XSwitch, XTagInput, type Option,
 } from '../../kit'
 import type { Outbound } from './model'
-import { canFlow, defaultNetwork, defaultQuic, defaultXmux, items, networks, user, xhttpModes } from './outbound'
+import { canFlow, defaultNetwork, defaultQuic, items, networks, user, xhttpModes } from './outbound'
 import OutboundPackets from './OutboundPackets.vue'
 import QuicParams from './QuicParams.vue'
+import XmuxFields from './XmuxFields.vue'
 
 /** The transport of the outbound window: the network first in the card, its settings, and the masks over it. */
 const props = defineProps<{ o: Outbound }>()
@@ -57,13 +58,6 @@ const tcpPath = headerList(
   () => ns.value.header?.request?.path,
   (v) => ((ns.value.header.request ??= {}).path = v.length ? v : ['/']),
 )
-
-// --- XHTTP: XMUX ------------------------------------------------------------------------
-
-const xmuxOn = computed({
-  get: () => !!ns.value.xmux,
-  set: (on: boolean) => (ns.value.xmux = on ? defaultXmux() : undefined),
-})
 
 // --- Masks ------------------------------------------------------------------------------
 
@@ -242,17 +236,7 @@ const resolverHint = computed(() => t('xray.hintExample', { v: '8.8.8.8:53' }))
           <XInput v-bind="a" v-model="ns.scMinPostsIntervalMs" mono />
         </XField>
       </XFieldGrid>
-      <XSwitch v-model="xmuxOn" boxed label="XMUX" />
-      <XNest v-if="xmuxOn" bare>
-        <XFieldGrid :cols="3" :phone="2">
-          <XField v-if="!ns.xmux.maxConnections" v-slot="a" label="Max Concurrency"><XInput v-bind="a" v-model="ns.xmux.maxConcurrency" mono /></XField>
-          <XField v-if="!ns.xmux.maxConcurrency" v-slot="a" label="Max Connections"><XInput v-bind="a" v-model="ns.xmux.maxConnections" mono /></XField>
-          <XField v-slot="a" label="Max Reuse Times"><XInput v-bind="a" v-model="ns.xmux.cMaxReuseTimes" mono /></XField>
-          <XField v-slot="a" label="Max Request Times"><XInput v-bind="a" v-model="ns.xmux.hMaxRequestTimes" mono /></XField>
-          <XField v-slot="a" label="Max Reusable Secs"><XInput v-bind="a" v-model="ns.xmux.hMaxReusableSecs" mono /></XField>
-          <XField v-slot="a" label="Keep Alive Period"><XNumber v-bind="a" block v-model="ns.xmux.hKeepAlivePeriod" /></XField>
-        </XFieldGrid>
-      </XNest>
+      <XmuxFields :ns="ns" />
     </template>
 
     <!-- Hysteria -->

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  XDivider, XField, XFieldGrid, XInput, XInputList, XNest, XNumber, XPairList, XPartHead, XSelect, XSwitch, type Option,
+  checkJson, XCodeEditor, XDivider, XField, XFieldGrid, XInput, XInputList, XNest, XNumber, XPairList, XPartHead, XSelect, XSwitch, type Option,
 } from '../../kit'
 import { canTls, defaultMasquerade, defaultTcpRequest, defaultTcpResponse, network, networks, setNetwork, xhttpModes, type InboundForm } from './inbound'
+import XmuxFields from '../xray/XmuxFields.vue'
 import InboundMasks from './InboundMasks.vue'
 import InboundSockopt from './InboundSockopt.vue'
 import { headerRows } from './rows'
@@ -60,6 +61,31 @@ const uplinkMethods: Option[] = [
 ]
 const idPlacements = placements('path', ['path', 'header', 'cookie', 'query'])
 const dataPlacements = placements('body', ['body', 'header', 'cookie', 'query'])
+const idTables: Option[] = [{ value: '', label: 'Default (UUID)' }, ...list(['number', 'hex', 'HEX', 'base36', 'BASE36', 'Base62', 'alphabet'])]
+
+/** HTTP/2 Params as JSON text; text that parses to an object goes into the settings. */
+const h2On = computed({
+  get: () => ns.value.h2Params !== undefined,
+  set: (on: boolean) => {
+    if (on) ns.value.h2Params = {}
+    else delete ns.value.h2Params
+  },
+})
+const h2Text = ref('')
+watch(
+  () => ns.value.h2Params,
+  (v) => {
+    if (v === undefined) return
+    const same = !checkJson(h2Text.value) && JSON.stringify(JSON.parse(h2Text.value)) === JSON.stringify(v)
+    if (!same) h2Text.value = JSON.stringify(v, null, 2)
+  },
+  { immediate: true },
+)
+watch(h2Text, (text) => {
+  if (ns.value.h2Params === undefined || checkJson(text)) return
+  const v = JSON.parse(text)
+  if (v && typeof v === 'object' && !Array.isArray(v)) ns.value.h2Params = v
+})
 
 // --- Hysteria ------------------------------------------------------------------------------
 
@@ -170,12 +196,15 @@ const masqueradeTypes: Option[] = [
     </XFieldGrid>
     <XFieldGrid>
       <XField v-slot="a" label="Uplink HTTP Method"><XSelect v-bind="a" v-model="ns.uplinkHTTPMethod" :options="uplinkMethods" mono /></XField>
+      <XField v-slot="a" label="Server Max Header Bytes"><XNumber v-bind="a" v-model="ns.serverMaxHeaderBytes" block :min="0" placeholder="0 (default)" /></XField>
     </XFieldGrid>
     <XFieldGrid>
       <XField v-slot="a" label="Session ID Placement"><XSelect v-bind="a" v-model="ns.sessionIDPlacement" :options="idPlacements" mono /></XField>
       <XField v-if="ns.sessionIDPlacement && ns.sessionIDPlacement !== 'path'" v-slot="a" label="Session ID Key">
         <XInput v-bind="a" v-model.trim="ns.sessionIDKey" mono placeholder="x_session" />
       </XField>
+      <XField v-slot="a" label="Session ID Table"><XSelect v-bind="a" v-model="ns.sessionIDTable" :options="idTables" mono /></XField>
+      <XField v-if="ns.sessionIDTable" v-slot="a" label="Session ID Length"><XInput v-bind="a" v-model.trim="ns.sessionIDLength" mono placeholder="8-16" /></XField>
       <XField v-slot="a" label="Sequence Placement"><XSelect v-bind="a" v-model="ns.seqPlacement" :options="idPlacements" mono /></XField>
       <XField v-if="ns.seqPlacement && ns.seqPlacement !== 'path'" v-slot="a" label="Sequence Key">
         <XInput v-bind="a" v-model.trim="ns.seqKey" mono placeholder="x_seq" />
@@ -189,6 +218,16 @@ const masqueradeTypes: Option[] = [
       </template>
     </XFieldGrid>
     <XSwitch v-model="ns.noSSEHeader" boxed label="No SSE Header" />
+    <XSwitch v-model="h2On" boxed label="HTTP/2 Params" />
+    <XNest v-if="h2On" bare>
+      <XCodeEditor v-model="h2Text" :height="160" :phone-height="160" fit label="h2Params" />
+    </XNest>
+    <XDivider :label="t('inbounds.xhttpClients')" />
+    <XFieldGrid v-if="ns.mode === 'packet-up' || ns.mode === 'stream-up' || ns.mode === 'stream-one'">
+      <XField v-if="ns.mode === 'packet-up'" v-slot="a" label="Min Upload Interval (Ms)"><XInput v-bind="a" v-model="ns.scMinPostsIntervalMs" mono placeholder="30" /></XField>
+      <XSwitch v-else v-model="ns.noGRPCHeader" boxed label="No gRPC Header" />
+    </XFieldGrid>
+    <XmuxFields :ns="ns" />
   </template>
 
   <!-- Hysteria -->
