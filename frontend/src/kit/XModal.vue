@@ -420,6 +420,7 @@ onBeforeUnmount(() => {
     position: fixed;
     inset: 0;
     background: var(--scrim);
+    backdrop-filter: var(--scrim-blur);
     transition: opacity var(--t-sheet) var(--ease-sheet);
   }
 

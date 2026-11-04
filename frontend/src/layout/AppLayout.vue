@@ -163,7 +163,7 @@ watch(() => route.fullPath, () => (drawerOpen.value = false))
     position: absolute;
     inset: 0;
     background: var(--scrim);
-    backdrop-filter: blur(2px);
+    backdrop-filter: var(--scrim-blur);
   }
 
   .drawer__panel {

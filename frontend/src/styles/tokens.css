@@ -118,7 +118,8 @@
   --foot: rgba(11, 14, 19, .4);
   --gut: #0D1118;
   --scrim: rgba(8, 11, 16, .55);
-  /* Light blur behind an open menu, the same in both themes */
+  /* Blur over the page behind what opens over it: windows and menus on phones, the busy cover everywhere; the same in both themes */
+  --scrim-blur: blur(8px) saturate(.9);
   --line: rgba(255, 255, 255, .08);
   --div: rgba(255, 255, 255, .07);
   --skel: rgba(255, 255, 255, .06);

@@ -44,7 +44,8 @@ watch(() => props.open, (on, was) => on !== !!was && lockScroll(on), { immediate
   justify-content: center;
   padding: 16px;
   background: var(--scrim);
-  backdrop-filter: blur(8px) saturate(.9);
+  /* Blurred on every screen, unlike the windows: nothing can be done under it. */
+  backdrop-filter: var(--scrim-blur);
 }
 
 .x-busy__card {

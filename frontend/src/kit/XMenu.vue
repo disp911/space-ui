@@ -269,7 +269,7 @@ function choose(item: MenuItem) {
   inset: 0;
   z-index: 999;
   background: var(--scrim);
-  backdrop-filter: blur(3px) saturate(.92);
+  backdrop-filter: var(--scrim-blur);
 }
 
 .x-menu-scrim-enter-active,
