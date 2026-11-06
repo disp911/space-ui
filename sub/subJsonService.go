@@ -2,9 +2,12 @@ package sub
 
 import (
 	_ "embed"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"maps"
+	"slices"
 	"strings"
 
 	"github.com/disp911/spacex-ui/v2/database/model"
@@ -22,7 +25,8 @@ var defaultJson string
 type SubJsonService struct {
 	configJson       map[string]any
 	defaultOutbounds []json_util.RawMessage
-	fragmentOrNoises bool
+	tcpMask          map[string]any
+	udpMask          map[string]any
 	mux              string
 
 	inboundService service.InboundService
@@ -41,31 +45,6 @@ func NewSubJsonService(fragment string, noises string, mux string, rules string,
 		}
 	}
 
-	fragmentOrNoises := false
-	if fragment != "" || noises != "" {
-		fragmentOrNoises = true
-		defaultOutboundsSettings := map[string]any{
-			"domainStrategy": "UseIP",
-			"redirect":       "",
-		}
-
-		if fragment != "" {
-			defaultOutboundsSettings["fragment"] = json_util.RawMessage(fragment)
-		}
-
-		if noises != "" {
-			defaultOutboundsSettings["noises"] = json_util.RawMessage(noises)
-		}
-
-		defaultDirectOutbound := map[string]any{
-			"protocol": "freedom",
-			"settings": defaultOutboundsSettings,
-			"tag":      "direct_out",
-		}
-		jsonBytes, _ := json.MarshalIndent(defaultDirectOutbound, "", "  ")
-		defaultOutbounds = append(defaultOutbounds, jsonBytes)
-	}
-
 	if rules != "" {
 		var newRules []any
 		routing, _ := configJson["routing"].(map[string]any)
@@ -79,7 +58,8 @@ func NewSubJsonService(fragment string, noises string, mux string, rules string,
 	return &SubJsonService{
 		configJson:       configJson,
 		defaultOutbounds: defaultOutbounds,
-		fragmentOrNoises: fragmentOrNoises,
+		tcpMask:          fragmentMask(fragment),
+		udpMask:          noiseMask(noises),
 		mux:              mux,
 		SubService:       subService,
 	}
@@ -204,6 +184,10 @@ func (s *SubJsonService) getConfig(inbound *model.Inbound, client model.Client, 
 				delete(newStream, "tlsSettings")
 			}
 		}
+		// Hysteria builds its stream anew and puts the masks in itself.
+		if !model.IsHysteria(inbound.Protocol) {
+			s.addMasks(newStream)
+		}
 		streamSettings, _ := json.MarshalIndent(newStream, "", "  ")
 
 		var newOutbounds []json_util.RawMessage
@@ -244,10 +228,6 @@ func (s *SubJsonService) streamData(stream string) map[string]any {
 		streamSettings["realitySettings"] = s.realityData(streamSettings["realitySettings"].(map[string]any))
 	}
 	delete(streamSettings, "sockopt")
-
-	if s.fragmentOrNoises {
-		streamSettings["sockopt"] = json_util.RawMessage(`{"dialerProxy": "direct_out", "tcpKeepAliveIdle": 100}`)
-	}
 
 	// remove proxy protocol
 	network, _ := streamSettings["network"].(string)
@@ -482,6 +462,7 @@ func (s *SubJsonService) genHy(inbound *model.Inbound, newStream map[string]any,
 	if finalmask, ok := hyStream["finalmask"].(map[string]any); ok {
 		newStream["finalmask"] = finalmask
 	}
+	s.addMasks(newStream)
 
 	newStream["network"] = "hysteria"
 	newStream["security"] = "tls"
@@ -537,4 +518,109 @@ func muxForVision(mux string) json_util.RawMessage {
 		return json_util.RawMessage(mux)
 	}
 	return out
+}
+
+// fragmentMask turns the fragmentation of the subscription's settings into
+// the "fragment" mask of finalmask.tcp, which took the place of the freedom
+// outbound's "fragment" in Xray 26. The settings are kept as they were
+// saved: "interval" is what the mask calls "delay".
+func fragmentMask(raw string) map[string]any {
+	if raw == "" {
+		return nil
+	}
+	var settings map[string]any
+	if err := json.Unmarshal([]byte(raw), &settings); err != nil || len(settings) == 0 {
+		logger.Warning("SubJsonService - the fragmentation setting is not JSON:", err)
+		return nil
+	}
+	if interval, ok := settings["interval"]; ok {
+		if _, has := settings["delay"]; !has {
+			settings["delay"] = interval
+		}
+		delete(settings, "interval")
+	}
+	return map[string]any{"type": "fragment", "settings": settings}
+}
+
+// noiseMask turns the noises of the subscription's settings, a list in the
+// freedom outbound's shape ({type, packet, delay, applyTo}), into the "noise"
+// mask of finalmask.udp, which took its place in Xray 26. A random packet
+// gives its length as "rand"; base64 is sent as hex, since the freedom
+// outbound read any base64 and the mask reads only the standard one. The
+// mask has no "applyTo": it sends its noise whatever the server's address.
+func noiseMask(raw string) map[string]any {
+	if raw == "" {
+		return nil
+	}
+	var noises []map[string]any
+	if err := json.Unmarshal([]byte(raw), &noises); err != nil {
+		logger.Warning("SubJsonService - the noises setting is not JSON:", err)
+		return nil
+	}
+	items := make([]any, 0, len(noises))
+	for _, n := range noises {
+		item := map[string]any{}
+		if delay, ok := n["delay"]; ok && delay != "" {
+			item["delay"] = delay
+		}
+		typ, _ := n["type"].(string)
+		packet, _ := n["packet"].(string)
+		packet = strings.TrimSpace(packet)
+		switch strings.ToLower(typ) {
+		case "rand":
+			item["rand"] = packet
+		case "base64":
+			b, err := base64.RawURLEncoding.DecodeString(strings.NewReplacer("+", "-", "/", "_", "=", "").Replace(packet))
+			if err != nil {
+				logger.Warning("SubJsonService - a noise packet is not base64:", err)
+				continue
+			}
+			item["type"], item["packet"] = "hex", hex.EncodeToString(b)
+		default:
+			item["type"], item["packet"] = typ, packet
+		}
+		items = append(items, item)
+	}
+	if len(items) == 0 {
+		return nil
+	}
+	return map[string]any{"type": "noise", "settings": map[string]any{"noise": items}}
+}
+
+// addMasks puts the subscription's fragmentation and noise into the
+// finalmask of an outbound's stream, beside the masks of the inbound's own,
+// as a new map: the inbound's stays as it is for the next address.
+func (s *SubJsonService) addMasks(stream map[string]any) {
+	if s.tcpMask == nil && s.udpMask == nil {
+		return
+	}
+	finalmask := map[string]any{}
+	if own, ok := stream["finalmask"].(map[string]any); ok {
+		maps.Copy(finalmask, own)
+	}
+	if s.tcpMask != nil {
+		finalmask["tcp"] = withMask(finalmask["tcp"], s.tcpMask)
+	}
+	if s.udpMask != nil {
+		finalmask["udp"] = withMask(finalmask["udp"], s.udpMask)
+	}
+	stream["finalmask"] = finalmask
+}
+
+// withMask adds a mask next to the socket, where the freedom outbound used
+// to work: last in the list, since Xray wraps the last mask first. Only
+// udphop and xicmp, which make the socket themselves, stay below it.
+func withMask(list any, mask map[string]any) []any {
+	masks, _ := list.([]any)
+	masks = slices.Clone(masks)
+	at := len(masks)
+	for at > 0 {
+		m, _ := masks[at-1].(map[string]any)
+		typ, _ := m["type"].(string)
+		if t := strings.ToLower(typ); t != "udphop" && t != "xicmp" {
+			break
+		}
+		at--
+	}
+	return slices.Insert(masks, at, any(mask))
 }
