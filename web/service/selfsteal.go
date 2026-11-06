@@ -273,11 +273,10 @@ func newSiteInbound(domain, socket string) (*model.Inbound, *model.Client, error
 				"spiderX":       "/",
 				"mldsa65Verify": "",
 			},
-			// Whoever is passed on to the website gets it at full speed for
-			// as much as the site has to give, then slowly: the server
-			// cannot be measured or used through it with large transfers.
-			"limitFallbackUpload":   map[string]any{"afterBytes": 1 << 20, "bytesPerSec": 128 << 10, "burstBytesPerSec": 256 << 10},
-			"limitFallbackDownload": map[string]any{"afterBytes": 16 << 20, "bytesPerSec": 1 << 20, "burstBytesPerSec": 2 << 20},
+			// Nothing passed on to the website is slowed down: it is our own
+			// site, not someone else's to be relayed to, and XHTTP and the
+			// WEB proxy reach their inbounds through it. Caddy does not slow
+			// an upload down either.
 		},
 		"tcpSettings": map[string]any{"acceptProxyProtocol": false, "header": map[string]any{"type": "none"}},
 	}

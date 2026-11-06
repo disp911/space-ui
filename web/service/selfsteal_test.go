@@ -32,8 +32,10 @@ func TestSiteInboundIsWhatXrayTakes(t *testing.T) {
 	if r.Type != "unix" || r.Xver != 1 || r.ServerNames[0] != "docs.example.com" || len(r.ShortIds) != 8 {
 		t.Fatalf("target type %q, names %v, short ids %v", r.Type, r.ServerNames, r.ShortIds)
 	}
-	if r.LimitFallbackDownload.AfterBytes == 0 || r.LimitFallbackUpload.BytesPerSec == 0 {
-		t.Fatalf("fallback limits are not read: %+v %+v", r.LimitFallbackUpload, r.LimitFallbackDownload)
+	// XHTTP and the WEB proxy reach their inbounds through the website, at
+	// full speed.
+	if r.LimitFallbackDownload.BytesPerSec != 0 || r.LimitFallbackUpload.BytesPerSec != 0 {
+		t.Fatalf("the website is slowed down: %+v %+v", r.LimitFallbackUpload, r.LimitFallbackDownload)
 	}
 
 	var settings conf.VLessInboundConfig
