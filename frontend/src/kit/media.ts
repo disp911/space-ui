@@ -10,6 +10,17 @@ export function usePhone() {
   return phone
 }
 
+/**
+ * Set by a window whose fields stand in one column, as on a phone, e.g. the
+ * inbound window: the grids, nests and cards in it give up their columns.
+ */
+export const stackKey: InjectionKey<boolean> = Symbol('stack')
+
+/** True inside a window whose fields stand in one column. */
+export function useStack() {
+  return inject(stackKey, false)
+}
+
 /** Set by a list that has gone to its phone columns for want of room; what it holds follows it. */
 export const compactKey: InjectionKey<Ref<boolean>> = Symbol('compact')
 

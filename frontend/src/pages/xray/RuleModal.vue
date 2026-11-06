@@ -6,7 +6,10 @@ import { customGeo, domainPresets, ipPresets } from './catalog'
 import { useXrayForm } from './form'
 import { listOf, type Rule } from './model'
 
-/** A routing rule to create, or the one at index to edit. */
+/**
+ * A routing rule to create, or the one at index to edit. Its fields stand in
+ * one column, as in the inbound window, and its body scrolls.
+ */
 const props = defineProps<{ rule: Rule | null; index: number }>()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ save: [rule: Rule] }>()
@@ -126,7 +129,7 @@ const title = computed(() => (props.rule ? t('xray.ruleEdit', { n: props.index +
 </script>
 
 <template>
-  <XModal v-model:open="open" :title="title" size="lg" cancel>
+  <XModal v-model:open="open" :title="title" size="md" cancel scroll-body stack>
     <div class="rule">
       <XField v-slot="a" label="Source IPs" :help="t('xray.useComma')">
         <XTagInput v-bind="a" v-model="form.sourceIP" :groups="ipGroups" mono placeholder="e.g. 0.0.0.0/8, fc00::/7, geoip:ir" />

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePhone, XAddButton, XButton, XField, XFieldGrid, XInput, XMultiSelect, XNest, XNestCard, XNumber, XSelect, XSwitch, type Option } from '../../kit'
+import { usePhone, useStack, XAddButton, XButton, XField, XFieldGrid, XInput, XMultiSelect, XNest, XNestCard, XNumber, XSelect, XSwitch, type Option } from '../../kit'
 import { alpns, defaultExternalProxy, fingerprints, type InboundForm } from './inbound'
 
 /**
@@ -9,11 +9,14 @@ import { alpns, defaultExternalProxy, fingerprints, type InboundForm } from './i
  * panel's own, e.g. a CDN, each with its TLS, port and remark. Turning it on
  * starts with the panel's address and the inbound's port, as the old panel did.
  * With Force TLS a row also says the SNI, fingerprint and ALPN of that TLS,
- * as a CDN reached by its address needs.
+ * as a CDN reached by its address needs. A row is a card on phones and in
+ * a window that stacks its fields, a line of the table otherwise.
  */
 const props = defineProps<{ f: InboundForm }>()
 const { t } = useI18n()
-const phone = usePhone()
+const narrow = usePhone()
+const stack = useStack()
+const phone = computed(() => narrow.value || stack)
 
 type Json = Record<string, any>
 const rows = computed<Json[]>(() => (Array.isArray(props.f.streamSettings?.externalProxy) ? props.f.streamSettings!.externalProxy : []))
@@ -46,7 +49,7 @@ const alpnOptions: Option[] = alpns.map((v) => ({ value: v, label: v }))
         <XNestCard v-for="(r, i) in rows" :key="i" :title="r.remark || String(i + 1)">
           <XFieldGrid :cols="1">
             <XField v-slot="a" label="Force TLS">
-              <XFieldGrid :cols="2" :phone="2">
+              <XFieldGrid :cols="2" phone-columns="repeat(2, minmax(0, 1fr))">
                 <XSelect v-bind="a" v-model="r.forceTls" :options="tlsOptions" />
                 <XNumber v-model="r.port" block :min="1" :max="65535" :aria-label="t('inbounds.colPort')" />
               </XFieldGrid>

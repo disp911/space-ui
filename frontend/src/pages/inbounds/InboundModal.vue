@@ -19,7 +19,8 @@ import { protocols, type DbInbound, type Protocol } from './model'
 
 /**
  * Window 11 of the mockup: a new inbound, or the stored one to change. It
- * opens centred and its body scrolls, as every window. The protocol of a
+ * opens centred and its body scrolls, as every window. Its fields stand in
+ * one column, one under another, as the old panel's long window had them. The protocol of a
  * stored inbound stays; the panel serves one MTProto inbound only.
  */
 const props = defineProps<{ inbound: DbInbound | null }>()
@@ -110,7 +111,7 @@ async function save() {
 </script>
 
 <template>
-  <XModal v-model:open="open" :title="editing ? t('inbounds.editTitle') : t('inbounds.addTitle')" size="lg" cancel scroll-body :dismissible="!saving">
+  <XModal v-model:open="open" :title="editing ? t('inbounds.editTitle') : t('inbounds.addTitle')" size="md" cancel scroll-body stack :dismissible="!saving">
     <div class="inbound">
       <XSwitch v-model="f.enable" boxed :label="t('inbounds.enable')" />
       <XFieldGrid>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { nextTick, onBeforeUnmount, provide, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import XButton from './XButton.vue'
+import { stackKey } from './media'
 import { lockScroll } from './scrollLock'
 import { startSheetDrag } from './sheetDrag'
 
@@ -30,12 +31,19 @@ const props = withDefaults(
      * view and only the body scrolling, e.g. the inbound window. As phones do.
      */
     scrollBody?: boolean
+    /**
+     * Its fields stand in one column, one under another, as on phones: the
+     * grids, nests and cards in it give up their columns, e.g. the inbound
+     * window. Set once, when the window is made.
+     */
+    stack?: boolean
   }>(),
   { size: 'md', dismissible: true },
 )
 
 const open = defineModel<boolean>('open', { default: false })
 const { t } = useI18n()
+provide(stackKey, props.stack)
 const id = useId()
 const dialog = ref<HTMLElement | null>(null)
 let returnFocus: HTMLElement | null = null

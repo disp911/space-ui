@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { useStack } from './media'
+
 /**
  * One item of a list inside an XNest, e.g. a noise: a title with a blue dot
  * when changed, actions at the right (a remove button) and its fields; with
  * columns, the fields fill a grid of at least that many px each. The head
- * sits under a line, as the window mockups draw a list's cards.
+ * sits under a line, as the window mockups draw a list's cards. In a window
+ * that stacks its fields the grid has one column.
  */
+const stack = useStack()
 defineProps<{ title: string; modified?: boolean; columns?: number }>()
 </script>
 
@@ -15,7 +19,7 @@ defineProps<{ title: string; modified?: boolean; columns?: number }>()
       <span v-if="modified" class="x-nest-card__dot" aria-hidden="true" />
       <div v-if="$slots.actions" class="x-nest-card__actions"><slot name="actions" /></div>
     </div>
-    <div :class="['x-nest-card__body', { 'x-nest-card__grid': columns }]" :style="columns ? { '--nest-col': `${columns}px` } : undefined"><slot /></div>
+    <div :class="['x-nest-card__body', { 'x-nest-card__grid': columns }]" :style="columns ? { '--nest-col': stack ? '100%' : `${columns}px` } : undefined"><slot /></div>
   </div>
 </template>
 

@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { useStack } from './media'
+
 /**
  * A block nested under a setting that a switch opens: a caps title and the
  * fields, one step below the card. With columns, fields fill a grid of at
- * least that many px each.
+ * least that many px each; one column in a window that stacks its fields.
  */
+const stack = useStack()
 defineProps<{
   title?: string
   columns?: number
@@ -15,7 +18,7 @@ defineProps<{
 <template>
   <div :class="['x-nest', { 'x-nest--bare': bare }]">
     <div v-if="title" class="x-caps x-caps--lg x-nest__title">{{ title }}</div>
-    <div :class="{ 'x-nest__grid': columns }" :style="columns ? { '--nest-col': `${columns}px` } : undefined"><slot /></div>
+    <div :class="{ 'x-nest__grid': columns }" :style="columns ? { '--nest-col': stack ? '100%' : `${columns}px` } : undefined"><slot /></div>
   </div>
 </template>
 
