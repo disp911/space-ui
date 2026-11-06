@@ -62,13 +62,18 @@ function setFragment(on: boolean) {
 
 // --- Noises -------------------------------------------------------------------
 
-interface Noise { type: string; packet: string; delay: string; applyTo: string }
+// The subscription sends them as finalmask's noise, which has no applyTo:
+// one saved before loses it when it is changed.
+interface Noise { type: string; packet: string; delay: string; applyTo?: string }
 const noises = json<Noise[]>('subJsonNoises')
-const newNoise = (): Noise => ({ type: 'rand', packet: '10-20', delay: '10-16', applyTo: 'ip' })
+const newNoise = (): Noise => ({ type: 'rand', packet: '10-20', delay: '10-16' })
 const noiseTypes = ['rand', 'base64', 'str', 'hex'].map((v) => ({ value: v, label: v }))
-const noiseTargets = ['ip', 'ipv4', 'ipv6'].map((v) => ({ value: v, label: v }))
 function setNoise(i: number, patch: Partial<Noise>) {
-  noises.value = (noises.value ?? []).map((n, j) => (j === i ? { ...n, ...patch } : n))
+  noises.value = (noises.value ?? []).map((n, j) => {
+    if (j !== i) return n
+    const { applyTo: _, ...rest } = { ...n, ...patch }
+    return rest
+  })
 }
 const noiseChanged = (i: number) => JSON.stringify(noises.value?.[i]) !== JSON.stringify(savedJson<Noise[]>('subJsonNoises')?.[i])
 
@@ -194,9 +199,6 @@ const directDomains = directList('domain')
                 </XField>
                 <XField v-slot="a" label="Delay (ms)">
                   <XInput v-bind="a" :model-value="n.delay" mono @update:model-value="setNoise(i, { delay: $event })" />
-                </XField>
-                <XField v-slot="a" label="ApplyTo">
-                  <XSelect v-bind="a" :model-value="n.applyTo" :options="noiseTargets" mono @update:model-value="setNoise(i, { applyTo: $event ?? 'ip' })" />
                 </XField>
               </XNestCard>
               <div>
