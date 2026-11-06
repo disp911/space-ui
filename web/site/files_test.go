@@ -68,10 +68,18 @@ func TestFilesServesPagesAndFolders(t *testing.T) {
 	}
 }
 
-func TestFilesRedirectsAFolderWithoutItsSlash(t *testing.T) {
-	resp := get(t, Files(testSite()), http.MethodGet, "/docs?v=2", nil)
-	if resp.StatusCode != http.StatusMovedPermanently || resp.Header.Get("Location") != "/docs/?v=2" {
-		t.Fatalf("got %d to %q", resp.StatusCode, resp.Header.Get("Location"))
+func TestFilesRedirectsToTheCanonicalPath(t *testing.T) {
+	// A folder takes its slash and a file loses one, as with Caddy: 308,
+	// the query kept, to any method, and no Vary.
+	for _, c := range []struct{ method, path, to string }{
+		{http.MethodGet, "/docs?v=2", "/docs/?v=2"},
+		{http.MethodPost, "/docs", "/docs/"},
+		{http.MethodGet, "/docs/intro.html/", "/docs/intro.html"},
+	} {
+		resp := get(t, Files(testSite()), c.method, c.path, nil)
+		if resp.StatusCode != http.StatusPermanentRedirect || resp.Header.Get("Location") != c.to || resp.Header.Get("Vary") != "" {
+			t.Errorf("%s %s: got %d to %q", c.method, c.path, resp.StatusCode, resp.Header.Get("Location"))
+		}
 	}
 }
 
@@ -85,6 +93,15 @@ func TestFilesAnswersMissingWithTheSitesOwnPage(t *testing.T) {
 			t.Errorf("%s: got %d", p, resp.StatusCode)
 		}
 	}
+	// The page is served as a file, to any method, and never compressed.
+	for _, m := range []string{http.MethodGet, http.MethodPut, http.MethodPost} {
+		resp := get(t, h, m, "/nope", map[string]string{"Accept-Encoding": "gzip"})
+		hd := resp.Header
+		if resp.StatusCode != http.StatusNotFound || hd.Get("Etag") == "" || hd.Get("Last-Modified") == "" || hd.Get("Accept-Ranges") != "bytes" ||
+			hd.Get("Vary") != "Accept-Encoding" || hd.Get("Content-Encoding") != "" || body(t, resp) != "<h1>Lost</h1>" {
+			t.Errorf("%s: got %d %v", m, resp.StatusCode, hd)
+		}
+	}
 }
 
 func TestFilesAnswersMissingPlainlyWithoutAPage(t *testing.T) {
@@ -92,8 +109,8 @@ func TestFilesAnswersMissingPlainlyWithoutAPage(t *testing.T) {
 	delete(fsys, "404.html")
 	resp := get(t, Files(fsys), http.MethodGet, "/nope", nil)
 	// Caddy's file server without an error page: the status and nothing more.
-	if b := body(t, resp); resp.StatusCode != http.StatusNotFound || b != "" {
-		t.Fatalf("got %d %q", resp.StatusCode, b)
+	if b := body(t, resp); resp.StatusCode != http.StatusNotFound || b != "" || len(resp.Header) != 0 {
+		t.Fatalf("got %d %q %v", resp.StatusCode, b, resp.Header)
 	}
 }
 
@@ -104,9 +121,13 @@ func TestFilesRefusesOtherMethods(t *testing.T) {
 			t.Errorf("%s: got %d, Allow %q", m, resp.StatusCode, resp.Header.Get("Allow"))
 		}
 		// Caddy's file server says no more than the status.
-		if b := body(t, resp); b != "" || resp.Header.Get("Content-Type") != "" {
-			t.Errorf("%s: body %q, type %q", m, b, resp.Header.Get("Content-Type"))
+		if b := body(t, resp); b != "" || resp.Header.Get("Content-Type") != "" || resp.Header.Get("Content-Length") != "" || resp.Header.Get("Vary") != "Accept-Encoding" {
+			t.Errorf("%s: body %q, headers %v", m, b, resp.Header)
 		}
+	}
+	// What is not there is missing to every method.
+	if resp := get(t, Files(testSite()), http.MethodPut, "/x", nil); resp.StatusCode != http.StatusNotFound {
+		t.Errorf("PUT /x: got %d", resp.StatusCode)
 	}
 }
 
@@ -115,13 +136,18 @@ func TestFilesHeadHasNoBody(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || body(t, resp) != "" || resp.Header.Get("Content-Length") != "14" {
 		t.Fatalf("got %d, length %q", resp.StatusCode, resp.Header.Get("Content-Length"))
 	}
+	// A body that would be compressed is announced so, without a length.
+	resp = get(t, Files(testSite()), http.MethodHead, "/", map[string]string{"Accept-Encoding": "gzip"})
+	if resp.StatusCode != http.StatusOK || body(t, resp) != "" || resp.Header.Get("Content-Encoding") != "gzip" || resp.Header.Get("Content-Length") != "" {
+		t.Fatalf("gzip: got %d %v", resp.StatusCode, resp.Header)
+	}
 }
 
 func TestFilesRevisitsGetNotModified(t *testing.T) {
 	h := Files(testSite())
 	first := get(t, h, http.MethodGet, "/logo.png", nil)
 	etag := first.Header.Get("ETag")
-	if etag != `"d8fvrbx09k3kxc"` {
+	if etag != `"d8fvrbx09k3k-xc"` {
 		t.Fatalf("ETag %q", etag)
 	}
 	if lm := first.Header.Get("Last-Modified"); lm != "Fri, 14 Mar 2025 09:26:53 GMT" {
@@ -167,12 +193,17 @@ func TestFilesCompressesTextForGzipClients(t *testing.T) {
 	}
 
 	// Pictures and small pages go as they are, and so does everything for
-	// a client that takes no gzip.
-	for _, c := range []struct{ path, enc string }{{"/logo.png", "gzip"}, {"/docs/intro.html", "gzip"}, {"/", ""}, {"/", "gzip;q=0"}} {
-		resp := get(t, h, http.MethodGet, c.path, map[string]string{"Accept-Encoding": c.enc})
-		if resp.Header.Get("Content-Encoding") != "" {
-			t.Errorf("%s with %q: compressed", c.path, c.enc)
+	// a client that takes no gzip or opens a WebSocket; Vary is there all
+	// the same.
+	for _, c := range []struct{ path, enc, ws string }{{"/logo.png", "gzip", ""}, {"/docs/intro.html", "gzip", ""}, {"/", "", ""}, {"/", "gzip;q=0", ""}, {"/", "gzip", "x"}} {
+		resp := get(t, h, http.MethodGet, c.path, map[string]string{"Accept-Encoding": c.enc, "Sec-WebSocket-Key": c.ws})
+		if resp.Header.Get("Content-Encoding") != "" || resp.Header.Get("Vary") != "Accept-Encoding" {
+			t.Errorf("%s with %q: %v", c.path, c.enc, resp.Header)
 		}
+	}
+	// A weight is read as Caddy reads it.
+	if again := get(t, h, http.MethodGet, "/", map[string]string{"Accept-Encoding": "gzip;q=0.5", "If-None-Match": resp.Header.Get("ETag")}); again.StatusCode != http.StatusNotModified {
+		t.Errorf("revisit with a weight: got %d", again.StatusCode)
 	}
 }
 

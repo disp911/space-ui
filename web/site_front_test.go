@@ -66,16 +66,41 @@ func TestSiteFrontRoutesByPath(t *testing.T) {
 	}
 }
 
+func TestSiteAnswersOnlyByItsNames(t *testing.T) {
+	front := siteFront{basePath: "/s3cret/", panel: named("panel"), site: named("site"), hosts: []string{"example.com", "2001:db8::7"}}
+	for _, c := range []struct {
+		host, path, want string
+	}{
+		{"example.com", "/", "site /"},
+		{"EXAMPLE.com:8443", "/docs/", "site /docs/"},
+		{"[2001:db8::7]", "/", "site /"},
+		{"[2001:db8::7]:443", "/", "site /"},
+		{"other.example", "/", ""},
+		{"", "/", ""},
+		{"203.0.113.7", "/", ""},
+		// The panel and the subscriptions are found by path alone.
+		{"other.example", "/s3cret/x", "panel /s3cret/x"},
+	} {
+		req := httptest.NewRequest(http.MethodGet, c.path, nil)
+		req.Host = c.host
+		rec := httptest.NewRecorder()
+		front.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK || rec.Body.String() != c.want || len(rec.Header()) != 0 && c.want == "" {
+			t.Errorf("%q %s: %d %q %v", c.host, c.path, rec.Code, rec.Body, rec.Header())
+		}
+	}
+}
+
 func TestSiteRedirect(t *testing.T) {
 	for _, c := range []struct{ host, uri, want string }{
 		{"example.com", "/docs/?q=1", "https://example.com/docs/?q=1"},
 		{"example.com:80", "/", "https://example.com/"},
-		{"", "/x", "https://fallback.org/x"},
+		{"", "/x", "https:///x"},
 	} {
 		req := httptest.NewRequest(http.MethodGet, c.uri, nil)
 		req.Host = c.host
 		rec := httptest.NewRecorder()
-		siteRedirect("fallback.org").ServeHTTP(rec, req)
+		siteRedirect().ServeHTTP(rec, req)
 		if rec.Code != http.StatusPermanentRedirect || rec.Header().Get("Location") != c.want {
 			t.Errorf("%s%s: %d to %q", c.host, c.uri, rec.Code, rec.Header().Get("Location"))
 		}
@@ -199,7 +224,7 @@ func TestSiteSocketTakesTheAddressFromXray(t *testing.T) {
 
 func TestSiteAnswersAsCaddy(t *testing.T) {
 	rec := httptest.NewRecorder()
-	asCaddy(siteRedirect("example.com")).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "http://example.com/docs/?a=1", nil))
+	asCaddy(siteRedirect()).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "http://example.com/docs/?a=1", nil))
 	h := rec.Header()
 	if rec.Code != http.StatusPermanentRedirect || h.Get("Location") != "https://example.com/docs/?a=1" || h.Get("Server") != "Caddy" || rec.Body.Len() != 0 {
 		t.Fatalf("%d %v %q", rec.Code, h, rec.Body)
@@ -208,7 +233,8 @@ func TestSiteAnswersAsCaddy(t *testing.T) {
 
 func TestSiteServerHasCaddysLimits(t *testing.T) {
 	s := caddyServer(named("site"))
-	if s.ReadHeaderTimeout != time.Minute || s.IdleTimeout != 5*time.Minute || s.MaxHeaderBytes != 16<<10 || s.ErrorLog != quietLog {
+	if s.ReadHeaderTimeout != time.Minute || s.IdleTimeout != 5*time.Minute || s.MaxHeaderBytes != 16<<10 || s.ErrorLog != quietLog ||
+		!s.Protocols.HTTP1() || !s.Protocols.HTTP2() || !s.Protocols.UnencryptedHTTP2() {
 		t.Fatalf("%v %v %d", s.ReadHeaderTimeout, s.IdleTimeout, s.MaxHeaderBytes)
 	}
 }

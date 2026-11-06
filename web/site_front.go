@@ -27,11 +27,46 @@ import (
 // siteFront answers on the website's listeners: the panel's secret path is the
 // panel's, the subscription paths are the subscription server's, and every
 // other path is the website's. A path is matched as whole segments, so
-// "/sub/" does not take "/subscribe".
+// "/sub/" does not take "/subscribe". The website answers only by its own
+// names: to any other host, or to none, it gives the empty 200 Caddy gives
+// a request no site of it is for.
 type siteFront struct {
 	basePath string
 	panel    http.Handler
 	site     http.Handler
+	hosts    []string
+}
+
+// ownHost reports whether the request names one of the website's hosts,
+// with any port; with no hosts known every name is the website's.
+func (f siteFront) ownHost(r *http.Request) bool {
+	if len(f.hosts) == 0 {
+		return true
+	}
+	host := r.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	host = strings.TrimSuffix(strings.TrimPrefix(host, "["), "]")
+	for _, h := range f.hosts {
+		if strings.EqualFold(host, h) {
+			return true
+		}
+	}
+	return false
+}
+
+// siteHosts are the names the website answers by: its own, and the WEB
+// proxy's, whose visitors without credentials it is shown to.
+func (s *Server) siteHosts(domain string) []string {
+	if domain == "" {
+		return nil
+	}
+	hosts := []string{strings.TrimSuffix(strings.TrimPrefix(domain, "["), "]")}
+	if web, _ := s.settingService.GetWebDomain(); web != "" && !strings.EqualFold(web, domain) {
+		hosts = append(hosts, web)
+	}
+	return hosts
 }
 
 func (f siteFront) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +82,9 @@ func (f siteFront) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+	}
+	if !f.ownHost(r) {
+		return
 	}
 	f.site.ServeHTTP(w, r)
 }
@@ -89,15 +127,13 @@ func SiteRunning() bool {
 	return siteRunning.Load()
 }
 
-// siteRedirect sends a plain HTTP visitor to the same address over HTTPS.
-func siteRedirect(domain string) http.Handler {
+// siteRedirect sends a plain HTTP visitor to the same address over HTTPS;
+// one naming no host is sent to none, as Caddy sends it.
+func siteRedirect() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host
 		if h, _, err := net.SplitHostPort(host); err == nil {
 			host = h
-		}
-		if host == "" {
-			host = domain
 		}
 		// As Caddy's automatic HTTPS: 308, no body, the connection closed.
 		w.Header().Set("Location", "https://"+host+r.URL.RequestURI())
@@ -121,14 +157,21 @@ var quietLog = log.New(io.Discard, "", 0)
 
 // caddyServer serves h with the limits Caddy's server has by default:
 // a minute for a request's head, 16 KB of it at most, and five minutes
-// for a connection left idle.
+// for a connection left idle. As Caddy's, it also speaks HTTP/2 without
+// TLS, and so waits for as many bytes as that protocol's preface before it
+// answers a plain connection at all.
 func caddyServer(h http.Handler) *http.Server {
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	protocols.SetHTTP2(true)
+	protocols.SetUnencryptedHTTP2(true)
 	return &http.Server{
 		Handler:           h,
 		ReadHeaderTimeout: time.Minute,
 		IdleTimeout:       5 * time.Minute,
 		MaxHeaderBytes:    16 << 10,
 		ErrorLog:          quietLog,
+		Protocols:         protocols,
 	}
 }
 
@@ -168,7 +211,7 @@ func (s *Server) startReality(panel http.Handler) error {
 		certs.Stop()
 		return err
 	}
-	s.siteFront = siteFront{basePath: basePath, panel: panel, site: pages}
+	s.siteFront = siteFront{basePath: basePath, panel: panel, site: pages, hosts: s.siteHosts(domain)}
 	s.siteHandler = asCaddy(webProxyFront{panel: s.siteFront, route: service.TelemtWebRoute, xhttp: service.XhttpSiteRoute})
 	s.siteServer = caddyServer(s.siteHandler)
 	go s.siteServer.Serve(tls.NewListener(ln, certs.TLSConfig()))
@@ -177,7 +220,7 @@ func (s *Server) startReality(panel http.Handler) error {
 	if l80, err := net.Listen("tcp", net.JoinHostPort(listen, "80")); err != nil {
 		logger.Warning("Website: port 80 is not available, certificates are checked over 443 only:", err)
 	} else {
-		s.redirectServer = caddyServer(asCaddy(certs.HTTPChallenge(siteRedirect(domain))))
+		s.redirectServer = caddyServer(asCaddy(certs.HTTPChallenge(siteRedirect())))
 		go s.redirectServer.Serve(l80)
 	}
 
@@ -267,7 +310,7 @@ func (s *Server) startOwnPort(panel http.Handler) (net.Listener, bool, error) {
 		s.stopSite()
 		return nil, false, err
 	}
-	s.siteFront = siteFront{basePath: basePath, panel: panel, site: pages}
+	s.siteFront = siteFront{basePath: basePath, panel: panel, site: pages, hosts: s.siteHosts(name)}
 	s.siteHandler = asCaddy(webProxyFront{panel: s.siteFront, route: service.TelemtWebRoute, xhttp: service.XhttpSiteRoute})
 	service.SetSiteStatus(&service.SiteState{Scheme: scheme, Host: host, Certs: s.siteCerts, Checker: s.siteCheck})
 	siteRunning.Store(true)
