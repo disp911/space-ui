@@ -25,6 +25,24 @@ import (
 	"go.uber.org/zap"
 )
 
+// CaddyTLS gives t the TLS Caddy serves by default: TLS 1.2 and up, in
+// TLS 1.2 only the ECDHE suites with AEAD ciphers, and only the curves
+// X25519MLKEM768, X25519 and P-256. A visitor offering nothing else is
+// refused as Caddy refuses it.
+func CaddyTLS(t *tls.Config) *tls.Config {
+	t.MinVersion = tls.VersionTLS12
+	t.CipherSuites = []uint16{
+		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+		tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+	}
+	t.CurvePreferences = []tls.CurveID{tls.X25519MLKEM768, tls.X25519, tls.CurveP256}
+	return t
+}
+
 // Certs obtains and renews the site's certificate on its own, with no
 // script beside the panel, from Let's Encrypt. A renewed certificate is served from the next
 // handshake on, with nothing restarted. The name is a domain or an IP
@@ -226,8 +244,7 @@ func (c *Certs) Renew(ctx context.Context) error {
 // authorities' TLS check. Until there is a certificate a self-signed one
 // stands in, so the panel can be opened past the browser's warning.
 func (c *Certs) TLSConfig() *tls.Config {
-	t := c.cfg.TLSConfig()
-	t.MinVersion = tls.VersionTLS12
+	t := CaddyTLS(c.cfg.TLSConfig())
 	t.NextProtos = append([]string{"h2", "http/1.1"}, t.NextProtos...)
 	get := t.GetCertificate
 	t.GetCertificate = func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {

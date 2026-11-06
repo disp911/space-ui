@@ -355,12 +355,7 @@ func (s *Server) Start() (err error) {
 			return err
 		}
 		s.listener = listener
-		s.httpServer = &http.Server{
-			Handler:           s.siteHandler,
-			ReadHeaderTimeout: 60 * time.Second,
-			IdleTimeout:       75 * time.Second,
-			ErrorLog:          quietLog,
-		}
+		s.httpServer = caddyServer(s.siteHandler)
 		go func() {
 			s.httpServer.Serve(listener)
 		}()

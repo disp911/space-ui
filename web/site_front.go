@@ -119,6 +119,19 @@ func asCaddy(h http.Handler) http.Handler {
 // handshake fails, which a public port sees all day.
 var quietLog = log.New(io.Discard, "", 0)
 
+// caddyServer serves h with the limits Caddy's server has by default:
+// a minute for a request's head, 16 KB of it at most, and five minutes
+// for a connection left idle.
+func caddyServer(h http.Handler) *http.Server {
+	return &http.Server{
+		Handler:           h,
+		ReadHeaderTimeout: time.Minute,
+		IdleTimeout:       5 * time.Minute,
+		MaxHeaderBytes:    16 << 10,
+		ErrorLog:          quietLog,
+	}
+}
+
 // startReality opens the website on the socket the REALITY inbound on 443
 // passes visitors to, with the panel at its secret path, plus port 80 for
 // the authorities' checks and a redirect to HTTPS. The panel opens no port
@@ -157,23 +170,14 @@ func (s *Server) startReality(panel http.Handler) error {
 	}
 	s.siteFront = siteFront{basePath: basePath, panel: panel, site: pages}
 	s.siteHandler = asCaddy(webProxyFront{panel: s.siteFront, route: service.TelemtWebRoute, xhttp: service.XhttpSiteRoute})
-	s.siteServer = &http.Server{
-		Handler:           s.siteHandler,
-		ReadHeaderTimeout: 60 * time.Second,
-		IdleTimeout:       75 * time.Second,
-		ErrorLog:          quietLog,
-	}
+	s.siteServer = caddyServer(s.siteHandler)
 	go s.siteServer.Serve(tls.NewListener(ln, certs.TLSConfig()))
 	logger.Info("Website running on", ln.Addr(), "for", domain)
 
 	if l80, err := net.Listen("tcp", net.JoinHostPort(listen, "80")); err != nil {
 		logger.Warning("Website: port 80 is not available, certificates are checked over 443 only:", err)
 	} else {
-		s.redirectServer = &http.Server{
-			Handler:           asCaddy(certs.HTTPChallenge(siteRedirect(domain))),
-			ReadHeaderTimeout: 60 * time.Second,
-			ErrorLog:          quietLog,
-		}
+		s.redirectServer = caddyServer(asCaddy(certs.HTTPChallenge(siteRedirect(domain))))
 		go s.redirectServer.Serve(l80)
 	}
 
@@ -219,7 +223,7 @@ func (s *Server) startOwnPort(panel http.Handler) (net.Listener, bool, error) {
 		if cert, err := tls.LoadX509KeyPair(certFile, keyFile); err != nil {
 			logger.Error("Error loading certificates:", err)
 		} else {
-			tlsConf = &tls.Config{Certificates: []tls.Certificate{cert}, NextProtos: []string{"h2", "http/1.1"}}
+			tlsConf = site.CaddyTLS(&tls.Config{Certificates: []tls.Certificate{cert}, NextProtos: []string{"h2", "http/1.1"}})
 		}
 	case name != "":
 		certs := site.NewCerts(config.GetCertFolder(), name)

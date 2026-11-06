@@ -205,3 +205,10 @@ func TestSiteAnswersAsCaddy(t *testing.T) {
 		t.Fatalf("%d %v %q", rec.Code, h, rec.Body)
 	}
 }
+
+func TestSiteServerHasCaddysLimits(t *testing.T) {
+	s := caddyServer(named("site"))
+	if s.ReadHeaderTimeout != time.Minute || s.IdleTimeout != 5*time.Minute || s.MaxHeaderBytes != 16<<10 || s.ErrorLog != quietLog {
+		t.Fatalf("%v %v %d", s.ReadHeaderTimeout, s.IdleTimeout, s.MaxHeaderBytes)
+	}
+}
