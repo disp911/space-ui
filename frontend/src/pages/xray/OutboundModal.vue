@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast, XButton, XCodeEditor, XField, XFieldGrid, XInput, XModal, XNumber, XSegmented, XSelect } from '../../kit'
 import type { Outbound } from './model'
-import { canStream, canTls, defaultSettings, finalize, fromLink, hasAddressPort, blackholeWrong, liftFreedomMasks, newOutbound, protocols, remoteDnsWrong, server, setProtocolStream } from './outbound'
+import { canStream, canTls, defaultSettings, finalize, fromLink, hasAddressPort, blackholeWrong, liftFreedomMasks, plainWrong, newOutbound, protocols, remoteDnsWrong, server, setProtocolStream } from './outbound'
 import OutboundSettings from './OutboundSettings.vue'
 import { sessionIdWrong } from './xhttp'
 import { customSockoptWrong } from './sockopt'
@@ -48,7 +48,7 @@ const protocol = computed({
 
 const tagTaken = computed(() => props.tags.includes(String(o.value.tag ?? '').trim()))
 const valid = computed(
-  () => !!String(o.value.tag ?? '').trim() && !tagTaken.value && !remoteDnsWrong(o.value) && !sessionIdWrong(o.value.streamSettings?.xhttpSettings) && !customSockoptWrong(o.value.streamSettings?.sockopt) && !blackholeWrong(o.value),
+  () => !!String(o.value.tag ?? '').trim() && !tagTaken.value && !remoteDnsWrong(o.value) && !sessionIdWrong(o.value.streamSettings?.xhttpSettings) && !customSockoptWrong(o.value.streamSettings?.sockopt) && !blackholeWrong(o.value) && !plainWrong(o.value),
 )
 
 const address = computed({ get: () => server(o.value).address ?? '', set: (v: string) => (server(o.value).address = v) })
@@ -121,7 +121,7 @@ const linkHint = 'vmess:// vless:// trojan:// ss:// hysteria2://'
           </XField>
         </XFieldGrid>
         <XFieldGrid v-if="hasAddressPort(o)" columns="minmax(0, 1fr) 150px">
-          <XField v-slot="a" :label="t('xray.outAddress')">
+          <XField v-slot="a" :label="t('xray.outAddress')" :error="plainWrong(o) && String(address).trim() ? t('xray.plainRefused', { p: o.protocol === 'vless' ? 'VLESS' : 'Trojan' }) : undefined">
             <XInput v-bind="a" v-model="address" mono />
           </XField>
           <XField v-slot="a" :label="t('xray.port')">

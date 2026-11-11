@@ -457,6 +457,7 @@ export interface MessageSchema {
     "ruleWebhookHelp": string
     "ruleDedupHelp": string
     "blackholeDataHelp": string
+    "plainRefused": string
     "ruleAdd": string
     "geoFiles": string
     "ruleSource": string

@@ -546,6 +546,7 @@
 "ruleWebhookHelp" = "Xray sends what matched this rule to this address"
 "ruleDedupHelp" = "Seconds within which the same match is sent once; 0 sends each"
 "blackholeDataHelp" = "The answer, in standard base64, sent before the connection is closed"
+"plainRefused" = "Xray does not start {p} without TLS or REALITY to a public address: turn security on, or use a private address"
 "ruleAdd" = "Add Rule"
 "geoFiles" = "Geo files"
 "ruleSource" = "Source"

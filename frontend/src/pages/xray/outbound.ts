@@ -312,6 +312,46 @@ export function liftFreedomMasks(o: Outbound): Outbound {
   return o
 }
 
+/** Go's IsPrivate, IsLoopback and IsLinkLocalUnicast of an IPv4 address. */
+function privateV4(ip: string) {
+  const [a, b] = ip.split('.').map(Number) as [number, number]
+  return a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254)
+}
+
+/** The zones Xray counts as private (common/geodata), and a name without a dot. */
+const privateZones = ['lan', 'localdomain', 'example', 'invalid', 'localhost', 'test', 'local', 'home.arpa', 'internal']
+
+/** A server address Xray lets VLESS and Trojan reach without TLS: a private, loopback or link-local IP, or a private name. */
+export function privateAddress(address: string): boolean {
+  const a = address.trim().toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '')
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(a)) return privateV4(a)
+  if (a.includes(':')) {
+    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(a)
+    if (mapped) return privateV4(mapped[1]!)
+    if (a === '::1') return true
+    const first = a.startsWith('::') ? 0 : parseInt(a.split(':')[0] || '0', 16)
+    return (first & 0xfe00) === 0xfc00 || (first & 0xffc0) === 0xfe80
+  }
+  if (/^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$/.test(a)) return true
+  return privateZones.some((z) => a === z || a.endsWith(`.${z}`))
+}
+
+/**
+ * VLESS or Trojan to a public address with neither TLS nor REALITY, nor
+ * VLESS's own encryption: Xray does not start on it ("vless without TLS or
+ * other encryption is prohibited unless the server address is a private IP
+ * or domain").
+ */
+export function plainWrong(o: Outbound): boolean {
+  if (o.protocol !== 'vless' && o.protocol !== 'trojan') return false
+  if (['tls', 'reality'].includes(String(o.streamSettings?.security ?? ''))) return false
+  if (o.protocol === 'vless') {
+    const enc = String(user(o).encryption ?? '')
+    if (enc && enc !== 'none') return false
+  }
+  return !privateAddress(String(server(o).address ?? ''))
+}
+
 /** A blackhole's custom response that is no standard base64: Xray does not start on one. */
 export const blackholeWrong = (o: Outbound) => {
   if (o.protocol !== 'blackhole' || o.settings?.response?.type !== 'custom') return false
