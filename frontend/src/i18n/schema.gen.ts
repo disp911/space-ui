@@ -457,7 +457,7 @@ export interface MessageSchema {
     "ruleWebhookHelp": string
     "ruleDedupHelp": string
     "blackholeDataHelp": string
-    "plainRefused": string
+    "plainOpen": string
     "ruleAdd": string
     "geoFiles": string
     "ruleSource": string
@@ -766,6 +766,8 @@ export interface MessageSchema {
     "wgSecretKey": string
     "wgPsk": string
     "wgAllowedIPs": string
+    "plainOpen": string
+    "plainPanelAddress": string
     "tunWindowsOnly": string
     "tunDnsGatewayDesc": string
     "tunWfpDesc": string

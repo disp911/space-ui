@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../../api'
 import {
-  toast, XButton, XDateTime, XDivider, XField, XFieldGrid, XInput, XModal, XNumber, XPlainTable, XSection, XSelect, XSwitch, type Option, type PlainColumn,
+  toast, XButton, XDateTime, XDivider, XField, XFieldGrid, XFieldNote, XInput, XModal, XNumber, XPlainTable, XSection, XSelect, XSwitch, type Option, type PlainColumn,
 } from '../../kit'
 import { formatDate } from '../../i18n/format'
 import { useInbounds } from '../../stores/inbounds'
@@ -17,6 +17,7 @@ import InboundSecurity from './InboundSecurity.vue'
 import InboundSniffing from './InboundSniffing.vue'
 import { protocols, type DbInbound, type Protocol } from './model'
 import { sessionIdWrong } from '../xray/xhttp'
+import { privateAddress } from '../xray/outbound'
 import { customSockoptWrong } from '../xray/sockopt'
 
 /**
@@ -94,6 +95,29 @@ const clientColumns = computed<PlainColumn[]>(() => {
 })
 const keyOf = (c: Record<string, any>) => String(c.id ?? c.password ?? c.auth ?? '')
 
+/**
+ * The addresses clients reach a VLESS or Trojan inbound by in the open, with
+ * neither TLS nor REALITY (nor VLESS's own encryption), that are public: the
+ * traffic goes unencrypted and clients on Xray 26 do not start on them. Only
+ * a warning: clients on sing-box or mihomo still connect. Without External
+ * Proxy rows it is the panel's own address, named as such.
+ */
+const plainPublic = computed<string[]>(() => {
+  const p = f.value.protocol
+  if (p !== 'vless' && p !== 'trojan') return []
+  const enc = String(f.value.settings?.encryption ?? '')
+  if (p === 'vless' && enc && enc !== 'none') return []
+  const own = String(f.value.streamSettings?.security ?? 'none')
+  const rows: Record<string, any>[] = Array.isArray(f.value.streamSettings?.externalProxy) ? f.value.streamSettings!.externalProxy : []
+  if (!rows.length) return ['tls', 'reality'].includes(own) ? [] : [t('inbounds.plainPanelAddress')]
+  return rows
+    .filter((r) => {
+      const sec = r.forceTls === 'same' || !r.forceTls ? own : r.forceTls
+      return !['tls', 'reality'].includes(sec) && !privateAddress(String(r.dest ?? ''))
+    })
+    .map((r) => String(r.dest ?? ''))
+})
+
 const portValid = computed(() => !!f.value.port && f.value.port >= 1 && f.value.port <= 65535)
 const valid = computed(
   () => portValid.value && !(f.value.protocol === 'mtproto' && mtprotoTaken.value) && !sessionIdWrong(f.value.streamSettings?.xhttpSettings) && !customSockoptWrong(f.value.streamSettings?.sockopt) && !(f.value.protocol === 'tun' && tunWrong(f.value.settings)),
@@ -166,6 +190,9 @@ async function save() {
         <InboundExternal :f="f" />
       </template>
       <InboundSecurity v-if="canStream(f.protocol)" :f="f" />
+      <XFieldNote v-if="plainPublic.length">
+        {{ t('inbounds.plainOpen', { p: f.protocol === 'vless' ? 'VLESS' : 'Trojan', addrs: plainPublic.join(', ') }) }}
+      </XFieldNote>
       <template v-if="f.protocol !== 'mtproto'">
         <XDivider spaced />
         <InboundSniffing v-model:open="sniffingOpen" :f="f" />

@@ -121,7 +121,7 @@ const linkHint = 'vmess:// vless:// trojan:// ss:// hysteria2://'
           </XField>
         </XFieldGrid>
         <XFieldGrid v-if="hasAddressPort(o)" columns="minmax(0, 1fr) 150px">
-          <XField v-slot="a" :label="t('xray.outAddress')" :error="plainWrong(o) && String(address).trim() ? t('xray.plainRefused', { p: o.protocol === 'vless' ? 'VLESS' : 'Trojan' }) : undefined">
+          <XField v-slot="a" :label="t('xray.outAddress')" :error="plainWrong(o) && String(address).trim() ? t('xray.plainOpen', { p: o.protocol === 'vless' ? 'VLESS' : 'Trojan' }) : undefined">
             <XInput v-bind="a" v-model="address" mono />
           </XField>
           <XField v-slot="a" :label="t('xray.port')">
