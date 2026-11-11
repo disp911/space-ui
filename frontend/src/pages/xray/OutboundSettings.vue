@@ -2,13 +2,13 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  XAddButton, XField, XFieldGrid, XInlineButton, XInput, XInputList, XListHead, XNest, XNestCard, XNumber, XSection, XSelect, XSwitch, XTagInput, type Option,
+  XField, XFieldGrid, XInlineButton, XInput, XInputList, XListHead, XNest, XNestCard, XNumber, XSection, XSelect, XSwitch, XTagInput, type Option,
 } from '../../kit'
 import { wireguardKeys } from '../../wireguard'
 import type { Outbound } from './model'
 import {
-  canFlow, canVisionSeed, defaultDnsRule, defaultFinalRule, defaultFragment, defaultNoise, defaultPeer, domainStrategies, flows, hasUser, server, ssMethods, user,
-  isIp, items, vmessSecurities,
+  canFlow, canVisionSeed, defaultDnsRule, defaultFinalRule, defaultPeer, domainStrategies, flows, hasUser, server, ssMethods, user,
+  blackholeWrong, isIp, items, vmessSecurities,
 } from './outbound'
 
 /** The part of the outbound window that belongs to its protocol, in a card titled with it. */
@@ -84,14 +84,6 @@ const newKey = () => (s.value.secretKey = wireguardKeys().privateKey)
 
 // --- Freedom -----------------------------------------------------------------------
 
-const fragmentOn = computed({
-  get: () => !!s.value.fragment && Object.keys(s.value.fragment).length > 0,
-  set: (on: boolean) => (s.value.fragment = on ? defaultFragment() : undefined),
-})
-const noisesOn = computed({
-  get: () => (s.value.noises?.length ?? 0) > 0,
-  set: (on: boolean) => (s.value.noises = on ? [defaultNoise()] : []),
-})
 /** A rule's network may come as a list; the field shows it as text. */
 const networkText = (r: Record<string, any>) => (Array.isArray(r.network) ? r.network.join(',') : (r.network ?? ''))
 
@@ -202,7 +194,10 @@ const remove = (list: unknown[], i: number) => list.splice(i, 1)
     <!-- Blackhole -->
     <XFieldGrid :cols="2" v-if="o.protocol === 'blackhole'">
       <XField v-slot="a" label="Response Type">
-        <XSelect v-bind="a" v-model="responseType" :options="list(['none', 'http'], true)" mono />
+        <XSelect v-bind="a" v-model="responseType" :options="list(['none', 'http', 'custom'], true)" mono />
+      </XField>
+      <XField v-if="responseType === 'custom'" v-slot="a" label="Response Data" :help="t('xray.blackholeDataHelp')" class="x-wide">
+        <XInput v-bind="a" v-model.trim="s.response.customResponseData" mono :invalid="blackholeWrong(o)" />
       </XField>
     </XFieldGrid>
 
@@ -240,53 +235,6 @@ const remove = (list: unknown[], i: number) => list.splice(i, 1)
           </XFieldGrid>
         </XNestCard>
       </XListHead>
-
-      <XSwitch v-model="fragmentOn" boxed label="Fragment" />
-      <XNest v-if="fragmentOn" bare>
-        <XFieldGrid :cols="4">
-          <XField v-slot="a" label="Packets">
-            <XSelect v-bind="a" v-model="s.fragment.packets" :options="list(['1-3', 'tlshello'])" mono />
-          </XField>
-          <XField v-slot="a" label="Length">
-            <XInput v-bind="a" v-model="s.fragment.length" mono />
-          </XField>
-          <XField v-slot="a" label="Interval">
-            <XInput v-bind="a" v-model="s.fragment.interval" mono />
-          </XField>
-          <XField v-slot="a" label="Max Split">
-            <XInput v-bind="a" v-model="s.fragment.maxSplit" mono />
-          </XField>
-        </XFieldGrid>
-      </XNest>
-
-      <XSwitch v-model="noisesOn" boxed label="Noises">
-        <template v-if="noisesOn" #actions>
-          <XAddButton :label="t('kit.addRow', { list: 'Noises' })" @click="s.noises.push(defaultNoise())" />
-        </template>
-      </XSwitch>
-      <XNest v-if="noisesOn" bare>
-        <XFieldGrid :cols="1">
-          <XNestCard v-for="(n, i) in items(s.noises)" :key="i" :title="String(i + 1)">
-            <template #actions>
-              <XInlineButton v-if="s.noises.length > 1" icon="delete" danger :label="t('xray.removeItem', { n: i + 1 })" @click="remove(s.noises, i)" />
-            </template>
-            <XFieldGrid :cols="4">
-              <XField v-slot="a" label="Type">
-                <XSelect v-bind="a" v-model="n.type" :options="list(['rand', 'base64', 'str', 'hex'])" mono />
-              </XField>
-              <XField v-slot="a" label="Packet">
-                <XInput v-bind="a" v-model="n.packet" mono />
-              </XField>
-              <XField v-slot="a" label="Delay">
-                <XInput v-bind="a" v-model="n.delay" mono />
-              </XField>
-              <XField v-slot="a" label="Apply To">
-                <XSelect v-bind="a" v-model="n.applyTo" :options="list(['ip', 'ipv4', 'ipv6'])" mono />
-              </XField>
-            </XFieldGrid>
-          </XNestCard>
-        </XFieldGrid>
-      </XNest>
     </template>
 
     <!-- WireGuard -->

@@ -8,7 +8,7 @@ import {
 import { formatDate } from '../../i18n/format'
 import { useInbounds } from '../../stores/inbounds'
 import { cause } from '../settings/form'
-import { canFlow, canStream, clientsOf, fromDb, newInbound, setProtocol, toForm, trafficResets, withClients, type InboundForm } from './inbound'
+import { canFlow, canStream, clientsOf, fromDb, newInbound, setProtocol, toForm, trafficResets, tunWrong, withClients, type InboundForm } from './inbound'
 import ClientFields from './ClientFields.vue'
 import InboundProtocol from './InboundProtocol.vue'
 import InboundStream from './InboundStream.vue'
@@ -16,6 +16,8 @@ import InboundExternal from './InboundExternal.vue'
 import InboundSecurity from './InboundSecurity.vue'
 import InboundSniffing from './InboundSniffing.vue'
 import { protocols, type DbInbound, type Protocol } from './model'
+import { sessionIdWrong } from '../xray/xhttp'
+import { customSockoptWrong } from '../xray/sockopt'
 
 /**
  * Window 11 of the mockup: a new inbound, or the stored one to change. It
@@ -93,7 +95,9 @@ const clientColumns = computed<PlainColumn[]>(() => {
 const keyOf = (c: Record<string, any>) => String(c.id ?? c.password ?? c.auth ?? '')
 
 const portValid = computed(() => !!f.value.port && f.value.port >= 1 && f.value.port <= 65535)
-const valid = computed(() => portValid.value && !(f.value.protocol === 'mtproto' && mtprotoTaken.value))
+const valid = computed(
+  () => portValid.value && !(f.value.protocol === 'mtproto' && mtprotoTaken.value) && !sessionIdWrong(f.value.streamSettings?.xhttpSettings) && !customSockoptWrong(f.value.streamSettings?.sockopt) && !(f.value.protocol === 'tun' && tunWrong(f.value.settings)),
+)
 
 async function save() {
   if (!valid.value || saving.value) return

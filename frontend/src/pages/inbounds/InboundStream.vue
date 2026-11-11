@@ -6,6 +6,7 @@ import {
 } from '../../kit'
 import { canTls, defaultMasquerade, defaultTcpRequest, defaultTcpResponse, network, networks, setNetwork, xhttpModes, type InboundForm } from './inbound'
 import XmuxFields from '../xray/XmuxFields.vue'
+import XhttpObfsFields from '../xray/XhttpObfsFields.vue'
 import InboundMasks from './InboundMasks.vue'
 import InboundSockopt from './InboundSockopt.vue'
 import { headerRows } from './rows'
@@ -50,18 +51,6 @@ const resHeaders = headerRows(() => (httpMask.value ? res.value : undefined), 'h
 
 const headers = headerRows(() => (['ws', 'httpupgrade', 'xhttp'].includes(net.value) ? ns.value : undefined), 'headers')
 
-const placements = (dflt: string, values: string[]): Option[] => [{ value: '', label: `Default (${dflt})` }, ...list(values)]
-const paddingPlacements = placements('queryInHeader', ['queryInHeader', 'header', 'cookie', 'query'])
-const paddingMethods = placements('repeat-x', ['repeat-x', 'tokenish'])
-const uplinkMethods: Option[] = [
-  { value: '', label: 'Default (POST)' },
-  { value: 'POST', label: 'POST' },
-  { value: 'PUT', label: 'PUT' },
-  { value: 'GET', label: 'GET (packet-up only)' },
-]
-const idPlacements = placements('path', ['path', 'header', 'cookie', 'query'])
-const dataPlacements = placements('body', ['body', 'header', 'cookie', 'query'])
-const idTables: Option[] = [{ value: '', label: 'Default (UUID)' }, ...list(['number', 'hex', 'HEX', 'base36', 'BASE36', 'Base62', 'alphabet'])]
 
 /** HTTP/2 Params as JSON text; text that parses to an object goes into the settings. */
 const h2On = computed({
@@ -165,6 +154,11 @@ const masqueradeTypes: Option[] = [
       <XField v-slot="a" label="Authority"><XInput v-bind="a" v-model.trim="ns.authority" mono /></XField>
     </XFieldGrid>
     <XSwitch v-model="ns.multiMode" boxed label="Multi Mode" />
+    <!-- The server's keepalive pings: 0 leaves them to gRPC. -->
+    <XFieldGrid>
+      <XField v-slot="a" label="Idle Timeout (s)"><XNumber v-bind="a" block v-model="ns.idle_timeout" :min="0" /></XField>
+      <XField v-slot="a" label="Health Check Timeout (s)"><XNumber v-bind="a" block v-model="ns.health_check_timeout" :min="0" /></XField>
+    </XFieldGrid>
   </template>
 
   <!-- XHTTP -->
@@ -184,39 +178,11 @@ const masqueradeTypes: Option[] = [
       </template>
       <XField v-else v-slot="a" label="Stream-Up Server"><XInput v-bind="a" v-model.trim="ns.scStreamUpServerSecs" mono /></XField>
     </XFieldGrid>
-    <XFieldGrid>
-      <XField v-slot="a" label="Padding Bytes"><XInput v-bind="a" v-model.trim="ns.xPaddingBytes" mono /></XField>
-    </XFieldGrid>
-    <XSwitch v-model="ns.xPaddingObfsMode" boxed label="Padding Obfs Mode" />
-    <XFieldGrid v-if="ns.xPaddingObfsMode">
-      <XField v-slot="a" label="Padding Key"><XInput v-bind="a" v-model.trim="ns.xPaddingKey" mono placeholder="x_padding" /></XField>
-      <XField v-slot="a" label="Padding Header"><XInput v-bind="a" v-model.trim="ns.xPaddingHeader" mono placeholder="X-Padding" /></XField>
-      <XField v-slot="a" label="Padding Placement"><XSelect v-bind="a" v-model="ns.xPaddingPlacement" :options="paddingPlacements" mono /></XField>
-      <XField v-slot="a" label="Padding Method"><XSelect v-bind="a" v-model="ns.xPaddingMethod" :options="paddingMethods" mono /></XField>
-    </XFieldGrid>
-    <XFieldGrid>
-      <XField v-slot="a" label="Uplink HTTP Method"><XSelect v-bind="a" v-model="ns.uplinkHTTPMethod" :options="uplinkMethods" mono /></XField>
-      <XField v-slot="a" label="Server Max Header Bytes"><XNumber v-bind="a" v-model="ns.serverMaxHeaderBytes" block :min="0" placeholder="0 (default)" /></XField>
-    </XFieldGrid>
-    <XFieldGrid>
-      <XField v-slot="a" label="Session ID Placement"><XSelect v-bind="a" v-model="ns.sessionIDPlacement" :options="idPlacements" mono /></XField>
-      <XField v-if="ns.sessionIDPlacement && ns.sessionIDPlacement !== 'path'" v-slot="a" label="Session ID Key">
-        <XInput v-bind="a" v-model.trim="ns.sessionIDKey" mono placeholder="x_session" />
-      </XField>
-      <XField v-slot="a" label="Session ID Table"><XSelect v-bind="a" v-model="ns.sessionIDTable" :options="idTables" mono /></XField>
-      <XField v-if="ns.sessionIDTable" v-slot="a" label="Session ID Length"><XInput v-bind="a" v-model.trim="ns.sessionIDLength" mono placeholder="8-16" /></XField>
-      <XField v-slot="a" label="Sequence Placement"><XSelect v-bind="a" v-model="ns.seqPlacement" :options="idPlacements" mono /></XField>
-      <XField v-if="ns.seqPlacement && ns.seqPlacement !== 'path'" v-slot="a" label="Sequence Key">
-        <XInput v-bind="a" v-model.trim="ns.seqKey" mono placeholder="x_seq" />
-      </XField>
-    </XFieldGrid>
-    <XFieldGrid v-if="ns.mode === 'packet-up'" :cols="3">
-      <XField v-slot="a" label="Uplink Data Placement"><XSelect v-bind="a" v-model="ns.uplinkDataPlacement" :options="dataPlacements" mono /></XField>
-      <template v-if="ns.uplinkDataPlacement && ns.uplinkDataPlacement !== 'body'">
-        <XField v-slot="a" label="Uplink Data Key"><XInput v-bind="a" v-model.trim="ns.uplinkDataKey" mono placeholder="x_data" /></XField>
-        <XField v-slot="a" label="Uplink Chunk Size"><XNumber v-bind="a" v-model="ns.uplinkChunkSize" block :min="0" placeholder="0 (unlimited)" /></XField>
+    <XhttpObfsFields :ns="ns">
+      <template #method>
+        <XField v-slot="a" label="Server Max Header Bytes"><XNumber v-bind="a" v-model="ns.serverMaxHeaderBytes" block :min="0" placeholder="0 (default)" /></XField>
       </template>
-    </XFieldGrid>
+    </XhttpObfsFields>
     <XSwitch v-model="ns.noSSEHeader" boxed label="No SSE Header" />
     <XSwitch v-model="h2On" boxed label="HTTP/2 Params" />
     <XNest v-if="h2On" bare>

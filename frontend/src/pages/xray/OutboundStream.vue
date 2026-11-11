@@ -9,14 +9,20 @@ import { canFlow, defaultNetwork, defaultQuic, items, networks, user, xhttpModes
 import OutboundPackets from './OutboundPackets.vue'
 import QuicParams from './QuicParams.vue'
 import XmuxFields from './XmuxFields.vue'
+import XhttpObfsFields from './XhttpObfsFields.vue'
 
-/** The transport of the outbound window: the network first in the card, its settings, and the masks over it. */
-const props = defineProps<{ o: Outbound }>()
+/**
+ * The transport of the outbound window: the network first in the card, its
+ * settings, and the masks over it. masksOnly is freedom's: no network, only
+ * the masks Xray 26 put in place of its fragment and noises, Fragment over
+ * TCP and Noise over UDP.
+ */
+const props = defineProps<{ o: Outbound; masksOnly?: boolean }>()
 const { t } = useI18n()
 const open = ref(true)
 
 const st = computed(() => {
-  props.o.streamSettings ??= { network: 'tcp', security: 'none' }
+  props.o.streamSettings ??= props.masksOnly ? {} : { network: 'tcp', security: 'none' }
   // Read back through the reactive object: ??= hands back the plain new value.
   return props.o.streamSettings
 })
@@ -66,9 +72,9 @@ const fm = computed(() => {
   // Read back through the reactive object: ??= hands back the plain new value.
   return st.value.finalmask
 })
-const tcpMasks = computed(() => ['tcp', 'raw', 'httpupgrade', 'ws', 'grpc', 'xhttp'].includes(net.value))
-const udpMasks = computed(() => net.value === 'kcp' || props.o.protocol === 'hysteria')
-const quic = computed(() => net.value === 'xhttp' || props.o.protocol === 'hysteria')
+const tcpMasks = computed(() => props.masksOnly || ['tcp', 'raw', 'httpupgrade', 'ws', 'grpc', 'xhttp'].includes(net.value))
+const udpMasks = computed(() => props.masksOnly || net.value === 'kcp' || props.o.protocol === 'hysteria')
+const quic = computed(() => !props.masksOnly && (net.value === 'xhttp' || props.o.protocol === 'hysteria'))
 
 const packetItem = () => ({ delay: 0, rand: 0, randRange: '0-255', type: 'array' })
 
@@ -120,18 +126,24 @@ function setUdpType(m: Record<string, any>, type: string) {
 }
 
 function addUdpMask() {
-  const type = props.o.protocol === 'hysteria' ? 'salamander' : 'mkcp-legacy'
+  const type = props.masksOnly ? 'noise' : props.o.protocol === 'hysteria' ? 'salamander' : 'mkcp-legacy'
   ;(fm.value.udp ??= []).push({ type, settings: udpMaskSettings(type) })
   keepHopLast()
 }
 
-const tcpTypes: Option[] = [
+const tcpTypes = computed<Option[]>(() => [
   { value: 'fragment', label: 'Fragment' },
-  { value: 'header-custom', label: 'Header Custom' },
-  { value: 'sudoku', label: 'Sudoku' },
-]
+  ...(props.masksOnly
+    ? []
+    : [
+        { value: 'header-custom', label: 'Header Custom' },
+        { value: 'sudoku', label: 'Sudoku' },
+      ]),
+])
 const udpTypes = computed<Option[]>(() =>
-  props.o.protocol === 'hysteria'
+  props.masksOnly
+    ? [{ value: 'noise', label: 'Noise' }]
+    : props.o.protocol === 'hysteria'
     ? [
         { value: 'salamander', label: 'Salamander (Hysteria2)' },
         { value: 'udphop', label: 'UDP Hop' },
@@ -173,7 +185,8 @@ const resolverHint = computed(() => t('xray.hintExample', { v: '8.8.8.8:53' }))
 </script>
 
 <template>
-  <XSection v-model:open="open" :title="t('xray.transport')" card>
+  <XSection v-model:open="open" :title="masksOnly ? 'Final Mask' : t('xray.transport')" card>
+    <template v-if="!masksOnly">
     <XFieldGrid :cols="2">
       <XField v-slot="a" :label="t('common.transportType')"><XSelect v-bind="a" v-model="net" :options="netOptions" mono /></XField>
     </XFieldGrid>
@@ -222,6 +235,12 @@ const resolverHint = computed(() => t('xray.hintExample', { v: '8.8.8.8:53' }))
         <XField v-slot="a" label="Service Name"><XInput v-bind="a" v-model="ns.serviceName" mono /></XField>
         <XField v-slot="a" label="Authority"><XInput v-bind="a" v-model="ns.authority" mono /></XField>
         <XSwitch v-model="ns.multiMode" boxed label="Multi Mode" />
+        <!-- Keepalive pings and the HTTP/2 client's own: 0 or empty leaves them to gRPC. -->
+        <XField v-slot="a" label="Idle Timeout (s)"><XNumber v-bind="a" block v-model="ns.idle_timeout" :min="0" /></XField>
+        <XField v-slot="a" label="Health Check Timeout (s)"><XNumber v-bind="a" block v-model="ns.health_check_timeout" :min="0" /></XField>
+        <XSwitch v-model="ns.permit_without_stream" boxed label="Permit Without Stream" />
+        <XField v-slot="a" label="Initial Windows Size"><XNumber v-bind="a" block v-model="ns.initial_windows_size" :min="0" /></XField>
+        <XField v-slot="a" label="User Agent"><XInput v-bind="a" v-model.trim="ns.user_agent" mono /></XField>
       </XFieldGrid>
     </template>
 
@@ -235,7 +254,12 @@ const resolverHint = computed(() => t('xray.hintExample', { v: '8.8.8.8:53' }))
         <XField v-if="ns.mode === 'packet-up'" v-slot="a" label="Min Upload Interval (Ms)">
           <XInput v-bind="a" v-model="ns.scMinPostsIntervalMs" mono />
         </XField>
+        <XField v-if="ns.mode === 'packet-up'" v-slot="a" label="Max Upload Size (Byte)">
+          <XInput v-bind="a" v-model.trim="ns.scMaxEachPostBytes" mono />
+        </XField>
       </XFieldGrid>
+      <!-- As the server has them: a server that hides its padding or ids takes no other client. -->
+      <XhttpObfsFields :ns="ns" />
       <XmuxFields :ns="ns" />
     </template>
 
@@ -247,6 +271,7 @@ const resolverHint = computed(() => t('xray.hintExample', { v: '8.8.8.8:53' }))
     </template>
 
     <XDivider v-if="tcpMasks || udpMasks || quic" />
+    </template>
 
     <!-- TCP masks -->
     <template v-if="tcpMasks">

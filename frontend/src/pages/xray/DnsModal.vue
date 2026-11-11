@@ -26,6 +26,12 @@ const form = reactive({
   skipFallback: true,
   disableCache: false,
   finalQuery: false,
+  clientIp: '',
+  tag: '',
+  timeoutMs: 0 as number | null,
+  /** '' leaves it to the DNS block's own; on or off overrides it for this server. */
+  serveStale: '' as '' | 'on' | 'off',
+  serveExpiredTTL: null as number | null,
 })
 
 /** The server as an object: a bare address gets the defaults around it. */
@@ -52,6 +58,11 @@ watch(open, (on) => {
     skipFallback: !!s.skipFallback,
     disableCache: !!s.disableCache,
     finalQuery: !!s.finalQuery,
+    clientIp: String(s.clientIp ?? ''),
+    tag: String(s.tag ?? ''),
+    timeoutMs: typeof s.timeoutMs === 'number' ? s.timeoutMs : 0,
+    serveStale: s.serveStale === true ? 'on' : s.serveStale === false ? 'off' : '',
+    serveExpiredTTL: typeof s.serveExpiredTTL === 'number' ? s.serveExpiredTTL : null,
   })
   shown = JSON.parse(JSON.stringify(form))
 })
@@ -69,10 +80,22 @@ function save() {
   const out: Record<string, unknown> = s && typeof s === 'object' ? { ...s } : { ...base() }
   for (const k of s && typeof s === 'object' ? changed : (Object.keys(now) as (keyof Form)[])) out[k] = now[k]
   if (out.port == null) delete out.port
+  // Left as Xray's own, they leave the server; serveStale is a switch of three.
+  for (const k of ['clientIp', 'tag'] as const) if (!String(out[k] ?? '').trim()) delete out[k]
+  if (!out.timeoutMs) delete out.timeoutMs
+  if (out.serveExpiredTTL == null) delete out.serveExpiredTTL
+  if (out.serveStale === 'on') out.serveStale = true
+  else if (out.serveStale === 'off') out.serveStale = false
+  else delete out.serveStale
   emit('save', out)
 }
 
 const strategies = dnsStrategies.map((v) => ({ value: v, label: v }))
+const staleOptions = [
+  { value: '', label: 'Default' },
+  { value: 'on', label: 'On' },
+  { value: 'off', label: 'Off' },
+]
 const title = computed(() => (props.server != null ? t('xray.dnsEditN', { n: props.index + 1 }) : t('xray.dnsAdd')))
 </script>
 
@@ -99,6 +122,14 @@ const title = computed(() => (props.server != null ? t('xray.dnsEditN', { n: pro
         <XSwitch v-model="form.skipFallback" boxed label="Skip Fallback" />
         <XSwitch v-model="form.disableCache" boxed label="Disable Cache" />
         <XSwitch v-model="form.finalQuery" boxed label="Final Query" />
+      </XFieldGrid>
+
+      <XFieldGrid>
+        <XField v-slot="a" label="Client IP"><XInput v-bind="a" v-model.trim="form.clientIp" mono placeholder="203.0.113.1" /></XField>
+        <XField v-slot="a" label="Tag"><XInput v-bind="a" v-model.trim="form.tag" mono /></XField>
+        <XField v-slot="a" label="Timeout (ms)"><XNumber v-bind="a" block v-model="form.timeoutMs" :min="0" placeholder="4000" /></XField>
+        <XField v-slot="a" label="Serve Stale"><XSelect v-bind="a" v-model="form.serveStale" :options="staleOptions" /></XField>
+        <XField v-slot="a" label="Serve Expired TTL"><XNumber v-bind="a" block v-model="form.serveExpiredTTL" :min="0" /></XField>
       </XFieldGrid>
     </div>
 

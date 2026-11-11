@@ -3,8 +3,10 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast, XButton, XCodeEditor, XField, XFieldGrid, XInput, XModal, XNumber, XSegmented, XSelect } from '../../kit'
 import type { Outbound } from './model'
-import { canStream, canTls, defaultSettings, finalize, fromLink, hasAddressPort, newOutbound, protocols, remoteDnsWrong, server, setProtocolStream } from './outbound'
+import { canStream, canTls, defaultSettings, finalize, fromLink, hasAddressPort, blackholeWrong, liftFreedomMasks, newOutbound, protocols, remoteDnsWrong, server, setProtocolStream } from './outbound'
 import OutboundSettings from './OutboundSettings.vue'
+import { sessionIdWrong } from './xhttp'
+import { customSockoptWrong } from './sockopt'
 import OutboundStream from './OutboundStream.vue'
 import OutboundSecurity from './OutboundSecurity.vue'
 import OutboundExtra from './OutboundExtra.vue'
@@ -28,7 +30,7 @@ let shown = ''
 
 watch(open, async (on) => {
   if (!on) return
-  o.value = props.outbound ? JSON.parse(JSON.stringify(props.outbound)) : newOutbound()
+  o.value = props.outbound ? liftFreedomMasks(JSON.parse(JSON.stringify(props.outbound))) : newOutbound()
   mode.value = 'form'
   link.value = ''
   await nextTick()
@@ -45,7 +47,9 @@ const protocol = computed({
 })
 
 const tagTaken = computed(() => props.tags.includes(String(o.value.tag ?? '').trim()))
-const valid = computed(() => !!String(o.value.tag ?? '').trim() && !tagTaken.value && !remoteDnsWrong(o.value))
+const valid = computed(
+  () => !!String(o.value.tag ?? '').trim() && !tagTaken.value && !remoteDnsWrong(o.value) && !sessionIdWrong(o.value.streamSettings?.xhttpSettings) && !customSockoptWrong(o.value.streamSettings?.sockopt) && !blackholeWrong(o.value),
+)
 
 const address = computed({ get: () => server(o.value).address ?? '', set: (v: string) => (server(o.value).address = v) })
 const port = computed({ get: () => server(o.value).port ?? null, set: (v: number | null) => (server(o.value).port = v) })
@@ -127,6 +131,7 @@ const linkHint = 'vmess:// vless:// trojan:// ss:// hysteria2://'
 
         <OutboundSettings :o="o" :tags="tags" />
         <OutboundStream v-if="canStream(o)" :o="o" />
+        <OutboundStream v-else-if="o.protocol === 'freedom'" :o="o" masks-only />
         <OutboundSecurity v-if="canTls(o)" :o="o" />
         <OutboundExtra :o="o" :tags="tags" />
       </template>

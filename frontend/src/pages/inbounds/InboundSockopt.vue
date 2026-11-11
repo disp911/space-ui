@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { XField, XFieldGrid, XInput, XNest, XNumber, XSelect, XSwitch, XTagInput, type Option } from '../../kit'
 import { domainStrategies, defaultSockopt, tcpCongestions, type InboundForm } from './inbound'
+import CustomSockopts from '../xray/CustomSockopts.vue'
 
 /**
  * Sockopt in window 11, as the old panel's form had it: a switch that adds
@@ -80,6 +81,7 @@ const forwarded = [{ options: ['CF-Connecting-IP', 'X-Real-IP', 'True-Client-IP'
           <XTagInput v-bind="a" :model-value="so.trustedXForwardedFor ?? []" :groups="forwarded" mono @update:model-value="so.trustedXForwardedFor = $event" />
         </XField>
       </XFieldGrid>
+      <CustomSockopts :so="so" />
     </XFieldGrid>
   </XNest>
 </template>

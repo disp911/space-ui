@@ -266,6 +266,7 @@ export interface MessageSchema {
     "trafficDiff": string
     "trafficDiffDesc": string
     "unitMinutes": string
+    "unitSeconds": string
     "unitDays": string
     "unitGb": string
     "errInteger": string
@@ -450,6 +451,12 @@ export interface MessageSchema {
     "partInbounds": string
     "partOutbounds": string
     "partRules": string
+    "ruleTagHelp": string
+    "ruleLocalHelp": string
+    "ruleProcessHelp": string
+    "ruleWebhookHelp": string
+    "ruleDedupHelp": string
+    "blackholeDataHelp": string
     "ruleAdd": string
     "geoFiles": string
     "ruleSource": string
@@ -558,6 +565,10 @@ export interface MessageSchema {
     "linkWrong": string
     "removeItem": string
     "httpCamouflage": string
+    "balExpectedHelp": string
+    "balMaxRttHelp": string
+    "balToleranceHelp": string
+    "balBaselinesHelp": string
     "balAdd": string
     "balEdit": string
     "balEmpty": string
@@ -588,6 +599,15 @@ export interface MessageSchema {
     "dnsUnexpectIPs": string
     "dnsSystemHosts": string
     "dnsSystemHostsDesc": string
+    "dnsServeStale": string
+    "dnsServeStaleDesc": string
+    "dnsExpiredTtl": string
+    "dnsExpiredTtlDesc": string
+    "dnsHosts": string
+    "dnsHostsList": string
+    "dnsHostsDomain": string
+    "dnsHostsAddress": string
+    "dnsHostsDesc": string
     "dnsPresets": string
     "dnsFamily": string
     "fakeAdd": string
@@ -745,6 +765,9 @@ export interface MessageSchema {
     "wgSecretKey": string
     "wgPsk": string
     "wgAllowedIPs": string
+    "tunWindowsOnly": string
+    "tunDnsGatewayDesc": string
+    "tunWfpDesc": string
     "tunNameDesc": string
     "tunMtuDesc": string
     "tunUserLevel": string

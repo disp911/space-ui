@@ -26,6 +26,7 @@ export const alpns = ['h3', 'h2', 'http/1.1']
 export const domainStrategies = ['AsIs', 'UseIP', 'UseIPv4', 'UseIPv6', 'UseIPv6v4', 'UseIPv4v6', 'ForceIP', 'ForceIPv6v4', 'ForceIPv6', 'ForceIPv4v6', 'ForceIPv4']
 export const vmessSecurities = ['aes-128-gcm', 'chacha20-poly1305', 'auto']
 export const xhttpModes = ['auto', 'packet-up', 'stream-up', 'stream-one']
+export const tcpCongestions = ['bbr', 'cubic', 'reno']
 export const addressPortStrategies = ['none', 'srvportonly', 'srvaddressonly', 'srvportandaddress', 'txtportonly', 'txtaddressonly', 'txtportandaddress']
 export const forwardedForHeaders = ['CF-Connecting-IP', 'X-Real-IP', 'True-Client-IP', 'X-Client-IP']
 export const networks = [
@@ -166,10 +167,15 @@ export const defaultSockopt = () => ({
   penetrate: false,
   addressPortStrategy: 'none',
   domainStrategy: 'AsIs',
+  tcpKeepAliveIdle: 0,
+  mark: 0,
+  tcpMaxSeg: 0,
+  tcpUserTimeout: 0,
+  tcpWindowClamp: 0,
+  tcpCongestion: '',
+  interface: '',
 })
 export const defaultMux = () => ({ enabled: true, concurrency: 8, xudpConcurrency: 16, xudpProxyUDP443: 'reject' })
-export const defaultFragment = () => ({ packets: '1-3', length: '100-200', interval: '', maxSplit: '' })
-export const defaultNoise = () => ({ type: 'rand', packet: '10-20', delay: '10-16', applyTo: 'ip' })
 export const defaultFinalRule = () => ({ action: 'block', network: '', port: '', ip: [], blockDelay: '' })
 export const defaultDnsRule = () => ({ action: 'direct', qType: '', domain: '' })
 export const defaultQuic = () => ({
@@ -219,8 +225,14 @@ export function finalize(input: Outbound): Outbound {
 
   const st = o.streamSettings
   if (st) {
+    // None of them is the system's own.
+    for (const k of ['tcpCongestion', 'interface']) if (st.sockopt && empty(st.sockopt[k])) delete st.sockopt[k]
     if (!canStream(o)) {
-      o.streamSettings = st.sockopt ? { sockopt: st.sockopt } : undefined
+      // Freedom keeps its masks: Fragment and Noise live there since Xray 26.
+      const finalmask = o.protocol === 'freedom' && (!empty(st.finalmask?.tcp) || !empty(st.finalmask?.udp)) ? st.finalmask : undefined
+      if (finalmask && empty(finalmask.tcp)) delete finalmask.tcp
+      if (finalmask && empty(finalmask.udp)) delete finalmask.udp
+      o.streamSettings = { ...(st.sockopt ? { sockopt: st.sockopt } : {}), ...(finalmask ? { finalmask } : {}) }
     } else {
       const keep = `${st.network}Settings`
       for (const k of netKeys) if (k !== keep) delete st[k]
@@ -250,6 +262,67 @@ export function finalize(input: Outbound): Outbound {
   }
   if (o.protocol === 'blackhole' && empty(s.response?.type)) delete s.response
   return o
+}
+
+/** Bytes of any base64, standard or URL-safe, padded or not, as hex; null when it is none. */
+function base64Hex(v: string): string | null {
+  try {
+    const std = v.replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '')
+    const bytes = atob(std + '='.repeat((4 - (std.length % 4)) % 4))
+    return [...bytes].map((c) => c.charCodeAt(0).toString(16).padStart(2, '0')).join('')
+  } catch {
+    return null
+  }
+}
+
+/**
+ * A freedom outbound saved with the fragment and noises of its settings, which
+ * Xray 26 takes with a warning, gets them as the masks of its stream that took
+ * their place: the fragment's interval is the mask's delay, a random noise
+ * its rand, base64 hex (the mask reads standard base64 only). The noises'
+ * applyTo has no place there. Done in the window: saved, it is the new way.
+ */
+export function liftFreedomMasks(o: Outbound): Outbound {
+  if (o.protocol !== 'freedom' || !o.settings) return o
+  const s = o.settings
+  const fm = ((o.streamSettings ??= {}).finalmask ??= {})
+  if (s.fragment && typeof s.fragment === 'object' && Object.keys(s.fragment).length) {
+    const { interval, ...rest } = s.fragment
+    ;(fm.tcp ??= []).push({ type: 'fragment', settings: { ...rest, delay: rest.delay ?? interval ?? '' } })
+  }
+  delete s.fragment
+  if (Array.isArray(s.noises) && s.noises.length) {
+    const noise = s.noises.flatMap((n: Record<string, any>) => {
+      const delay = n.delay ?? ''
+      const packet = String(n.packet ?? '').trim()
+      if (n.type === 'rand') return [{ type: 'array', rand: packet, randRange: '0-255', delay }]
+      if (n.type === 'base64') {
+        const hex = base64Hex(packet)
+        return hex === null ? [] : [{ type: 'hex', packet: hex, delay }]
+      }
+      return [{ type: n.type, packet, delay }]
+    })
+    if (noise.length) (fm.udp ??= []).push({ type: 'noise', settings: { reset: 0, noise } })
+  }
+  delete s.noises
+  if (!fm.tcp && !fm.udp) {
+    delete o.streamSettings!.finalmask
+    if (!Object.keys(o.streamSettings!).length) delete o.streamSettings
+  }
+  return o
+}
+
+/** A blackhole's custom response that is no standard base64: Xray does not start on one. */
+export const blackholeWrong = (o: Outbound) => {
+  if (o.protocol !== 'blackhole' || o.settings?.response?.type !== 'custom') return false
+  const data = String(o.settings.response.customResponseData ?? '')
+  if (!data || !/^[A-Za-z0-9+/]*={0,2}$/.test(data) || data.length % 4) return true
+  try {
+    atob(data)
+    return false
+  } catch {
+    return true
+  }
 }
 
 /** An IPv4 or IPv6 address as Go's netip reads it: no leading zeros, no mask, no port. */
@@ -330,7 +403,15 @@ function streamFrom(net: string, get: (k: string) => string | undefined): Json {
       st.httpupgradeSettings = { path: path || '/', host }
       break
     case 'xhttp': {
-      const xh: Json = { path: path || '/', host }
+      // extra carries what the client shares with the server: padding, ids, XMUX.
+      let extra: Json = {}
+      try {
+        const e = JSON.parse(get('extra') ?? '{}')
+        if (e && typeof e === 'object' && !Array.isArray(e)) extra = e
+      } catch {
+        // A link with a broken extra still connects with what else it says.
+      }
+      const xh: Json = { ...extra, path: path || '/', host }
       if (get('mode')) xh.mode = get('mode')
       st.xhttpSettings = xh
       break

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  XButton, XEmpty, XGridTable, XInput, XSelect, XSettingRow, XSettingsSection, XSwitch, XValueChip, type GridColumn, type MenuItem,
+  XButton, XEmpty, XGridTable, XInput, XNumber, XPairList, XSelect, XSettingRow, XSettingsSection, XSwitch, XValueChip, type GridColumn, type MenuItem,
 } from '../../kit'
 import { useXrayForm } from './form'
 import { dnsAddress, dnsList, dnsStrategies, newDns, type DnsServer, type Text } from './model'
@@ -18,7 +18,7 @@ import FakeDnsModal from './FakeDnsModal.vue'
 const { t } = useI18n()
 const f = useXrayForm()
 
-const open = reactive({ general: true, servers: true, fake: true })
+const open = reactive({ general: true, hosts: true, servers: true, fake: true })
 const config = computed(() => f.draft.config)
 const dns = computed(() => config.value.dns as Record<string, any> | undefined)
 
@@ -61,6 +61,15 @@ const v = reactive({
     },
   }),
   queryStrategy: computed({ get: () => String(dns.value?.queryStrategy ?? ''), set: (x: string) => dns.value && (dns.value.queryStrategy = x) }),
+  /** 0, Xray's own, leaves the key out. */
+  serveExpiredTTL: computed({
+    get: () => Number(dns.value?.serveExpiredTTL ?? 0),
+    set: (x: number | null) => {
+      if (!dns.value) return
+      if (x) dns.value.serveExpiredTTL = x
+      else delete dns.value.serveExpiredTTL
+    },
+  }),
 })
 
 const flags = reactive({
@@ -69,11 +78,12 @@ const flags = reactive({
   disableFallbackIfMatch: flag('disableFallbackIfMatch'),
   enableParallelQuery: flag('enableParallelQuery'),
   useSystemHosts: flag('useSystemHosts'),
+  serveStale: flag('serveStale'),
 })
 
 type Flag = keyof typeof flags
 type Key = keyof typeof v | Flag
-const keys: Key[] = ['tag', 'clientIp', 'queryStrategy', 'disableCache', 'disableFallback', 'disableFallbackIfMatch', 'enableParallelQuery', 'useSystemHosts']
+const keys: Key[] = ['tag', 'clientIp', 'queryStrategy', 'disableCache', 'disableFallback', 'disableFallbackIfMatch', 'enableParallelQuery', 'useSystemHosts', 'serveStale', 'serveExpiredTTL']
 
 const dirtyEnabled = computed(() => (f.draft.config.dns != null) !== (f.saved.config.dns != null))
 const dirty = (k: Key) => !same(f.draft.config.dns?.[k], f.saved.config.dns?.[k])
@@ -85,7 +95,51 @@ const switches: { key: Flag; title: Text; description: Text }[] = [
   { key: 'disableFallbackIfMatch', title: 'xray.dnsNoFallbackMatch', description: 'xray.dnsNoFallbackMatchDesc' },
   { key: 'enableParallelQuery', title: 'xray.dnsParallel', description: 'xray.dnsParallelDesc' },
   { key: 'useSystemHosts', title: 'xray.dnsSystemHosts', description: 'xray.dnsSystemHostsDesc' },
+  { key: 'serveStale', title: 'xray.dnsServeStale', description: 'xray.dnsServeStaleDesc' },
 ]
+
+// --- Hosts ----------------------------------------------------------------------
+// A domain and its answer: one address as a string, several as a list, as Xray
+// reads them. The rows live here, so one still without a domain stays shown;
+// only rows with a domain reach the template, an emptied list leaves it.
+
+type Row = [string, string]
+const rowsOf = (hosts: unknown): Row[] =>
+  hosts && typeof hosts === 'object'
+    ? Object.entries(hosts as Record<string, unknown>).map(([d, a]) => [d, Array.isArray(a) ? a.join(', ') : String(a ?? '')])
+    : []
+function hostsOf(rows: Row[]) {
+  const out: Record<string, string | string[]> = {}
+  for (const [d, a] of rows) {
+    const addrs = a.split(',').map((x) => x.trim()).filter(Boolean)
+    if (d.trim() && addrs.length) out[d.trim()] = addrs.length === 1 ? addrs[0]! : addrs
+  }
+  return Object.keys(out).length ? out : undefined
+}
+const hostRows = ref<Row[]>(rowsOf(dns.value?.hosts))
+let written = JSON.stringify(dns.value?.hosts ?? null)
+watch(
+  () => JSON.stringify(dns.value?.hosts ?? null),
+  (now) => {
+    // Loaded, saved over or set to the defaults elsewhere: the rows follow.
+    if (now !== written) {
+      written = now
+      hostRows.value = rowsOf(dns.value?.hosts)
+    }
+  },
+)
+watch(
+  hostRows,
+  (rows) => {
+    if (!dns.value) return
+    const hosts = hostsOf(rows)
+    if (hosts) dns.value.hosts = hosts
+    else delete dns.value.hosts
+    written = JSON.stringify(hosts ?? null)
+  },
+  { deep: true },
+)
+const hostsDirty = computed(() => !same(f.draft.config.dns?.hosts, f.saved.config.dns?.hosts))
 
 const strategies = dnsStrategies.map((x) => ({ value: x, label: x }))
 
@@ -174,7 +228,7 @@ function savePool(p: Pool) {
 
 <template>
   <div class="xray-tab">
-    <XSettingsSection v-model:open="open.general" :title="t('xray.secGeneral')" :count="enabled ? 9 : 1" :modified="generalChanges">
+    <XSettingsSection v-model:open="open.general" :title="t('xray.secGeneral')" :count="enabled ? 11 : 1" :modified="generalChanges">
       <XSettingRow :title="t('xray.dnsEnable')" :description="t('xray.dnsEnableDesc')" inline :modified="dirtyEnabled">
         <XSwitch v-model="enabled" :label="t('xray.dnsEnable')" :modified="dirtyEnabled" />
       </XSettingRow>
@@ -191,7 +245,15 @@ function savePool(p: Pool) {
         <XSettingRow v-for="s in switches" :key="s.key" :title="t(s.title)" :description="t(s.description)" inline :modified="dirty(s.key)">
           <XSwitch v-model="flags[s.key]" :label="t(s.title)" :modified="dirty(s.key)" />
         </XSettingRow>
+        <XSettingRow :title="t('xray.dnsExpiredTtl')" :description="t('xray.dnsExpiredTtlDesc')" :modified="dirty('serveExpiredTTL')">
+          <XNumber v-model="v.serveExpiredTTL" block :min="0" :unit="t('settings.unitSeconds')" :modified="dirty('serveExpiredTTL')" />
+        </XSettingRow>
       </template>
+    </XSettingsSection>
+
+    <XSettingsSection v-if="enabled" v-model:open="open.hosts" :title="t('xray.dnsHosts')" :count="hostRows.length" :modified="+hostsDirty" padded>
+      <p class="dns-list__note">{{ t('xray.dnsHostsDesc') }}</p>
+      <XPairList v-model="hostRows" :title="t('xray.dnsHostsList')" :name-label="t('xray.dnsHostsDomain')" :value-label="t('xray.dnsHostsAddress')" mono />
     </XSettingsSection>
 
     <template v-if="enabled">
@@ -278,6 +340,12 @@ function savePool(p: Pool) {
 
 .dns-list__tools {
   display: flex;
+}
+
+.dns-list__note {
+  margin: 0 0 12px;
+  color: var(--fg2);
+  font: 400 var(--fs-12) / var(--lh-normal) var(--font-sans);
 }
 
 /* On phones the address fills the card's head. */

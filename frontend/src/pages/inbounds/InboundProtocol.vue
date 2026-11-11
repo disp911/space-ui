@@ -11,6 +11,8 @@ import InboundSockopt from './InboundSockopt.vue'
 import { headerRows } from './rows'
 import {
   canVisionSeed, isSS2022, network, newFallback, newPeer, newVlessEnc, randomVisionSeed, setSSMethod, ssMethods, ssPassword, visionSeed, type InboundForm,
+  tunMissing,
+  wfpLeakWrong,
 } from './inbound'
 
 /**
@@ -25,6 +27,8 @@ const { t } = useI18n()
 const s = computed(() => props.f.settings)
 const p = computed(() => props.f.protocol)
 const list = (values: string[]): Option[] => values.map((v) => ({ value: v, label: v }))
+/** What Xray's TUN blocks from leaking past it on Windows: DNS, its client, a broken TUN, or a port such as 53. */
+const wfpLeaks = [{ options: list(['dns', 'windnsclient', 'misconfigtun', 'udp/53', 'tcp/853']) }]
 const networkOptions: Option[] = [
   { value: 'tcp,udp', label: 'TCP,UDP' },
   { value: 'tcp', label: 'TCP' },
@@ -346,18 +350,25 @@ const webFrontOk = location.protocol === 'https:' && (location.port === '' || lo
           <XNumber v-bind="a" v-model="s.mtu" block :min="1" :max="9000" placeholder="1500" />
         </XField>
         <XField v-slot="a" label="Gateway">
-          <XTagInput v-bind="a" v-model="s.gateway" mono placeholder="IPv4/IPv6 gateway" />
+          <XTagInput v-bind="a" v-model="s.gateway" mono placeholder="IPv4/IPv6 gateway" :invalid="tunMissing(s).gateway" />
         </XField>
         <XField v-slot="a" label="DNS">
-          <XTagInput v-bind="a" v-model="s.dns" mono placeholder="DNS servers" />
+          <XTagInput v-bind="a" v-model="s.dns" mono placeholder="DNS servers" :invalid="tunMissing(s).dns" />
         </XField>
         <XField v-slot="a" label="Auto Routing Table">
-          <XTagInput v-bind="a" v-model="s.autoSystemRoutingTable" mono placeholder="e.g. vpn, proxy" />
+          <XTagInput v-bind="a" v-model="s.autoSystemRoutingTable" mono placeholder="e.g. vpn, proxy" :invalid="tunMissing(s).routingTable" />
         </XField>
         <XField v-slot="a" label="Auto Outbounds">
           <XInput v-bind="a" v-model.trim="s.autoOutboundsInterface" mono placeholder="auto" />
         </XField>
+        <XField v-slot="a" label="Description" :help="t('inbounds.tunWindowsOnly')">
+          <XInput v-bind="a" v-model.trim="s.desc" mono />
+        </XField>
+        <XField v-slot="a" label="WFP Block Leak" :help="t('inbounds.tunWfpDesc')">
+          <XTagInput v-bind="a" :model-value="s.autoSystemWfpBlockLeak ?? []" :groups="wfpLeaks" mono :invalid="wfpLeakWrong(s.autoSystemWfpBlockLeak)" @update:model-value="s.autoSystemWfpBlockLeak = $event" />
+        </XField>
       </XFieldGrid>
+      <XSwitch v-model="s.autoSystemDnsToGateway" boxed label="DNS To Gateway" :help="t('inbounds.tunDnsGatewayDesc')" />
     </template>
 
     <!-- MTProto -->

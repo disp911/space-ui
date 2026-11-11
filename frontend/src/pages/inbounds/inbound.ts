@@ -705,3 +705,34 @@ export function newEch(sni: string) {
 
 /** VLESS Encryption pairs, one per authentication, labelled as the server names them. */
 export const newVlessEnc = () => api.get<{ auths?: { label: string; decryption: string; encryption: string }[] }>('panel/api/server/getNewVlessEnc')
+
+/** What TUN's autoSystemWfpBlockLeak takes: dns, windnsclient, misconfigtun or a port as tcp/853 or udp/53. */
+export function wfpLeakWrong(values: unknown): boolean {
+  if (!Array.isArray(values)) return false
+  return values.some((v) => {
+    const s = String(v).trim().toLowerCase()
+    if (['dns', 'windnsclient', 'misconfigtun'].includes(s)) return false
+    const m = /^(tcp|udp)\/(\d+)$/.exec(s)
+    return !m || Number(m[2]) < 1 || Number(m[2]) > 65535
+  })
+}
+
+const filledList = (v: unknown) => Array.isArray(v) && v.some((x) => String(x).trim())
+
+/**
+ * What a TUN's settings need beside each other, as Xray checks them where they
+ * take effect: DNS to the gateway needs a gateway (Linux), blocking leaks
+ * needs the routing table (Windows), blocking the system's DNS needs DNS
+ * servers on the TUN (Windows). Each names the field that is missing.
+ */
+export function tunMissing(s: Record<string, any> | undefined) {
+  const leaks: string[] = Array.isArray(s?.autoSystemWfpBlockLeak) ? s.autoSystemWfpBlockLeak.map((v: unknown) => String(v).trim().toLowerCase()) : []
+  return {
+    gateway: !!s?.autoSystemDnsToGateway && !filledList(s?.gateway),
+    routingTable: leaks.length > 0 && !filledList(s?.autoSystemRoutingTable),
+    dns: leaks.some((v) => ['dns', 'udp/53', 'tcp/53', 'windnsclient'].includes(v)) && !filledList(s?.dns),
+  }
+}
+
+/** A TUN Xray does not start with. */
+export const tunWrong = (s: Record<string, any> | undefined) => wfpLeakWrong(s?.autoSystemWfpBlockLeak) || Object.values(tunMissing(s)).some(Boolean)
