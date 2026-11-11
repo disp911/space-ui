@@ -710,8 +710,20 @@ func applyShareRealityParams(stream map[string]any, params map[string]string) {
 				params["pqv"] = pqv
 			}
 		}
-		params["spx"] = "/" + random.Seq(15)
+		settings, _ := realitySettings.(map[string]any)
+		params["spx"] = spiderX(settings)
 	}
+}
+
+// spiderX is the path a client's REALITY starts from when it meets a real
+// certificate and browses the site as a browser would: the inbound's own,
+// as its links have it, so that it is a page of the site; a random one only
+// when the inbound sets none.
+func spiderX(realityClient map[string]any) string {
+	if spx, _ := realityClient["spiderX"].(string); strings.TrimSpace(spx) != "" {
+		return strings.TrimSpace(spx)
+	}
+	return "/" + random.Seq(15)
 }
 
 func buildVmessLink(obj map[string]any) string {
