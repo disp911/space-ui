@@ -165,6 +165,7 @@ export const defaultSockopt = () => ({
   tcpMptcp: false,
   penetrate: false,
   addressPortStrategy: 'none',
+  domainStrategy: 'AsIs',
 })
 export const defaultMux = () => ({ enabled: true, concurrency: 8, xudpConcurrency: 16, xudpProxyUDP443: 'reject' })
 export const defaultFragment = () => ({ packets: '1-3', length: '100-200', interval: '', maxSplit: '' })
@@ -243,11 +244,32 @@ export function finalize(input: Outbound): Outbound {
   if (o.protocol === 'freedom') for (const k of ['domainStrategy', 'redirect', 'fragment', 'noises', 'finalRules']) if (empty(s[k])) delete s[k]
   if (o.protocol === 'wireguard') {
     if (empty(s.reserved)) delete s.reserved
+    s.remoteDNS = (s.remoteDNS ?? []).map((v: string) => String(v).trim()).filter(Boolean)
+    if (empty(s.remoteDNS)) delete s.remoteDNS
     for (const p of s.peers ?? []) if (empty(p.preSharedKey)) delete p.preSharedKey
   }
   if (o.protocol === 'blackhole' && empty(s.response?.type)) delete s.response
   return o
 }
+
+/** An IPv4 or IPv6 address as Go's netip reads it: no leading zeros, no mask, no port. */
+export function isIp(v: string): boolean {
+  if (/^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/.test(v)) return true
+  if (!v.includes(':') || /[^0-9a-fA-F:.]/.test(v)) return false
+  try {
+    new URL(`http://[${v}]/`)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * A WireGuard outbound's tunnel DNS that is no IP: Xray does not start on
+ * one (it panics reading it), so the window does not save it.
+ */
+export const remoteDnsWrong = (o: Outbound) =>
+  o.protocol === 'wireguard' && Array.isArray(o.settings?.remoteDNS) && o.settings.remoteDNS.some((v: string) => !!String(v).trim() && !isIp(String(v).trim()))
 
 // --- Links -------------------------------------------------------------------------
 

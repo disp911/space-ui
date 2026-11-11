@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast, XButton, XCodeEditor, XField, XFieldGrid, XInput, XModal, XNumber, XSegmented, XSelect } from '../../kit'
 import type { Outbound } from './model'
-import { canStream, canTls, defaultSettings, finalize, fromLink, hasAddressPort, newOutbound, protocols, server, setProtocolStream } from './outbound'
+import { canStream, canTls, defaultSettings, finalize, fromLink, hasAddressPort, newOutbound, protocols, remoteDnsWrong, server, setProtocolStream } from './outbound'
 import OutboundSettings from './OutboundSettings.vue'
 import OutboundStream from './OutboundStream.vue'
 import OutboundSecurity from './OutboundSecurity.vue'
@@ -45,7 +45,7 @@ const protocol = computed({
 })
 
 const tagTaken = computed(() => props.tags.includes(String(o.value.tag ?? '').trim()))
-const valid = computed(() => !!String(o.value.tag ?? '').trim() && !tagTaken.value)
+const valid = computed(() => !!String(o.value.tag ?? '').trim() && !tagTaken.value && !remoteDnsWrong(o.value))
 
 const address = computed({ get: () => server(o.value).address ?? '', set: (v: string) => (server(o.value).address = v) })
 const port = computed({ get: () => server(o.value).port ?? null, set: (v: number | null) => (server(o.value).port = v) })

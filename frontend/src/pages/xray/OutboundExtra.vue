@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { XField, XFieldGrid, XNest, XNumber, XSelect, XSwitch, XTagInput, type Option } from '../../kit'
 import type { Outbound } from './model'
-import { addressPortStrategies, canMux, defaultMux, defaultSockopt, forwardedForHeaders } from './outbound'
+import { addressPortStrategies, canMux, defaultMux, defaultSockopt, domainStrategies, forwardedForHeaders } from './outbound'
 
 /** Socket options and Mux at the foot of the outbound window: a switch each, their fields under it when on. */
 const props = defineProps<{ o: Outbound; tags: string[] }>()
@@ -36,6 +36,8 @@ const headers = [{ options: forwardedForHeaders.map((h) => ({ value: h, label: h
     <XFieldGrid :cols="1">
       <XFieldGrid :cols="3">
         <XField v-slot="a" label="Dialer Proxy"><XSelect v-bind="a" :model-value="so.dialerProxy ?? ''" @update:model-value="so.dialerProxy = String($event)" :options="dialers" mono /></XField>
+        <!-- How the server's domain is resolved, e.g. WireGuard's endpoint to IPv4 or IPv6. -->
+        <XField v-slot="a" label="Domain Strategy"><XSelect v-bind="a" :model-value="so.domainStrategy ?? 'AsIs'" @update:model-value="so.domainStrategy = String($event)" :options="list(domainStrategies)" mono /></XField>
         <XField v-slot="a" label="Address Port Strategy"><XSelect v-bind="a" v-model="so.addressPortStrategy" :options="list(addressPortStrategies)" mono /></XField>
         <XField v-slot="a" label="Keep Alive Interval"><XNumber v-bind="a" block v-model="so.tcpKeepAliveInterval" :min="0" /></XField>
         <XSwitch v-model="so.tcpFastOpen" boxed label="TCP Fast Open" />

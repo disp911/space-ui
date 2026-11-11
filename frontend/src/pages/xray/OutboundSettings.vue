@@ -8,7 +8,7 @@ import { wireguardKeys } from '../../wireguard'
 import type { Outbound } from './model'
 import {
   canFlow, canVisionSeed, defaultDnsRule, defaultFinalRule, defaultFragment, defaultNoise, defaultPeer, domainStrategies, flows, hasUser, server, ssMethods, user,
-  items, vmessSecurities,
+  isIp, items, vmessSecurities,
 } from './outbound'
 
 /** The part of the outbound window that belongs to its protocol, in a card titled with it. */
@@ -69,6 +69,10 @@ const socksPass = account('pass')
 
 const wgAddress = commaList('address')
 const wgReserved = commaList('reserved', true)
+const wgDns = computed({
+  get: () => (Array.isArray(s.value.remoteDNS) ? s.value.remoteDNS : []),
+  set: (v: string[]) => (s.value.remoteDNS = v),
+})
 const publicKey = computed(() => {
   try {
     return s.value.secretKey ? wireguardKeys(s.value.secretKey).publicKey : ''
@@ -311,6 +315,8 @@ const remove = (list: unknown[], i: number) => list.splice(i, 1)
         </XField>
         <XSwitch v-model="s.noKernelTun" boxed label="No Kernel Tun" />
       </XFieldGrid>
+      <!-- DNS inside the tunnel; none means Xray's own, Cloudflare's 1.1.1.1 and its kin. -->
+      <XInputList v-model="wgDns" title="Remote DNS" mono placeholder="1.1.1.1" :invalid="(v) => !isIp(v)" />
       <XListHead title="Peers" add @add="(s.peers ??= []).push(defaultPeer())">
         <XNestCard v-for="(p, i) in items(s.peers)" :key="i" :title="t('xray.peer', { n: i + 1 })">
           <template #actions>

@@ -7,9 +7,10 @@ import XListHead from './XListHead.vue'
 /**
  * A list of single values, each in a field of its own, e.g. a peer's allowed
  * IPs: a title with a dashed + at its right, then a field and a − per value.
- * The last value stays, so the list is never left without a field.
+ * The last value stays, so the list is never left without a field. With
+ * invalid, a value it refuses is marked, e.g. a DNS server that is no IP.
  */
-const props = defineProps<{ title: string; mono?: boolean; placeholder?: string }>()
+const props = defineProps<{ title: string; mono?: boolean; placeholder?: string; invalid?: (value: string) => boolean }>()
 const values = defineModel<string[]>({ default: () => [] })
 const { t } = useI18n()
 
@@ -20,7 +21,7 @@ const set = (i: number, v: string) => (values.value = values.value.map((x, j) =>
   <div class="x-inputs">
     <XListHead :title="title" add @add="values = [...values, '']" />
     <div v-for="(v, i) in values" :key="i" class="x-inputs__row">
-      <XInput :model-value="v" :mono="mono" :placeholder="placeholder" :aria-label="`${props.title} ${i + 1}`" @update:model-value="set(i, $event)" />
+      <XInput :model-value="v" :mono="mono" :placeholder="placeholder" :invalid="!!v.trim() && !!invalid?.(v.trim())" :aria-label="`${props.title} ${i + 1}`" @update:model-value="set(i, $event)" />
       <button
         type="button"
         class="x-inputs__drop"
