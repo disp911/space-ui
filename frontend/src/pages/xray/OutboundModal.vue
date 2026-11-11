@@ -12,7 +12,8 @@ import OutboundExtra from './OutboundExtra.vue'
 /**
  * An outbound to create, or the one at index to edit: a form of the parts
  * that go with its protocol, or its JSON with a share link to read. A tag
- * must be there and be its own.
+ * must be there and be its own. Its fields stand in one column, as in the
+ * inbound window, and its body scrolls.
  */
 const props = defineProps<{ outbound: Outbound | null; index: number; tags: string[] }>()
 const open = defineModel<boolean>('open', { default: false })
@@ -97,7 +98,7 @@ const linkHint = 'vmess:// vless:// trojan:// ss:// hysteria2://'
 </script>
 
 <template>
-  <XModal v-model:open="open" :title="title" size="lg" cancel>
+  <XModal v-model:open="open" :title="title" size="md" cancel scroll-body stack>
     <div class="outbound">
       <div class="outbound__mode">
         <XSegmented v-model="mode" :options="modes" block :label="title" />
@@ -115,7 +116,7 @@ const linkHint = 'vmess:// vless:// trojan:// ss:// hysteria2://'
             <XInput v-bind="a" v-model="o.sendThrough" mono />
           </XField>
         </XFieldGrid>
-        <XFieldGrid v-if="hasAddressPort(o)" columns="minmax(0, 1fr) 150px" phone-columns="minmax(0, 1fr) 96px">
+        <XFieldGrid v-if="hasAddressPort(o)" columns="minmax(0, 1fr) 150px">
           <XField v-slot="a" :label="t('xray.outAddress')">
             <XInput v-bind="a" v-model="address" mono />
           </XField>
