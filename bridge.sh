@@ -24,7 +24,12 @@ command_path="/usr/local/bin/space-bridge"
 conf_dir="/etc/space-bridge"
 conf_file="${conf_dir}/bridges.conf"
 unit_file="/etc/systemd/system/space-bridge.service"
-sysctl_file="/etc/sysctl.d/99-space-bridge.conf"
+# Named to sort last: sysctl files apply in name order and the last one wins,
+# and hosting images put their own in, such as 99-sysctl.conf (/etc/sysctl.conf).
+sysctl_file="/etc/sysctl.d/99-zz-space-bridge.conf"
+# systemd-networkd 256 and later sets forwarding itself and may turn it off
+# when it reconfigures a link; older versions ignore the key.
+networkd_file="/etc/systemd/networkd.conf.d/99-zz-space-bridge.conf"
 
 LOGE() { echo -e "${red}$*${plain}"; }
 LOGI() { echo -e "${green}$*${plain}"; }
@@ -156,6 +161,10 @@ enable_forwarding() {
         fi
     } > "$sysctl_file"
     sysctl -q -p "$sysctl_file" > /dev/null
+    if [[ -d /etc/systemd/network || -d /run/systemd/netif ]]; then
+        mkdir -p "${networkd_file%/*}"
+        printf '%s\n' '[Network]' 'IPv4Forwarding=yes' > "$networkd_file"
+    fi
 }
 
 # --- Rules ------------------------------------------------------------------
@@ -176,7 +185,13 @@ drop_chain() {
 # apply puts the rules of every bridge in the list in place, the old ones gone.
 apply() {
     ensure_iptables
-    sysctl -q -w net.ipv4.ip_forward=1 > /dev/null
+    # Again at every boot, after the network is up: the bridge's values win
+    # over whatever the hosting set meanwhile.
+    if [[ -f "$sysctl_file" ]]; then
+        sysctl -q -p "$sysctl_file" > /dev/null
+    else
+        sysctl -q -w net.ipv4.ip_forward=1 > /dev/null
+    fi
     chain nat SPACE_BRIDGE_PRE PREROUTING
     chain nat SPACE_BRIDGE_POST POSTROUTING
     chain filter SPACE_BRIDGE_FWD FORWARD
@@ -329,7 +344,7 @@ uninstall() {
     drop_chain nat SPACE_BRIDGE_POST POSTROUTING
     drop_chain filter SPACE_BRIDGE_FWD FORWARD
     drop_chain mangle SPACE_BRIDGE_MSS FORWARD
-    rm -rf "$conf_dir" "$sysctl_file"
+    rm -rf "$conf_dir" "$sysctl_file" "$networkd_file"
     rm -f "$command_path"
     LOGI "The bridge is removed. IPv4 forwarding stays on until the next reboot."
     exit 0
