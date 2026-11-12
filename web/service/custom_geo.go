@@ -31,7 +31,6 @@ var (
 	customGeoAliasPattern = regexp.MustCompile(`^[a-z0-9_-]+$`)
 	reservedCustomAliases = map[string]struct{}{
 		"geoip": {}, "geosite": {},
-		"geoip_ir": {}, "geosite_ir": {},
 		"geoip_ru": {}, "geosite_ru": {},
 	}
 	ErrCustomGeoInvalidType    = errors.New("custom_geo_invalid_type")

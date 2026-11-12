@@ -11,7 +11,7 @@ import { checkValue, muxCheck, type AllSetting, type SettingKey } from './model'
  * What JSON and Clash subscriptions add to a client's config. Fragmentation,
  * noises, mux and direct rules are kept as JSON in their settings, an empty
  * one meaning off; the defaults and the shape follow the old settings page,
- * except that direct connection starts with Russia instead of Iran.
+ * except that direct connection starts with Russia.
  */
 const { t } = useI18n()
 const f = useSettingsForm()
@@ -100,7 +100,6 @@ const defaultRules = (): Rule[] => [
 ]
 const ipPresets = [
   { value: 'geoip:private', label: 'Private IP' },
-  { value: 'geoip:ir', label: '🇮🇷 Iran' },
   { value: 'geoip:cn', label: '🇨🇳 China' },
   { value: 'geoip:ru', label: '🇷🇺 Russia' },
   { value: 'geoip:vn', label: '🇻🇳 Vietnam' },
@@ -112,7 +111,6 @@ const ipPresets = [
 ]
 const domainPresets = [
   { value: 'geosite:private', label: 'Private DNS' },
-  { value: 'geosite:category-ir', label: '🇮🇷 Iran' },
   { value: 'geosite:cn', label: '🇨🇳 China' },
   { value: 'geosite:category-ru', label: '🇷🇺 Russia' },
   { value: 'geosite:apple', label: 'Apple' },

@@ -23,7 +23,7 @@ func disableSSRFCheck(t *testing.T) {
 }
 
 func TestNormalizeAliasKey(t *testing.T) {
-	if got := NormalizeAliasKey("GeoIP-IR"); got != "geoip_ir" {
+	if got := NormalizeAliasKey("GeoIP-RU"); got != "geoip_ru" {
 		t.Fatalf("got %q", got)
 	}
 	if got := NormalizeAliasKey("a-b_c"); got != "a_b_c" {

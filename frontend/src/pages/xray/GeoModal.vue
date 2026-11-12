@@ -19,7 +19,7 @@ const open = defineModel<boolean>('open', { default: false })
 const { t } = useI18n()
 const phone = usePhone()
 
-const standard = ['geosite.dat', 'geoip.dat', 'geosite_IR.dat', 'geoip_IR.dat', 'geosite_RU.dat', 'geoip_RU.dat'].map((file) => ({ file }))
+const standard = ['geosite.dat', 'geoip.dat', 'geosite_RU.dat', 'geoip_RU.dat'].map((file) => ({ file }))
 const fileColumns: PlainColumn[] = [{ key: 'file' }, { key: 'update', fit: true }]
 const openStandard = ref(true)
 const openCustom = ref(true)

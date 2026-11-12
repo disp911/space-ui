@@ -64,10 +64,11 @@ else
     echo "Failed to check the system OS, please contact the author!" >&2
     exit 1
 fi
-[[ "$1" == site-* ]] || echo "The OS release is: $release"
+[[ "$1" == site-* || "$1" == help ]] || echo "The OS release is: $release"
 
 os_version=""
-os_version=$(grep "^VERSION_ID" /etc/os-release | cut -d '=' -f2 | tr -d '"' | tr -d '.')
+# The major version only: 24 for Ubuntu 24.04, 12 for Debian 12.
+os_version=$(grep "^VERSION_ID" /etc/os-release | cut -d '=' -f2 | tr -d '"' | cut -d '.' -f1)
 
 # Declare Variables
 space_ui_folder="${SPACE_UI_MAIN_FOLDER:=/usr/local/space-ui}"
@@ -134,43 +135,86 @@ update() {
     fi
 }
 
+# fetch downloads a URL to a file, over IPv4 when the default way fails.
+fetch() {
+    curl -fsLRo "$1" "$2" 2> /dev/null || curl -4fsLRo "$1" "$2"
+}
+
+# pkg_install installs packages with the system's package manager, without
+# upgrading the rest of the system.
+pkg_install() {
+    case "${release}" in
+        ubuntu | debian | armbian)
+            apt-get update && apt-get install -y "$@"
+            ;;
+        fedora | amzn | virtuozzo | rhel | almalinux | rocky | ol)
+            dnf -y install "$@"
+            ;;
+        centos)
+            if [[ "${VERSION_ID}" =~ ^7 ]]; then
+                yum -y install "$@"
+            else
+                dnf -y install "$@"
+            fi
+            ;;
+        arch | manjaro | parch)
+            pacman -S --needed --noconfirm "$@"
+            ;;
+        alpine)
+            apk add "$@"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# update_menu puts back the menu of the installed version, so the menu and
+# the panel always come from one release.
 update_menu() {
-    echo -e "${yellow}Updating Menu${plain}"
-    confirm "This function will update the menu to the latest changes." "y"
-    if [[ $? != 0 ]]; then
-        LOGE "Cancelled"
-        if [[ $# == 0 ]]; then
-            before_show_menu
-        fi
-        return 0
-    fi
-
-    curl -fLRo /usr/bin/space-ui https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.sh
-    chmod +x ${space_ui_folder}/space-ui.sh
-    chmod +x /usr/bin/space-ui
-
-    if [[ $? == 0 ]]; then
-        echo -e "${green}Update successful. The panel has automatically restarted.${plain}"
-        exit 0
-    else
-        echo -e "${red}Failed to update the menu.${plain}"
+    local version tmp
+    version=$(${space_ui_folder}/space-ui -v 2> /dev/null)
+    if [[ -z "$version" ]]; then
+        LOGE "The installed version is unknown."
+        [[ $# == 0 ]] && before_show_menu
         return 1
     fi
+    confirm "This replaces the menu with the one of the installed version v${version}." "y"
+    if [[ $? != 0 ]]; then
+        LOGE "Cancelled"
+        [[ $# == 0 ]] && before_show_menu
+        return 0
+    fi
+    tmp=$(mktemp)
+    if ! fetch "$tmp" "https://raw.githubusercontent.com/disp911/space-ui/v${version}/space-ui.sh"; then
+        rm -f "$tmp"
+        LOGE "Failed to download the menu, please be sure that your server can access GitHub."
+        [[ $# == 0 ]] && before_show_menu
+        return 1
+    fi
+    chmod +x "$tmp"
+    cp -f "$tmp" ${space_ui_folder}/space-ui.sh
+    mv -f "$tmp" /usr/bin/space-ui
+    LOGI "The menu of v${version} is in place. Run space-ui again."
+    exit 0
 }
 
 legacy_version() {
-    echo -n "Enter the panel version (like 2.9.5):"
+    echo -n "Enter the panel version (like 3.0.0): "
     read -r tag_version
+    tag_version=${tag_version#v}
 
-    if [ -z "$tag_version" ]; then
-        echo "Panel version cannot be empty. Exiting."
+    if ! [[ "$tag_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "A version is three numbers, like 3.0.0. Exiting."
         exit 1
     fi
-    # Use the entered panel version in the download link
-    install_command="bash <(curl -Ls "https://raw.githubusercontent.com/disp911/space-ui/v$tag_version/install.sh") v$tag_version"
+    if [[ "$(printf '%s\n' 3.0.0 "$tag_version" | sort -V | head -n1)" != "3.0.0" ]]; then
+        echo "Versions before 3.0.0 are not Space UI. Exiting."
+        exit 1
+    fi
 
     echo "Downloading and installing panel version $tag_version..."
-    eval $install_command
+    bash <(curl -Ls "https://raw.githubusercontent.com/disp911/space-ui/v${tag_version}/install.sh") "v${tag_version}"
 }
 
 # Function to handle the deletion of the script file
@@ -267,19 +311,6 @@ reset_webbasepath() {
     restart
 }
 
-reset_config() {
-    confirm "Are you sure you want to reset all panel settings, Account data will not be lost, Username and password will not change" "n"
-    if [[ $? != 0 ]]; then
-        if [[ $# == 0 ]]; then
-            show_menu
-        fi
-        return 0
-    fi
-    ${space_ui_folder}/space-ui setting -reset
-    echo -e "All panel settings have been reset to default."
-    restart
-}
-
 check_config() {
     local info=$(${space_ui_folder}/space-ui setting -show true)
     if [[ $? != 0 ]]; then
@@ -290,19 +321,6 @@ check_config() {
     LOGI "${info}"
 
     site_status
-}
-
-set_port() {
-    echo -n "Enter port number[1-65535]: "
-    read -r port
-    if [[ -z "${port}" ]]; then
-        LOGD "Cancelled"
-        before_show_menu
-    else
-        ${space_ui_folder}/space-ui setting -port ${port}
-        echo -e "The port is set, Please restart the panel now, and use the new port ${green}${port}${plain} to access web panel"
-        confirm_restart
-    fi
 }
 
 start() {
@@ -430,52 +448,12 @@ disable() {
 
 show_log() {
     if [[ $release == "alpine" ]]; then
-        echo -e "${green}\t1.${plain} Debug Log"
-        echo -e "${green}\t0.${plain} Back to Main Menu"
-        read -rp "Choose an option: " choice
-
-        case "$choice" in
-            0)
-                show_menu
-                ;;
-            1)
-                grep -F 'space-ui[' /var/log/messages
-                if [[ $# == 0 ]]; then
-                    before_show_menu
-                fi
-                ;;
-            *)
-                echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
-                show_log
-                ;;
-        esac
+        grep -F 'space-ui[' /var/log/messages
     else
-        echo -e "${green}\t1.${plain} Debug Log"
-        echo -e "${green}\t2.${plain} Clear All logs"
-        echo -e "${green}\t0.${plain} Back to Main Menu"
-        read -rp "Choose an option: " choice
-
-        case "$choice" in
-            0)
-                show_menu
-                ;;
-            1)
-                journalctl -u space-ui -e --no-pager -f -p debug
-                if [[ $# == 0 ]]; then
-                    before_show_menu
-                fi
-                ;;
-            2)
-                sudo journalctl --rotate
-                sudo journalctl --vacuum-time=1s
-                echo "All Logs cleared."
-                restart
-                ;;
-            *)
-                echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
-                show_log
-                ;;
-        esac
+        journalctl -u space-ui -e --no-pager -f -p debug
+    fi
+    if [[ $# == 0 ]]; then
+        before_show_menu
     fi
 }
 
@@ -564,19 +542,6 @@ enable_bbr() {
         echo -e "${green}BBR has been enabled successfully.${plain}"
     else
         echo -e "${red}Failed to enable BBR. Please check your system configuration.${plain}"
-    fi
-}
-
-update_shell() {
-    curl -fLRo /usr/bin/space-ui -z /usr/bin/space-ui https://github.com/disp911/space-ui/raw/main/space-ui.sh
-    if [[ $? != 0 ]]; then
-        echo ""
-        LOGE "Failed to download script, Please check whether the machine can connect Github"
-        before_show_menu
-    else
-        chmod +x /usr/bin/space-ui
-        LOGI "Upgrade script succeeded, Please rerun the script"
-        before_show_menu
     fi
 }
 
@@ -695,13 +660,17 @@ show_xray_status() {
 }
 
 firewall_menu() {
-    echo -e "${green}\t1.${plain} ${green}Install${plain} Firewall"
-    echo -e "${green}\t2.${plain} Port List [numbered]"
-    echo -e "${green}\t3.${plain} ${green}Open${plain} Ports"
-    echo -e "${green}\t4.${plain} ${red}Delete${plain} Ports from List"
-    echo -e "${green}\t5.${plain} ${green}Enable${plain} Firewall"
-    echo -e "${green}\t6.${plain} ${red}Disable${plain} Firewall"
-    echo -e "${green}\t7.${plain} Firewall Status"
+    if ! command -v ufw > /dev/null 2>&1; then
+        echo -e "${yellow}ufw is not installed; the menu manages ufw only.${plain}"
+        before_show_menu
+        return
+    fi
+    echo -e "${green}\t1.${plain} Port List [numbered]"
+    echo -e "${green}\t2.${plain} ${green}Open${plain} Ports"
+    echo -e "${green}\t3.${plain} ${red}Delete${plain} Ports from List"
+    echo -e "${green}\t4.${plain} ${green}Enable${plain} Firewall"
+    echo -e "${green}\t5.${plain} ${red}Disable${plain} Firewall"
+    echo -e "${green}\t6.${plain} Firewall Status"
     echo -e "${green}\t0.${plain} Back to Main Menu"
     read -rp "Choose an option: " choice
     case "$choice" in
@@ -709,30 +678,26 @@ firewall_menu() {
             show_menu
             ;;
         1)
-            install_firewall
-            firewall_menu
-            ;;
-        2)
             ufw status numbered
             firewall_menu
             ;;
-        3)
+        2)
             open_ports
             firewall_menu
             ;;
-        4)
+        3)
             delete_ports
             firewall_menu
             ;;
-        5)
+        4)
             ufw enable
             firewall_menu
             ;;
-        6)
+        5)
             ufw disable
             firewall_menu
             ;;
-        7)
+        6)
             ufw status verbose
             firewall_menu
             ;;
@@ -741,32 +706,6 @@ firewall_menu() {
             firewall_menu
             ;;
     esac
-}
-
-install_firewall() {
-    if ! command -v ufw &> /dev/null; then
-        echo "ufw firewall is not installed. Installing now..."
-        apt-get update
-        apt-get install -y ufw
-    else
-        echo "ufw firewall is already installed"
-    fi
-
-    # Check if the firewall is inactive
-    if ufw status | grep -q "Status: active"; then
-        echo "Firewall is already active"
-    else
-        echo "Activating firewall..."
-        # Open the necessary ports
-        ufw allow ssh
-        ufw allow http
-        ufw allow https
-        ufw allow 2053/tcp #webPort
-        ufw allow 2096/tcp #subport
-
-        # Enable the firewall
-        ufw --force enable
-    fi
 }
 
 open_ports() {
@@ -887,7 +826,6 @@ delete_ports() {
 
 update_all_geofiles() {
     update_geofiles "main"
-    update_geofiles "IR"
     update_geofiles "RU"
 }
 
@@ -897,17 +835,13 @@ update_geofiles() {
             dat_files=(geoip geosite)
             dat_source="Loyalsoldier/v2ray-rules-dat"
             ;;
-        "IR")
-            dat_files=(geoip_IR geosite_IR)
-            dat_source="chocolate4u/Iran-v2ray-rules"
-            ;;
         "RU")
             dat_files=(geoip_RU geosite_RU)
             dat_source="runetfreedom/russia-v2ray-rules-dat"
             ;;
     esac
     for dat in "${dat_files[@]}"; do
-        # Remove suffix for remote filename (e.g., geoip_IR -> geoip)
+        # Remove suffix for remote filename (e.g., geoip_RU -> geoip)
         remote_file="${dat%%_*}"
         curl -fLRo ${space_ui_folder}/bin/${dat}.dat -z ${space_ui_folder}/bin/${dat}.dat \
             https://github.com/${dat_source}/releases/latest/download/${remote_file}.dat
@@ -916,9 +850,8 @@ update_geofiles() {
 
 update_geo() {
     echo -e "${green}\t1.${plain} Loyalsoldier (geoip.dat, geosite.dat)"
-    echo -e "${green}\t2.${plain} chocolate4u (geoip_IR.dat, geosite_IR.dat)"
-    echo -e "${green}\t3.${plain} runetfreedom (geoip_RU.dat, geosite_RU.dat)"
-    echo -e "${green}\t4.${plain} All"
+    echo -e "${green}\t2.${plain} runetfreedom (geoip_RU.dat, geosite_RU.dat)"
+    echo -e "${green}\t3.${plain} All"
     echo -e "${green}\t0.${plain} Back to Main Menu"
     read -rp "Choose an option: " choice
 
@@ -932,16 +865,11 @@ update_geo() {
             restart
             ;;
         2)
-            update_geofiles "IR"
-            echo -e "${green}chocolate4u datasets have been updated successfully!${plain}"
-            restart
-            ;;
-        3)
             update_geofiles "RU"
             echo -e "${green}runetfreedom datasets have been updated successfully!${plain}"
             restart
             ;;
-        4)
+        3)
             update_all_geofiles
             echo -e "${green}All geo files have been updated successfully!${plain}"
             restart
@@ -1240,47 +1168,6 @@ site_menu() {
     esac
 }
 
-run_speedtest() {
-    # Check if Speedtest is already installed
-    if ! command -v speedtest &> /dev/null; then
-        # If not installed, determine installation method
-        if command -v snap &> /dev/null; then
-            # Use snap to install Speedtest
-            echo "Installing Speedtest using snap..."
-            snap install speedtest
-        else
-            # Fallback to using package managers
-            local pkg_manager=""
-            local speedtest_install_script=""
-
-            if command -v dnf &> /dev/null; then
-                pkg_manager="dnf"
-                speedtest_install_script="https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.rpm.sh"
-            elif command -v yum &> /dev/null; then
-                pkg_manager="yum"
-                speedtest_install_script="https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.rpm.sh"
-            elif command -v apt-get &> /dev/null; then
-                pkg_manager="apt-get"
-                speedtest_install_script="https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh"
-            elif command -v apt &> /dev/null; then
-                pkg_manager="apt"
-                speedtest_install_script="https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh"
-            fi
-
-            if [[ -z $pkg_manager ]]; then
-                echo "Error: Package manager not found. You may need to install Speedtest manually."
-                return 1
-            else
-                echo "Installing Speedtest using $pkg_manager..."
-                curl -s $speedtest_install_script | bash
-                $pkg_manager install -y speedtest
-            fi
-        fi
-    fi
-
-    speedtest
-}
-
 ip_validation() {
     ipv6_regex="^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$"
     ipv4_regex="^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]?|0)\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]?|0)$"
@@ -1296,7 +1183,7 @@ iplimit_main() {
     echo -e "${green}\t7.${plain} Real-Time Logs"
     echo -e "${green}\t8.${plain} Service Status"
     echo -e "${green}\t9.${plain} Service Restart"
-    echo -e "${green}\t10.${plain} Uninstall Fail2ban and IP Limit"
+    echo -e "${green}\t10.${plain} Remove IP Limit or Fail2ban"
     echo -e "${green}\t0.${plain} Back to Main Menu"
     read -rp "Choose an option: " choice
     case "$choice" in
@@ -1394,64 +1281,36 @@ install_iplimit() {
     if ! command -v fail2ban-client &> /dev/null; then
         echo -e "${green}Fail2ban is not installed. Installing now...!${plain}\n"
 
-        # Install fail2ban together with nftables. Recent fail2ban packages
-        # default to `banaction = nftables-multiport` in /etc/fail2ban/jail.conf,
-        # but the `nftables` package isn't pulled in as a dependency on most
-        # minimal server images (Debian 12+, Ubuntu 24+, fresh RHEL-family).
-        # Without `nft` in PATH the default sshd jail fails to ban with
-        #   stderr: '/bin/sh: 1: nft: not found'
-        # even though our own space-ui-ipl jail uses iptables. Bundling the binary
-        # at install time prevents that confusing log spam for new installs.
-        case "${release}" in
-            ubuntu)
-                apt-get update
-                if [[ "${os_version}" -ge 24 ]]; then
-                    apt-get install python3-pip -y
-                    python3 -m pip install pyasynchat --break-system-packages
-                fi
-                apt-get install fail2ban nftables -y
-                ;;
-            debian)
-                apt-get update
-                if [ "$os_version" -ge 12 ]; then
-                    apt-get install -y python3-systemd
-                fi
-                apt-get install -y fail2ban nftables
-                ;;
-            armbian)
-                apt-get update && apt-get install fail2ban nftables -y
-                ;;
-            fedora | amzn | virtuozzo | rhel | almalinux | rocky | ol)
-                dnf -y update && dnf -y install fail2ban nftables
-                ;;
-            centos)
-                if [[ "${VERSION_ID}" =~ ^7 ]]; then
-                    yum update -y && yum install epel-release -y
-                    yum -y install fail2ban nftables
-                else
-                    dnf -y update && dnf -y install fail2ban nftables
-                fi
-                ;;
-            arch | manjaro | parch)
-                pacman -Syu --noconfirm fail2ban nftables
-                ;;
-            alpine)
-                apk add fail2ban nftables
-                ;;
-            *)
-                echo -e "${red}Unsupported operating system. Please check the script and install the necessary packages manually.${plain}\n"
-                exit 1
-                ;;
-        esac
+        # nftables comes along: recent fail2ban packages ban with nftables by
+        # default (the sshd jail), and minimal images lack it.
+        if [[ "${release}" == "debian" && "${os_version}" -ge 12 ]]; then
+            pkg_install fail2ban nftables python3-systemd
+        elif [[ "${release}" == "centos" && "${VERSION_ID}" =~ ^7 ]]; then
+            pkg_install epel-release && pkg_install fail2ban nftables
+        else
+            pkg_install fail2ban nftables
+        fi
+        if [[ $? -ne 0 ]] && ! command -v fail2ban-client &> /dev/null; then
+            echo -e "${red}Fail2ban could not be installed on ${release}. Please install it manually.${plain}\n"
+            before_show_menu
+            return 1
+        fi
 
         if ! command -v fail2ban-client &> /dev/null; then
             echo -e "${red}Fail2ban installation failed.${plain}\n"
-            exit 1
+            before_show_menu
+            return 1
         fi
 
         echo -e "${green}Fail2ban installed successfully!${plain}\n"
     else
         echo -e "${yellow}Fail2ban is already installed.${plain}\n"
+    fi
+
+    # The IP Limit jail bans with iptables; minimal images may have nftables only.
+    if ! command -v iptables &> /dev/null; then
+        echo -e "${green}Installing iptables for the IP Limit jail...${plain}\n"
+        pkg_install iptables
     fi
 
     echo -e "${green}Configuring IP Limit...${plain}\n"
@@ -1482,74 +1341,90 @@ install_iplimit() {
         fi
         rc-update add fail2ban
     else
-        if ! systemctl is-active --quiet fail2ban; then
-            systemctl start fail2ban
-        else
-            systemctl restart fail2ban
-        fi
+        systemctl restart fail2ban
         systemctl enable fail2ban
+        sleep 2
+        # Fail2ban 1.0 on Python 3.12 (Ubuntu 24.04) needs asyncore and
+        # asynchat, which Python no longer has; the distribution packages them.
+        if ! fail2ban-client ping > /dev/null 2>&1 && [[ "${release}" =~ ^(ubuntu|debian|armbian)$ ]]; then
+            echo -e "${yellow}Fail2ban does not start; installing the Python modules it needs...${plain}\n"
+            pkg_install python3-pyasyncore python3-pyasynchat && systemctl restart fail2ban
+            sleep 2
+        fi
     fi
 
-    echo -e "${green}IP Limit installed and configured successfully!${plain}\n"
+    if fail2ban-client ping > /dev/null 2>&1; then
+        echo -e "${green}IP Limit installed and configured successfully!${plain}\n"
+    else
+        echo -e "${red}Fail2ban does not run; see: journalctl -u fail2ban${plain}\n"
+    fi
     before_show_menu
 }
 
+# remove_iplimit takes the IP Limit jail away, and on request Fail2ban itself:
+# only its package goes, the rest of /etc/fail2ban and other jails' settings stay.
 remove_iplimit() {
-    echo -e "${green}\t1.${plain} Only remove IP Limit configurations"
-    echo -e "${green}\t2.${plain} Uninstall Fail2ban and IP Limit"
+    echo -e "${green}\t1.${plain} Remove IP Limit only (Fail2ban stays)"
+    echo -e "${green}\t2.${plain} Remove IP Limit and uninstall Fail2ban"
     echo -e "${green}\t0.${plain} Back to Main Menu"
     read -rp "Choose an option: " num
     case "$num" in
-        1)
+        1 | 2)
+            local others
+            others=$(fail2ban-client status 2> /dev/null | sed -n 's/.*Jail list:[[:space:]]*//p' | tr -d ' ' | tr ',' '\n' | grep -vx 'space-ui-ipl' | paste -sd ' ')
+            if [[ "$num" == "2" && -n "$others" ]]; then
+                echo -e "${yellow}Fail2ban also guards: ${others}. Uninstalling it ends that protection too.${plain}"
+                confirm "Uninstall Fail2ban anyway?" "n" || {
+                    remove_iplimit
+                    return
+                }
+            fi
             rm -f /etc/fail2ban/filter.d/space-ui-ipl.conf
             rm -f /etc/fail2ban/action.d/space-ui-ipl.conf
             rm -f /etc/fail2ban/jail.d/space-ui-ipl.conf
-            if [[ $release == "alpine" ]]; then
-                rc-service fail2ban restart
-            else
-                systemctl restart fail2ban
+            if [[ "$num" == "1" ]]; then
+                if [[ $release == "alpine" ]]; then
+                    rc-service fail2ban restart
+                else
+                    systemctl restart fail2ban
+                fi
+                echo -e "${green}IP Limit removed successfully!${plain}\n"
+                before_show_menu
+                return
             fi
-            echo -e "${green}IP Limit removed successfully!${plain}\n"
-            before_show_menu
-            ;;
-        2)
-            rm -rf /etc/fail2ban
             if [[ $release == "alpine" ]]; then
                 rc-service fail2ban stop
+                rc-update del fail2ban
             else
-                systemctl stop fail2ban
+                systemctl disable --now fail2ban
             fi
             case "${release}" in
                 ubuntu | debian | armbian)
                     apt-get remove -y fail2ban
-                    apt-get purge -y fail2ban -y
-                    apt-get autoremove -y
                     ;;
                 fedora | amzn | virtuozzo | rhel | almalinux | rocky | ol)
-                    dnf remove fail2ban -y
-                    dnf autoremove -y
+                    dnf remove -y fail2ban
                     ;;
                 centos)
                     if [[ "${VERSION_ID}" =~ ^7 ]]; then
-                        yum remove fail2ban -y
-                        yum autoremove -y
+                        yum remove -y fail2ban
                     else
-                        dnf remove fail2ban -y
-                        dnf autoremove -y
+                        dnf remove -y fail2ban
                     fi
                     ;;
                 arch | manjaro | parch)
-                    pacman -Rns --noconfirm fail2ban
+                    pacman -R --noconfirm fail2ban
                     ;;
                 alpine)
                     apk del fail2ban
                     ;;
                 *)
                     echo -e "${red}Unsupported operating system. Please uninstall Fail2ban manually.${plain}\n"
-                    exit 1
+                    before_show_menu
+                    return 1
                     ;;
             esac
-            echo -e "${green}Fail2ban and IP Limit removed successfully!${plain}\n"
+            echo -e "${green}IP Limit removed and Fail2ban uninstalled; its other settings in /etc/fail2ban are kept.${plain}\n"
             before_show_menu
             ;;
         0)
@@ -1676,89 +1551,76 @@ iplimit_remove_conflicts() {
     done
 }
 
+# ssh_port prints the port sshd listens on, 22 when it is not found.
+ssh_port() {
+    local port
+    port=$(ss -ltnpH 2> /dev/null | grep '"sshd"' | awk '{print $4}' | sed 's/.*://' | sort -un | head -1)
+    echo "${port:-22}"
+}
+
+# ssh_tunnel_hint prints how to reach the panel listening on $1 through an
+# SSH tunnel from the user's computer.
+ssh_tunnel_hint() {
+    local listen="$1" port path scheme name cert sp ip opt=""
+    port=$(${space_ui_folder}/space-ui setting -show true | grep -Eo '^port: .+' | awk '{print $2}')
+    path=$(${space_ui_folder}/space-ui setting -show true | grep -Eo '^webBasePath: .+' | awk '{print $2}')
+    name=$(site_value "website name")
+    cert=$(${space_ui_folder}/space-ui setting -getCert true | sed -n 's/^cert: //p')
+    scheme=http
+    [[ -n "$name" || -n "$cert" ]] && scheme=https
+    sp=$(ssh_port)
+    [[ "$sp" != "22" ]] && opt=" -p ${sp}"
+    ip=$(server_ips | head -1)
+    echo -e "\n${green}On your computer:${plain}"
+    echo -e "${yellow}ssh${opt} -N -L 2222:${listen}:${port} ${SUDO_USER:-root}@${ip:-<server address>}${plain}"
+    echo -e "Then open: ${yellow}${scheme}://localhost:2222${path}${plain}"
+    if [[ "$scheme" == "https" && -n "$name" ]]; then
+        echo -e "${yellow}The certificate is for ${name}, so the browser warns about the name on localhost.${plain}"
+    fi
+}
+
+# SSH_port_forwarding hides the panel's own port from the internet: the panel
+# listens on a local address only and is reached through an SSH tunnel.
 SSH_port_forwarding() {
-    local URL_lists=(
-        "https://api4.ipify.org"
-        "https://ipv4.icanhazip.com"
-        "https://v4.api.ipinfo.io/ip"
-        "https://ipv4.myexternalip.com/raw"
-        "https://4.ident.me"
-        "https://check-host.net/ip"
-    )
-    local server_ip=""
-    for ip_address in "${URL_lists[@]}"; do
-        local response=$(curl -s -w "\n%{http_code}" --max-time 3 "${ip_address}" 2> /dev/null)
-        local http_code=$(echo "$response" | tail -n1)
-        local ip_result=$(echo "$response" | head -n-1 | tr -d '[:space:]')
-        if [[ "${http_code}" == "200" && -n "${ip_result}" ]]; then
-            server_ip="${ip_result}"
-            break
-        fi
-    done
-
-    local existing_webBasePath=$(${space_ui_folder}/space-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}')
-    local existing_port=$(${space_ui_folder}/space-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
-    local existing_listenIP=$(${space_ui_folder}/space-ui setting -getListen true | grep -Eo 'listenIP: .+' | awk '{print $2}')
-    local existing_cert=$(${space_ui_folder}/space-ui setting -getCert true | grep -Eo 'cert: .+' | awk '{print $2}')
-    local existing_key=$(${space_ui_folder}/space-ui setting -getCert true | grep -Eo 'key: .+' | awk '{print $2}')
-
-    local config_listenIP=""
-    local listen_choice=""
-
-    if [[ -n "$existing_cert" && -n "$existing_key" ]]; then
-        echo -e "${green}Panel is secure with SSL.${plain}"
+    local listen choice ip
+    if [[ "$(site_value "website mode")" == "reality" ]]; then
+        echo -e "${yellow}The panel runs behind REALITY on 443 and has no port of its own to forward: it opens only at its secret path.${plain}"
+        echo -e "${yellow}To reach it through SSH instead, put it on a port of its own first (Website & Certificate).${plain}"
         before_show_menu
+        return
     fi
-    if [[ -z "$existing_cert" && -z "$existing_key" && (-z "$existing_listenIP" || "$existing_listenIP" == "0.0.0.0") ]]; then
-        echo -e "\n${red}Warning: No Cert and Key found! The panel is not secure.${plain}"
-        echo "Please obtain a certificate or set up SSH port forwarding."
-    fi
-
-    if [[ -n "$existing_listenIP" && "$existing_listenIP" != "0.0.0.0" && (-z "$existing_cert" && -z "$existing_key") ]]; then
-        echo -e "\n${green}Current SSH Port Forwarding Configuration:${plain}"
-        echo -e "Standard SSH command:"
-        echo -e "${yellow}ssh -L 2222:${existing_listenIP}:${existing_port} root@${server_ip}${plain}"
-        echo -e "\nIf using SSH key:"
-        echo -e "${yellow}ssh -i <sshkeypath> -L 2222:${existing_listenIP}:${existing_port} root@${server_ip}${plain}"
-        echo -e "\nAfter connecting, access the panel at:"
-        echo -e "${yellow}http://localhost:2222${existing_webBasePath}${plain}"
+    listen=$(${space_ui_folder}/space-ui setting -getListen true | sed -n 's/^listenIP: //p')
+    if [[ -z "$listen" || "$listen" == "0.0.0.0" || "$listen" == "::" ]]; then
+        echo -e "\nThe panel listens on all addresses: its port is open to the internet."
+    else
+        echo -e "\n${green}The panel listens on ${listen} only.${plain}"
+        ssh_tunnel_hint "$listen"
     fi
 
     echo -e "\nChoose an option:"
-    echo -e "${green}1.${plain} Set listen IP"
-    echo -e "${green}2.${plain} Clear listen IP"
+    echo -e "${green}1.${plain} Listen on a local address only (SSH forwarding)"
+    echo -e "${green}2.${plain} Listen on all addresses again"
     echo -e "${green}0.${plain} Back to Main Menu"
-    read -rp "Choose an option: " num
+    read -rp "Choose an option: " choice
 
-    case "$num" in
+    case "$choice" in
         1)
-            if [[ -z "$existing_listenIP" || "$existing_listenIP" == "0.0.0.0" ]]; then
-                echo -e "\nNo listenIP configured. Choose an option:"
-                echo -e "1. Use default IP (127.0.0.1)"
-                echo -e "2. Set a custom IP"
-                read -rp "Select an option (1 or 2): " listen_choice
-
-                config_listenIP="127.0.0.1"
-                [[ "$listen_choice" == "2" ]] && read -rp "Enter custom IP to listen on: " config_listenIP
-
-                ${space_ui_folder}/space-ui setting -listenIP "${config_listenIP}" > /dev/null 2>&1
-                echo -e "${green}listen IP has been set to ${config_listenIP}.${plain}"
-                echo -e "\n${green}SSH Port Forwarding Configuration:${plain}"
-                echo -e "Standard SSH command:"
-                echo -e "${yellow}ssh -L 2222:${config_listenIP}:${existing_port} root@${server_ip}${plain}"
-                echo -e "\nIf using SSH key:"
-                echo -e "${yellow}ssh -i <sshkeypath> -L 2222:${config_listenIP}:${existing_port} root@${server_ip}${plain}"
-                echo -e "\nAfter connecting, access the panel at:"
-                echo -e "${yellow}http://localhost:2222${existing_webBasePath}${plain}"
-                restart
-            else
-                config_listenIP="${existing_listenIP}"
-                echo -e "${green}Current listen IP is already set to ${config_listenIP}.${plain}"
+            echo -e "${yellow}The website and the subscriptions on the panel's port become unreachable from the internet too: clients' subscriptions stop updating.${plain}"
+            read -rp "Local address to listen on [default 127.0.0.1]: " ip
+            ip=${ip:-127.0.0.1}
+            if ! is_ip "$ip"; then
+                LOGE "\"${ip}\" is not an IP address."
+                SSH_port_forwarding
+                return
             fi
+            ${space_ui_folder}/space-ui setting -listenIP "${ip}" > /dev/null 2>&1
+            LOGI "The panel listens on ${ip} only."
+            ssh_tunnel_hint "$ip"
+            restart
             ;;
         2)
             ${space_ui_folder}/space-ui setting -listenIP 0.0.0.0 > /dev/null 2>&1
-            echo -e "${green}Listen IP has been cleared.${plain}"
+            LOGI "The panel listens on all addresses."
             restart
             ;;
         0)
@@ -1809,32 +1671,29 @@ show_menu() {
 │────────────────────────────────────────────────│
 │   ${green}6.${plain} Reset Username & Password                 │
 │   ${green}7.${plain} Reset Web Base Path                       │
-│   ${green}8.${plain} Reset Settings                            │
-│   ${green}9.${plain} Change Port                               │
-│  ${green}10.${plain} View Current Settings                     │
+│   ${green}8.${plain} View Current Settings                     │
 │────────────────────────────────────────────────│
-│  ${green}11.${plain} Start                                     │
-│  ${green}12.${plain} Stop                                      │
-│  ${green}13.${plain} Restart                                   │
-|  ${green}14.${plain} Restart Xray                              │
-│  ${green}15.${plain} Check Status                              │
-│  ${green}16.${plain} Logs Management                           │
+│   ${green}9.${plain} Start                                     │
+│  ${green}10.${plain} Stop                                      │
+│  ${green}11.${plain} Restart                                   │
+│  ${green}12.${plain} Restart Xray                              │
+│  ${green}13.${plain} Check Status                              │
+│  ${green}14.${plain} Logs                                      │
 │────────────────────────────────────────────────│
-│  ${green}17.${plain} Enable Autostart                          │
-│  ${green}18.${plain} Disable Autostart                         │
+│  ${green}15.${plain} Enable Autostart                          │
+│  ${green}16.${plain} Disable Autostart                         │
 │────────────────────────────────────────────────│
-│  ${green}19.${plain} Website & Certificate                     │
-│  ${green}20.${plain} IP Limit Management                       │
-│  ${green}21.${plain} Firewall Management                       │
-│  ${green}22.${plain} SSH Port Forwarding Management            │
+│  ${green}17.${plain} Website & Certificate                     │
+│  ${green}18.${plain} IP Limit Management                       │
+│  ${green}19.${plain} Firewall Management                       │
+│  ${green}20.${plain} SSH Port Forwarding                       │
 │────────────────────────────────────────────────│
-│  ${green}23.${plain} Enable BBR                                │
-│  ${green}24.${plain} Update Geo Files                          │
-│  ${green}25.${plain} Speedtest by Ookla                        │
+│  ${green}21.${plain} Enable BBR                                │
+│  ${green}22.${plain} Update Geo Files                          │
 ╚────────────────────────────────────────────────╝
 "
     show_status
-    echo && read -rp "Please enter your selection [0-25]: " num
+    echo && read -rp "Please enter your selection [0-22]: " num
 
     case "${num}" in
         0)
@@ -1862,61 +1721,52 @@ show_menu() {
             check_install && reset_webbasepath
             ;;
         8)
-            check_install && reset_config
-            ;;
-        9)
-            check_install && set_port
-            ;;
-        10)
             check_install && check_config
             ;;
-        11)
+        9)
             check_install && start
             ;;
-        12)
+        10)
             check_install && stop
             ;;
-        13)
+        11)
             check_install && restart
             ;;
-        14)
+        12)
             check_install && restart_xray
             ;;
-        15)
+        13)
             check_install && status
             ;;
-        16)
+        14)
             check_install && show_log
             ;;
-        17)
+        15)
             check_install && enable
             ;;
-        18)
+        16)
             check_install && disable
             ;;
-        19)
+        17)
             check_install && site_menu
             ;;
-        20)
+        18)
             iplimit_main
             ;;
-        21)
+        19)
             firewall_menu
             ;;
-        22)
-            SSH_port_forwarding
+        20)
+            check_install && SSH_port_forwarding
             ;;
-        23)
+        21)
             bbr_menu
             ;;
-        24)
+        22)
             update_geo
             ;;
-        25)
-            run_speedtest
-            ;;
         *)
-            LOGE "Please enter the correct number [0-25]"
+            LOGE "Please enter the correct number [0-22]"
             ;;
     esac
 }

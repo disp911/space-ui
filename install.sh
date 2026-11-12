@@ -36,7 +36,7 @@ arch() {
         armv6* | armv6) echo 'armv6' ;;
         armv5* | armv5) echo 'armv5' ;;
         s390x) echo 's390x' ;;
-        *) echo -e "${green}Unsupported CPU architecture! ${plain}" && rm -f install.sh && exit 1 ;;
+        *) echo -e "${red}Unsupported CPU architecture! ${plain}" && rm -f install.sh && exit 1 ;;
     esac
 }
 
@@ -54,6 +54,11 @@ is_ip() {
 }
 is_domain() {
     [[ "$1" =~ ^([A-Za-z0-9](-*[A-Za-z0-9])*\.)+(xn--[a-z0-9]{2,}|[A-Za-z]{2,})$ ]] && return 0 || return 1
+}
+
+# fetch downloads a URL to a file, over IPv4 when the default way fails.
+fetch() {
+    curl -fLRo "$1" "$2" || curl -4fLRo "$1" "$2"
 }
 
 # Port helpers
@@ -79,17 +84,17 @@ install_base() {
             apt-get update && apt-get install -y -q curl tar tzdata ca-certificates openssl
             ;;
         fedora | amzn | virtuozzo | rhel | almalinux | rocky | ol)
-            dnf -y update && dnf install -y -q curl tar tzdata ca-certificates openssl
+            dnf install -y -q curl tar tzdata ca-certificates openssl
             ;;
         centos)
             if [[ "${VERSION_ID}" =~ ^7 ]]; then
-                yum -y update && yum install -y curl tar tzdata ca-certificates openssl
+                yum install -y -q curl tar tzdata ca-certificates openssl
             else
-                dnf -y update && dnf install -y -q curl tar tzdata ca-certificates openssl
+                dnf install -y -q curl tar tzdata ca-certificates openssl
             fi
             ;;
         arch | manjaro | parch)
-            pacman -Syu && pacman -Syu --noconfirm curl tar tzdata ca-certificates openssl
+            pacman -S --needed --noconfirm curl tar tzdata ca-certificates openssl
             ;;
         opensuse-tumbleweed | opensuse-leap)
             zypper refresh && zypper -q install -y curl tar timezone ca-certificates openssl
@@ -124,7 +129,12 @@ config_after_install() {
     if [[ "$existing_hasDefaultCredential" == "true" ]]; then
         NEW_USERNAME=$(gen_random_string 10)
         NEW_PASSWORD=$(gen_random_string 10)
-        ${space_ui_folder}/space-ui setting -username "${NEW_USERNAME}" -password "${NEW_PASSWORD}" -port "$(shuf -i 1024-62000 -n 1)" > /dev/null
+        local port
+        port=$(shuf -i 1024-62000 -n 1)
+        while is_port_in_use "$port"; do
+            port=$(shuf -i 1024-62000 -n 1)
+        done
+        ${space_ui_folder}/space-ui setting -username "${NEW_USERNAME}" -password "${NEW_PASSWORD}" -port "${port}" > /dev/null
 
         echo ""
         echo -e "${green}═══════════════════════════════════════════${plain}"
@@ -183,7 +193,7 @@ install_space-ui() {
             fi
         fi
         echo -e "Got space-ui latest version: ${tag_version}, beginning the installation..."
-        curl -4fLRo ${space_ui_folder}-linux-$(arch).tar.gz https://github.com/disp911/space-ui/releases/download/${tag_version}/space-ui-linux-$(arch).tar.gz
+        fetch ${space_ui_folder}-linux-$(arch).tar.gz https://github.com/disp911/space-ui/releases/download/${tag_version}/space-ui-linux-$(arch).tar.gz
         if [[ $? -ne 0 ]]; then
             echo -e "${red}Downloading space-ui failed, please be sure that your server can access GitHub ${plain}"
             exit 1
@@ -200,7 +210,7 @@ install_space-ui() {
 
         url="https://github.com/disp911/space-ui/releases/download/${tag_version}/space-ui-linux-$(arch).tar.gz"
         echo -e "Beginning to install space-ui $1"
-        curl -4fLRo ${space_ui_folder}-linux-$(arch).tar.gz ${url}
+        fetch ${space_ui_folder}-linux-$(arch).tar.gz ${url}
         if [[ $? -ne 0 ]]; then
             echo -e "${red}Download space-ui $1 failed, please check if the version exists ${plain}"
             exit 1
@@ -217,7 +227,7 @@ install_space-ui() {
     fi
 
     # Extract resources and set permissions
-    tar zxvf space-ui-linux-$(arch).tar.gz
+    tar zxf space-ui-linux-$(arch).tar.gz
     rm space-ui-linux-$(arch).tar.gz -f
 
     cd space-ui
@@ -252,8 +262,13 @@ install_space-ui() {
         fi
     fi
 
+    # Startup files the archive lacks come from the same release, or from main
+    # for a local archive.
+    local ref=main
+    [[ -z "${SPACE_UI_ARCHIVE}" ]] && ref=${tag_version}
+
     if [[ $release == "alpine" ]]; then
-        curl -4fLRo /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.rc
+        fetch /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/${ref}/space-ui.rc
         if [[ $? -ne 0 ]]; then
             echo -e "${red}Failed to download space-ui.rc${plain}"
             exit 1
@@ -310,13 +325,13 @@ install_space-ui() {
             echo -e "${yellow}Service files not found in tar.gz, downloading from GitHub...${plain}"
             case "${release}" in
                 ubuntu | debian | armbian)
-                    curl -4fLRo ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.service.debian > /dev/null 2>&1
+                    fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${ref}/space-ui.service.debian > /dev/null 2>&1
                     ;;
                 arch | manjaro | parch)
-                    curl -4fLRo ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.service.arch > /dev/null 2>&1
+                    fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${ref}/space-ui.service.arch > /dev/null 2>&1
                     ;;
                 *)
-                    curl -4fLRo ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.service.rhel > /dev/null 2>&1
+                    fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${ref}/space-ui.service.rhel > /dev/null 2>&1
                     ;;
             esac
 
@@ -341,26 +356,7 @@ install_space-ui() {
     fi
 
     echo -e "${green}space-ui ${tag_version}${plain} installation finished, it is running now..."
-    echo -e ""
-    echo -e "┌───────────────────────────────────────────────────────────┐
-│  ${blue}space-ui control menu usages (subcommands):${plain}              │
-│                                                           │
-│  ${blue}space-ui${plain}              - Admin Management Script          │
-│  ${blue}space-ui start${plain}        - Start                            │
-│  ${blue}space-ui stop${plain}         - Stop                             │
-│  ${blue}space-ui restart${plain}      - Restart                          │
-│  ${blue}space-ui status${plain}       - Current Status                   │
-│  ${blue}space-ui settings${plain}     - Current Settings                 │
-│  ${blue}space-ui site${plain}         - Website & Certificate            │
-│  ${blue}space-ui enable${plain}       - Enable Autostart on OS Startup   │
-│  ${blue}space-ui disable${plain}      - Disable Autostart on OS Startup  │
-│  ${blue}space-ui log${plain}          - Check logs                       │
-│  ${blue}space-ui banlog${plain}       - Check Fail2ban ban logs          │
-│  ${blue}space-ui update${plain}       - Update                           │
-│  ${blue}space-ui legacy${plain}       - Legacy version                   │
-│  ${blue}space-ui install${plain}      - Install                          │
-│  ${blue}space-ui uninstall${plain}    - Uninstall                        │
-└───────────────────────────────────────────────────────────┘"
+    /usr/bin/space-ui help
 }
 
 echo -e "${green}Running...${plain}"

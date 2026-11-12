@@ -8,7 +8,6 @@ type Preset = { value: string; label: string }
 
 export const ipPresets: Preset[] = [
   { label: 'Private IPs', value: 'geoip:private' },
-  { label: '🇮🇷 Iran', value: 'ext:geoip_IR.dat:ir' },
   { label: '🇨🇳 China', value: 'geoip:cn' },
   { label: '🇷🇺 Russia', value: 'ext:geoip_RU.dat:ru' },
   { label: '🇻🇳 Vietnam', value: 'geoip:vn' },
@@ -23,9 +22,6 @@ export const domainPresets: { title: Text; options: Preset[] }[] = [
   {
     title: 'xray.catalogRegions',
     options: [
-      { label: '🇮🇷 Iran', value: 'ext:geosite_IR.dat:ir' },
-      { label: '🇮🇷 .ir', value: 'regexp:.*\\.ir$' },
-      { label: '🇮🇷 .ایران', value: 'regexp:.*\\.xn--mgba3a4f16a$' },
       { label: '🇨🇳 China', value: 'geosite:cn' },
       { label: '🇨🇳 .cn', value: 'regexp:.*\\.cn$' },
       { label: '🇷🇺 Russia', value: 'ext:geosite_RU.dat:ru-available-only-inside' },
@@ -39,11 +35,7 @@ export const domainPresets: { title: Text; options: Preset[] }[] = [
     title: 'xray.catalogThreats',
     options: [
       { label: 'Ads All', value: 'geosite:category-ads-all' },
-      { label: 'Ads IR 🇮🇷', value: 'ext:geosite_IR.dat:category-ads-all' },
       { label: 'Ads RU 🇷🇺', value: 'ext:geosite_RU.dat:category-ads-all' },
-      { label: 'Malware 🇮🇷', value: 'ext:geosite_IR.dat:malware' },
-      { label: 'Phishing 🇮🇷', value: 'ext:geosite_IR.dat:phishing' },
-      { label: 'Cryptominers 🇮🇷', value: 'ext:geosite_IR.dat:cryptominers' },
       { label: 'Adult +18', value: 'geosite:category-porn' },
     ],
   },

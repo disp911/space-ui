@@ -81,6 +81,11 @@ is_domain() {
     [[ "$1" =~ ^([A-Za-z0-9](-*[A-Za-z0-9])*\.)+(xn--[a-z0-9]{2,}|[A-Za-z]{2,})$ ]] && return 0 || return 1
 }
 
+# fetch downloads a URL to a file, over IPv4 when the default way fails.
+fetch() {
+    ${curl_bin} -fLRo "$1" "$2" > /dev/null 2>&1 || ${curl_bin} -4fLRo "$1" "$2" > /dev/null 2>&1
+}
+
 # Port helpers
 is_port_in_use() {
     local port="$1"
@@ -106,23 +111,23 @@ gen_random_string() {
 }
 
 install_base() {
-    echo -e "${green}Updating and install dependency packages...${plain}"
+    echo -e "${green}Installing dependency packages...${plain}"
     case "${release}" in
         ubuntu | debian | armbian)
             apt-get update > /dev/null 2>&1 && apt-get install -y -q curl tar tzdata openssl > /dev/null 2>&1
             ;;
         fedora | amzn | virtuozzo | rhel | almalinux | rocky | ol)
-            dnf -y update > /dev/null 2>&1 && dnf install -y -q curl tar tzdata openssl > /dev/null 2>&1
+            dnf install -y -q curl tar tzdata openssl > /dev/null 2>&1
             ;;
         centos)
             if [[ "${VERSION_ID}" =~ ^7 ]]; then
-                yum -y update > /dev/null 2>&1 && yum install -y -q curl tar tzdata openssl > /dev/null 2>&1
+                yum install -y -q curl tar tzdata openssl > /dev/null 2>&1
             else
-                dnf -y update > /dev/null 2>&1 && dnf install -y -q curl tar tzdata openssl > /dev/null 2>&1
+                dnf install -y -q curl tar tzdata openssl > /dev/null 2>&1
             fi
             ;;
         arch | manjaro | parch)
-            pacman -Syu > /dev/null 2>&1 && pacman -Syu --noconfirm curl tar tzdata openssl > /dev/null 2>&1
+            pacman -S --needed --noconfirm curl tar tzdata openssl > /dev/null 2>&1
             ;;
         opensuse-tumbleweed | opensuse-leap)
             zypper refresh > /dev/null 2>&1 && zypper -q install -y curl tar timezone openssl > /dev/null 2>&1
@@ -219,7 +224,7 @@ update_space-ui() {
     fi
 
     echo -e "${green}Installing new space-ui version...${plain}"
-    tar zxvf space-ui-linux-$(arch).tar.gz > /dev/null 2>&1
+    tar zxf space-ui-linux-$(arch).tar.gz > /dev/null 2>&1
     rm space-ui-linux-$(arch).tar.gz -f > /dev/null 2>&1
     cd space-ui > /dev/null 2>&1
     chmod +x space-ui > /dev/null 2>&1
@@ -250,12 +255,8 @@ update_space-ui() {
 
     if [[ $release == "alpine" ]]; then
         echo -e "${green}Downloading and installing startup unit space-ui.rc...${plain}"
-        ${curl_bin} -fLRo /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.rc > /dev/null 2>&1
-        if [[ $? -ne 0 ]]; then
-            ${curl_bin} -4fLRo /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.rc > /dev/null 2>&1
-            if [[ $? -ne 0 ]]; then
-                _fail "ERROR: Failed to download startup unit space-ui.rc, please be sure that your server can access GitHub"
-            fi
+        if ! fetch /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/space-ui.rc; then
+            _fail "ERROR: Failed to download startup unit space-ui.rc, please be sure that your server can access GitHub"
         fi
         chmod +x /etc/init.d/space-ui > /dev/null 2>&1
         chown root:root /etc/init.d/space-ui > /dev/null 2>&1
@@ -306,13 +307,13 @@ update_space-ui() {
                 echo -e "${yellow}Service files not found in tar.gz, downloading from GitHub...${plain}"
                 case "${release}" in
                     ubuntu | debian | armbian)
-                        ${curl_bin} -4fLRo ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.service.debian > /dev/null 2>&1
+                        fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/space-ui.service.debian
                         ;;
                     arch | manjaro | parch)
-                        ${curl_bin} -4fLRo ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.service.arch > /dev/null 2>&1
+                        fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/space-ui.service.arch
                         ;;
                     *)
-                        ${curl_bin} -4fLRo ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.service.rhel > /dev/null 2>&1
+                        fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/space-ui.service.rhel
                         ;;
                 esac
 
@@ -332,26 +333,7 @@ update_space-ui() {
     config_after_update
 
     echo -e "${green}space-ui ${tag_version}${plain} updating finished, it is running now..."
-    echo -e ""
-    echo -e "┌───────────────────────────────────────────────────────────┐
-│  ${blue}space-ui control menu usages (subcommands):${plain}              │
-│                                                           │
-│  ${blue}space-ui${plain}              - Admin Management Script          │
-│  ${blue}space-ui start${plain}        - Start                            │
-│  ${blue}space-ui stop${plain}         - Stop                             │
-│  ${blue}space-ui restart${plain}      - Restart                          │
-│  ${blue}space-ui status${plain}       - Current Status                   │
-│  ${blue}space-ui settings${plain}     - Current Settings                 │
-│  ${blue}space-ui site${plain}         - Website & Certificate            │
-│  ${blue}space-ui enable${plain}       - Enable Autostart on OS Startup   │
-│  ${blue}space-ui disable${plain}      - Disable Autostart on OS Startup  │
-│  ${blue}space-ui log${plain}          - Check logs                       │
-│  ${blue}space-ui banlog${plain}       - Check Fail2ban ban logs          │
-│  ${blue}space-ui update${plain}       - Update                           │
-│  ${blue}space-ui legacy${plain}       - Legacy version                   │
-│  ${blue}space-ui install${plain}      - Install                          │
-│  ${blue}space-ui uninstall${plain}    - Uninstall                        │
-└───────────────────────────────────────────────────────────┘"
+    /usr/bin/space-ui help
 }
 
 echo -e "${green}Running...${plain}"
