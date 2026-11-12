@@ -129,25 +129,6 @@ func runWebServer() {
 	}
 }
 
-// resetSetting resets all panel settings to their default values.
-func resetSetting() error {
-	err := database.InitDB(config.GetDBPath())
-	if err != nil {
-		fmt.Println("Failed to initialize database:", err)
-		return err
-	}
-
-	settingService := service.SettingService{}
-	err = settingService.ResetSettings()
-	if err != nil {
-		fmt.Println("Failed to reset settings:", err)
-		return err
-	} else {
-		fmt.Println("Settings successfully reset.")
-	}
-	return nil
-}
-
 // showSetting displays the current panel settings if show is true.
 func showSetting(show bool) {
 	if show {
@@ -462,7 +443,7 @@ func main() {
 	var show bool
 	var getCert bool
 	var resetTwoFactor bool
-	settingCmd.BoolVar(&reset, "reset", false, "Reset all settings")
+	settingCmd.BoolVar(&reset, "reset", false, "Drop the panel's certificate files (cert command)")
 	settingCmd.BoolVar(&show, "show", false, "Display current settings")
 	settingCmd.IntVar(&port, "port", 0, "Set panel port number")
 	settingCmd.StringVar(&username, "username", "", "Set login username")
@@ -519,14 +500,8 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		if reset {
-			if err = resetSetting(); err != nil {
-				return
-			}
-		} else {
-			if err = updateSetting(port, username, password, webBasePath, listenIP, resetTwoFactor); err != nil {
-				return
-			}
+		if err = updateSetting(port, username, password, webBasePath, listenIP, resetTwoFactor); err != nil {
+			return
 		}
 		if show {
 			showSetting(show)

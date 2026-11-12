@@ -67,41 +67,12 @@ arch() {
 
 echo "Arch: $(arch)"
 
-# Simple helpers
-is_ipv4() {
-    [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] && return 0 || return 1
-}
-is_ipv6() {
-    [[ "$1" =~ : ]] && return 0 || return 1
-}
-is_ip() {
-    is_ipv4 "$1" || is_ipv6 "$1"
-}
-is_domain() {
-    [[ "$1" =~ ^([A-Za-z0-9](-*[A-Za-z0-9])*\.)+(xn--[a-z0-9]{2,}|[A-Za-z]{2,})$ ]] && return 0 || return 1
-}
-
 # fetch downloads a URL to a file, over IPv4 when the default way fails.
 fetch() {
     ${curl_bin} -fLRo "$1" "$2" > /dev/null 2>&1 || ${curl_bin} -4fLRo "$1" "$2" > /dev/null 2>&1
 }
 
 # Port helpers
-is_port_in_use() {
-    local port="$1"
-    if command -v ss > /dev/null 2>&1; then
-        ss -ltn 2> /dev/null | awk -v p=":${port}$" '$4 ~ p {exit 0} END {exit 1}'
-        return
-    fi
-    if command -v netstat > /dev/null 2>&1; then
-        netstat -lnt 2> /dev/null | awk -v p=":${port} " '$4 ~ p {exit 0} END {exit 1}'
-        return
-    fi
-    if command -v lsof > /dev/null 2>&1; then
-        lsof -nP -iTCP:${port} -sTCP:LISTEN > /dev/null 2>&1 && return 0
-    fi
-    return 1
-}
 
 gen_random_string() {
     local length="$1"

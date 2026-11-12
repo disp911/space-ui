@@ -42,20 +42,6 @@ arch() {
 
 echo "Arch: $(arch)"
 
-# Simple helpers
-is_ipv4() {
-    [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] && return 0 || return 1
-}
-is_ipv6() {
-    [[ "$1" =~ : ]] && return 0 || return 1
-}
-is_ip() {
-    is_ipv4 "$1" || is_ipv6 "$1"
-}
-is_domain() {
-    [[ "$1" =~ ^([A-Za-z0-9](-*[A-Za-z0-9])*\.)+(xn--[a-z0-9]{2,}|[A-Za-z]{2,})$ ]] && return 0 || return 1
-}
-
 # fetch downloads a URL to a file, over IPv4 when the default way fails.
 fetch() {
     curl -fLRo "$1" "$2" || curl -4fLRo "$1" "$2"

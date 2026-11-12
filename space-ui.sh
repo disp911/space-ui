@@ -7,33 +7,12 @@ yellow='\033[0;33m'
 plain='\033[0m'
 
 #Add some basic function here
-function LOGD() {
-    echo -e "${yellow}[DEG] $* ${plain}"
-}
-
 function LOGE() {
     echo -e "${red}[ERR] $* ${plain}"
 }
 
 function LOGI() {
     echo -e "${green}[INF] $* ${plain}"
-}
-
-# Port helpers: detect listener and owning process (best effort)
-is_port_in_use() {
-    local port="$1"
-    if command -v ss > /dev/null 2>&1; then
-        ss -ltn 2> /dev/null | awk -v p=":${port}$" '$4 ~ p {exit 0} END {exit 1}'
-        return
-    fi
-    if command -v netstat > /dev/null 2>&1; then
-        netstat -lnt 2> /dev/null | awk -v p=":${port} " '$4 ~ p {exit 0} END {exit 1}'
-        return
-    fi
-    if command -v lsof > /dev/null 2>&1; then
-        lsof -nP -iTCP:${port} -sTCP:LISTEN > /dev/null 2>&1 && return 0
-    fi
-    return 1
 }
 
 # Simple helpers for domain/IP validation

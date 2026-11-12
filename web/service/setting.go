@@ -196,16 +196,6 @@ func (s *SettingService) GetAllSetting() (*entity.AllSetting, error) {
 	return allSetting, nil
 }
 
-func (s *SettingService) ResetSettings() error {
-	db := database.GetDB()
-	err := db.Where("1 = 1").Delete(model.Setting{}).Error
-	if err != nil {
-		return err
-	}
-	return db.Model(model.User{}).
-		Where("1 = 1").Error
-}
-
 func (s *SettingService) getSetting(key string) (*model.Setting, error) {
 	db := database.GetDB()
 	setting := &model.Setting{}
