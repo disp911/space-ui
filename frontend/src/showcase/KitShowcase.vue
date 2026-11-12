@@ -33,7 +33,6 @@ const has = (s: State, ...list: State[]) => list.includes(s)
 const languages = [
   { value: 'ru', label: '🇷🇺 Русский' },
   { value: 'en', label: '🇬🇧 English' },
-  { value: 'fa', label: '🇮🇷 فارسی' },
   { value: 'zh', label: '🇨🇳 中文', disabled: true },
 ]
 const strategies = ['AsIs', 'IPIfNonMatch', 'IPOnDemand'].map((v) => ({ value: v, label: v }))

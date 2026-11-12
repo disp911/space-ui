@@ -659,6 +659,45 @@ show_xray_status() {
     fi
 }
 
+# ufw_allows says whether ufw has a rule letting TCP port $1 in; $2 names
+# the same port as ufw's services do, such as OpenSSH|ssh.
+ufw_allows() {
+    ufw show added 2> /dev/null | grep -Eq "^ufw allow (in )?(${1}(/tcp)?|${2:-$1})$"
+}
+
+# firewall_enable turns ufw on only once SSH and the panel stay reachable:
+# it offers to open their ports first.
+firewall_enable() {
+    local missing=() names=() port
+    port=$(ssh_port)
+    ufw_allows "$port" "OpenSSH|ssh" || { missing+=("$port"); names+=("SSH ${port}"); }
+    if [[ -x ${space_ui_folder}/space-ui ]]; then
+        if [[ "$(site_value "website mode")" == "reality" ]]; then
+            port=443
+        else
+            port=$(${space_ui_folder}/space-ui setting -show true | grep -Eo '^port: .+' | awk '{print $2}')
+        fi
+        if [[ -n "$port" ]] && ! ufw_allows "$port" "https"; then
+            missing+=("$port")
+            names+=("panel ${port}")
+        fi
+    fi
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        echo -e "${yellow}The firewall would block: ${names[*]}.${plain}"
+        [[ "${names[0]}" == SSH* ]] && echo -e "${yellow}Without SSH you lose access to the server.${plain}"
+        if confirm "Open these ports first?" "y"; then
+            for port in "${missing[@]}"; do
+                ufw allow "${port}/tcp"
+            done
+        elif ! confirm "Enable the firewall anyway?" "n"; then
+            echo -e "${yellow}Cancelled.${plain}"
+            return
+        fi
+    fi
+    echo -e "${yellow}Inbounds on other ports stay blocked until you open them (Open Ports).${plain}"
+    ufw enable
+}
+
 firewall_menu() {
     if ! command -v ufw > /dev/null 2>&1; then
         echo -e "${yellow}ufw is not installed; the menu manages ufw only.${plain}"
@@ -690,7 +729,7 @@ firewall_menu() {
             firewall_menu
             ;;
         4)
-            ufw enable
+            firewall_enable
             firewall_menu
             ;;
         5)
