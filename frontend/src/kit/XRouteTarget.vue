@@ -27,7 +27,7 @@ defineProps<{ tag: string; balancer?: boolean }>()
 }
 
 .x-route-target--balancer .x-route-target__icon {
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .x-route-target__tag {

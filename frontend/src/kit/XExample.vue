@@ -34,7 +34,7 @@ defineProps<{ label: string; value: string }>()
 .x-example__value {
   min-width: 0;
   overflow: hidden;
-  color: var(--acc);
+  color: var(--acc-t);
   font: 500 var(--fs-13) / var(--lh-tight) var(--font-mono);
   white-space: pre;
   text-overflow: ellipsis;

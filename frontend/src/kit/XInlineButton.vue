@@ -115,7 +115,7 @@ withDefaults(
 
 /* At work it stays bright, even while its neighbours are held back. */
 .x-inline-btn.is-loading {
-  color: var(--acc);
+  color: var(--acc-t);
   opacity: 1;
   pointer-events: none;
 }

@@ -210,7 +210,7 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 .x-seg__item--icon.is-selected {
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .x-seg__item:disabled {

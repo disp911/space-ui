@@ -32,7 +32,7 @@ button {
 }
 
 a {
-  color: var(--acc);
+  color: var(--acc-t);
   text-decoration: none;
 }
 

@@ -43,9 +43,11 @@ button.x-test-result:active {
   transform: scale(var(--press-scale-chip));
 }
 
-.x-test-result--testing,
+.x-test-result--testing {
+  color: var(--acc-t);
+}
 .x-test-result--ok {
-  color: var(--acc);
+  color: var(--ok-t);
 }
 
 .x-test-result--idle {

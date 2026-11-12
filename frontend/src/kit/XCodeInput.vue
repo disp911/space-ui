@@ -94,7 +94,7 @@ function onInput(e: Event) {
 }
 
 .x-code.is-full .x-code__count {
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .x-code.is-invalid .x-code__count {

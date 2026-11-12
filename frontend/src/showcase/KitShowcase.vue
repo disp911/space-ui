@@ -232,7 +232,7 @@ function applySwitch() {
 const swatches = {
   'Поверхности': ['bg', 'side', 'card', 'nest', 'dlg', 'field', 'ctrl', 'chip', 'seg', 'track'],
   'Текст': ['fg', 'fg2', 'mut', 'dim', 'faint'],
-  'Акцент': ['acc', 'acc-hover', 'acc-press', 'acc-soft', 'acc-ink'],
+  'Акцент': ['acc', 'acc-t', 'acc-hover', 'acc-press', 'acc-soft', 'acc-ink'],
   'Статусы': ['ok', 'warn', 'err', 'unl', 'on', 'off', 'mod'],
 }
 const radii = [4, 6, 8, 10, 12, 16]
@@ -1213,7 +1213,7 @@ const spacing = [2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 56]
   height: 44px;
   border: 1px solid var(--acc-line);
   background: var(--acc-soft);
-  color: var(--acc);
+  color: var(--acc-t);
   font: 500 var(--fs-11) var(--font-mono);
 }
 

@@ -77,7 +77,7 @@ function toggle(v: T) {
 .x-order__item.is-on {
   border-color: var(--acc-line);
   background: var(--acc-soft);
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .x-order__place {

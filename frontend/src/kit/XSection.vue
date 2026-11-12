@@ -92,7 +92,7 @@ const id = useId()
 .x-section__head:focus-visible .x-section__chevron,
 .x-section__head.is-focus .x-section__chevron {
   background: var(--acc-soft);
-  color: var(--acc);
+  color: var(--acc-t);
   box-shadow: 0 0 0 4px var(--acc-soft), 0 0 0 5px var(--acc-line);
 }
 

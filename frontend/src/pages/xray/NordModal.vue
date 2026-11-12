@@ -264,11 +264,11 @@ const keys = computed(() =>
   align-items: center;
   justify-content: center;
   min-height: calc(var(--ctl-h) + 32px);
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .nord__spin {
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .nord__way {

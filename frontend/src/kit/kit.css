@@ -165,7 +165,7 @@
 .x-popup-item.is-selected.is-hover,
 .x-popup-item.is-selected.is-active {
   background-color: var(--acc-soft);
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .x-popup-item.is-danger {

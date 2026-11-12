@@ -82,7 +82,7 @@ const { t } = useI18n()
 /* Keyboard focus marks the chevron, not the whole header. */
 .x-settings__head:focus-visible .x-settings__chevron {
   background: var(--acc-soft);
-  color: var(--acc);
+  color: var(--acc-t);
   box-shadow: 0 0 0 4px var(--acc-soft), 0 0 0 5px var(--acc-line);
 }
 

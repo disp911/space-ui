@@ -63,7 +63,7 @@ watch(() => props.open, (on, was) => on !== !!was && lockScroll(on), { immediate
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .x-busy__text {

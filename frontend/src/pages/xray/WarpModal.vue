@@ -226,7 +226,7 @@ const details = computed(() => {
   display: flex;
   align-items: center;
   height: var(--ctl-h);
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .warp__line {

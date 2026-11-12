@@ -285,7 +285,7 @@ function onBlur() {
 .x-tag-chip--preset {
   border-color: transparent;
   background: var(--acc-soft);
-  color: var(--acc);
+  color: var(--acc-t);
   font-family: var(--font-sans);
 }
 
@@ -317,7 +317,7 @@ function onBlur() {
 }
 
 .x-tags__add {
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .x-tags__key {

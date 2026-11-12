@@ -147,7 +147,7 @@ const button = computed(() => ({
 }
 
 .x-switch-line__text.is-on {
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .x-switch-line__text.is-loading {

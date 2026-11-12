@@ -56,6 +56,6 @@ withDefaults(defineProps<{
 
 .x-badge--accent {
   border-color: var(--acc-line);
-  color: var(--acc);
+  color: var(--acc-t);
 }
 </style>

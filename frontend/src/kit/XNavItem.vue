@@ -61,7 +61,7 @@ defineProps<{ icon: IconName; label: string; to?: RouteLocationRaw; danger?: boo
 }
 
 .x-nav-item.is-current {
-  color: var(--acc);
+  color: var(--acc-t);
   font-weight: 500;
 }
 

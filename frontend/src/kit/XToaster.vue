@@ -57,8 +57,8 @@ import { dismissToast, toasts } from './toast'
 }
 
 .x-toast__icon--ok {
-  background: var(--acc-soft);
-  color: var(--acc);
+  background: var(--ok-bg);
+  color: var(--ok-t);
 }
 
 .x-toast__icon--warn {

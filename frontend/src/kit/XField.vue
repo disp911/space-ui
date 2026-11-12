@@ -145,7 +145,7 @@ const describedBy = computed(() => (props.error || props.hint ? `${id}-note` : u
   border: 0;
   border-radius: var(--r-6);
   background: transparent;
-  color: var(--acc);
+  color: var(--acc-t);
   cursor: pointer;
   outline: none;
   transition: background-color var(--t-fast), transform var(--t-fast);

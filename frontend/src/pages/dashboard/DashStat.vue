@@ -33,7 +33,7 @@ defineProps<{ label: string; value: string; small?: boolean; tone?: 'up' | 'down
 }
 
 .stat--up .stat__value { color: var(--upload); }
-.stat--down .stat__value { color: var(--acc); }
+.stat--down .stat__value { color: var(--acc-t); }
 
 .stat__value {
   overflow: hidden;

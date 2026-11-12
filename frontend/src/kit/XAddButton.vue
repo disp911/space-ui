@@ -23,7 +23,7 @@ defineProps<{ label: string }>()
   border: 1px dashed var(--acc);
   border-radius: var(--chip-r);
   background: transparent;
-  color: var(--acc);
+  color: var(--acc-t);
   outline: none;
   transition: background-color var(--t-fast), transform var(--t-fast);
 }

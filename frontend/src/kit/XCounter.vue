@@ -24,6 +24,6 @@ withDefaults(defineProps<{ accent?: boolean }>(), {})
 
 .x-counter--accent {
   background: var(--acc-soft);
-  color: var(--acc);
+  color: var(--acc-t);
 }
 </style>

@@ -420,7 +420,7 @@ const dash = '—'
 }
 
 .down {
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 /* Network figures: two pairs under the two totals. */

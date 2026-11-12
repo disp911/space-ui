@@ -145,22 +145,23 @@
   --chip-line: rgba(255, 255, 255, .08);
   --track: #2A3141;
   --knob: #C7CCD6;
-  --knob-on: #06201A;
+  --knob-on: #FFFFFF;
   --scrollbar: #2A3141;
   --scrollbar-hover: #3A4352;
 
-  /* Accent */
-  --acc: #2FD4A0;
-  --acc-ink: #06201A;
-  --acc-soft: #172A26;
-  --acc-line: rgba(47, 212, 160, .5);
-  --acc-ring: rgba(47, 212, 160, .14);
-  --acc-glow: rgba(47, 212, 160, .3);
-  --acc-hover: #48DEB0;
-  --acc-press: #22B88A;
+  /* Accent: steel blue. --acc-t is its tone for text and icons on the page's surfaces. */
+  --acc: #3A7AA8;
+  --acc-t: #8BB9DD;
+  --acc-ink: #FFFFFF;
+  --acc-soft: #15253A;
+  --acc-line: rgba(58, 122, 168, .6);
+  --acc-ring: rgba(58, 122, 168, .2);
+  --acc-glow: rgba(58, 122, 168, .35);
+  --acc-hover: #4588B8;
+  --acc-press: #316B94;
 
   /* Status tones: solid, text, tint background, tint line */
-  --ok: var(--acc);
+  --ok: #2FD4A0;
   --ok-t: #5FE0B6;
   --ok-bg: rgba(47, 212, 160, .12);
   --ok-line: rgba(47, 212, 160, .4);
@@ -194,10 +195,10 @@
   --mod-line: rgba(122, 167, 255, .5);
 
   /* Outgoing traffic; incoming uses the accent. Also proxied connections in the Xray log. */
-  --upload: #4AA8E0;
-  --upload-t: #6FC0F0;
-  --upload-bg: rgba(74, 168, 224, .12);
-  --upload-line: rgba(74, 168, 224, .4);
+  --upload: #9A92E8;
+  --upload-t: #B5AFF0;
+  --upload-bg: rgba(154, 146, 232, .12);
+  --upload-line: rgba(154, 146, 232, .4);
 
   /* Usage bars, search highlight */
   --bar-track: rgba(255, 255, 255, .08);
@@ -257,15 +258,17 @@
   --scrollbar: #C9CED7;
   --scrollbar-hover: #AAB1BC;
 
-  --acc: #0A7A59;
+  --acc: #2F648C;
+  --acc-t: #2A5A7E;
   --acc-ink: #FFFFFF;
-  --acc-soft: #E4F5EE;
-  --acc-line: rgba(10, 122, 89, .5);
-  --acc-ring: rgba(10, 122, 89, .15);
-  --acc-glow: rgba(10, 122, 89, .22);
-  --acc-hover: #0C8B66;
-  --acc-press: #08684C;
+  --acc-soft: #E6EEF5;
+  --acc-line: rgba(47, 100, 140, .5);
+  --acc-ring: rgba(47, 100, 140, .15);
+  --acc-glow: rgba(47, 100, 140, .22);
+  --acc-hover: #37729E;
+  --acc-press: #285677;
 
+  --ok: #0A7A59;
   --ok-t: #0A7A59;
   --ok-bg: rgba(10, 122, 89, .08);
   --ok-line: rgba(10, 122, 89, .3);
@@ -295,10 +298,10 @@
   --mod-bg: rgba(47, 107, 216, .05);
   --mod-line: rgba(47, 107, 216, .5);
 
-  --upload: #1E7FC0;
-  --upload-t: #1A6FA8;
-  --upload-bg: rgba(30, 127, 192, .08);
-  --upload-line: rgba(30, 127, 192, .3);
+  --upload: #5E56C0;
+  --upload-t: #4F47AD;
+  --upload-bg: rgba(94, 86, 192, .08);
+  --upload-line: rgba(94, 86, 192, .3);
 
   --bar-track: rgba(16, 20, 28, .08);
   --bar-unl: #C3C8D1;

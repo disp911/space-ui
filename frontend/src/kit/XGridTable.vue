@@ -383,7 +383,7 @@ function rowStyle(k: number) {
 
 .x-grid__grip[aria-pressed='true'] {
   background: var(--acc-soft);
-  color: var(--acc);
+  color: var(--acc-t);
   cursor: grabbing;
 }
 

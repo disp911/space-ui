@@ -296,7 +296,7 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
 .x-btn--soft {
   background: var(--acc-soft);
   border-color: var(--acc-line);
-  color: var(--acc);
+  color: var(--acc-t);
 }
 .x-btn--soft:hover:not(:disabled),
 .x-btn--soft.is-hover {
@@ -334,7 +334,7 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
 .x-btn--dashed.is-hover {
   border-color: var(--acc-line);
   background: var(--acc-soft);
-  color: var(--acc);
+  color: var(--acc-t);
 }
 .x-btn--dashed:focus-visible,
 .x-btn--dashed.is-focus {

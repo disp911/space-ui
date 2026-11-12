@@ -47,7 +47,7 @@ defineProps<{ label: string; accent?: boolean }>()
 }
 
 .x-info-row--accent .x-info-row__value {
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 @media (max-width: 767px) {

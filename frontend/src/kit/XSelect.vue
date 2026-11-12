@@ -273,7 +273,7 @@ function onKeydown(e: KeyboardEvent) {
 
 .x-select__match {
   background: none;
-  color: var(--acc);
+  color: var(--acc-t);
   font-weight: 600;
 }
 

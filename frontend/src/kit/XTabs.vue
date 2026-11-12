@@ -139,7 +139,7 @@ function onKeydown(e: KeyboardEvent, items: TabItem<K>[]) {
 }
 
 .x-tabs__tab:focus-visible {
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .x-tabs__tab:focus-visible::before {

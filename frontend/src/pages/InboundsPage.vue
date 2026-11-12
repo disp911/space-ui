@@ -588,7 +588,7 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
   align-items: center;
   justify-content: center;
   height: 640px;
-  color: var(--acc);
+  color: var(--acc-t);
 }
 
 .inbounds__stats {
