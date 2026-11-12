@@ -1,6 +1,7 @@
 import vue from '@vitejs/plugin-vue'
 import { defineConfig, type Plugin } from 'vite'
 import { loadMessages, localeFiles, translationDir, writeSchema, type Locale } from './build/i18n.ts'
+import { globeIconUrl } from './src/layout/globe.ts'
 
 const prefix = 'virtual:locale/'
 
@@ -36,11 +37,26 @@ function translations(): Plugin {
   }
 }
 
+/**
+ * Builds the panel's favicon into its page as a data: URL. A file would be
+ * served on the open site, where the decoy keeps its own /favicon.ico.
+ */
+function favicon(): Plugin {
+  return {
+    name: 'space-favicon',
+    transformIndexHtml(html, ctx) {
+      if (!ctx.filename.endsWith('index.html')) return html
+      return html.replace('</title>', `</title>
+    <link rel="icon" type="image/svg+xml" href="${globeIconUrl()}" />`)
+    },
+  }
+}
+
 // In development the API goes to a running panel: PANEL_URL=http://host:port npm run dev
 const panel = process.env.PANEL_URL ?? 'http://127.0.0.1:2053'
 
 export default defineConfig({
-  plugins: [vue(), translations()],
+  plugins: [vue(), translations(), favicon()],
   // Relative URLs: the panel serves the app under its own base path and adds <base>.
   base: './',
   build: {
