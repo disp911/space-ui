@@ -17,9 +17,7 @@ on:
       - "frontend/**"
       - "go.mod"
       - "go.sum"
-      - "space-ui.service.debian"
-      - "space-ui.service.arch"
-      - "space-ui.service.rhel"
+      - "packaging/**"
   pull_request:
 
 env:
@@ -164,9 +162,7 @@ jobs:
 
           mkdir space-ui
           cp space-ui-release space-ui/
-          cp space-ui.service.debian space-ui/
-          cp space-ui.service.arch space-ui/
-          cp space-ui.service.rhel space-ui/
+          cp packaging/space-ui.service.debian packaging/space-ui.service.arch packaging/space-ui.service.rhel packaging/space-ui.rc space-ui/
           cp space-ui.sh space-ui/
           mv space-ui/space-ui-release space-ui/space-ui
           mkdir space-ui/bin

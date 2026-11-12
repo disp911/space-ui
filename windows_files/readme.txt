@@ -1,13 +1,20 @@
-you can't install fail2ban on windows
-we don't have bash menu for windows
-if you forgot your password you need to check your database with https://sqlitebrowser.org/
-the app need to be open all the time
+Space UI for Windows
 
-default setting:
-http://localhost:2053/
-user: admin
-pass: admin
-port: 2053
+Run space-ui.exe and keep it running: it runs Xray, and Xray stops with it.
 
+First start
+  Open http://localhost:2053/ and log in as admin / admin.
+  Change the username and the password at once (Settings).
 
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout localhost.key -out localhost.crt
+Forgot the password
+  Stop space-ui.exe, then run in this folder:
+    space-ui.exe setting -username NEW_NAME -password NEW_PASSWORD
+  and start space-ui.exe again.
+
+Files
+  space-ui.db   the panel's database, next to space-ui.exe
+  bin\          Xray and its geo files
+
+Not on Windows
+  The space-ui menu and its install and update scripts are for Linux only.
+  IP Limit does not ban: it needs Fail2ban, which runs on Linux.

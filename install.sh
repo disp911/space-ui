@@ -254,7 +254,7 @@ install_space-ui() {
     [[ -z "${SPACE_UI_ARCHIVE}" ]] && ref=${tag_version}
 
     if [[ $release == "alpine" ]]; then
-        fetch /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/${ref}/space-ui.rc
+        cp -f space-ui.rc /etc/init.d/space-ui 2> /dev/null || fetch /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/${ref}/packaging/space-ui.rc
         if [[ $? -ne 0 ]]; then
             echo -e "${red}Failed to download space-ui.rc${plain}"
             exit 1
@@ -311,13 +311,13 @@ install_space-ui() {
             echo -e "${yellow}Service files not found in tar.gz, downloading from GitHub...${plain}"
             case "${release}" in
                 ubuntu | debian | armbian)
-                    fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${ref}/space-ui.service.debian > /dev/null 2>&1
+                    fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${ref}/packaging/space-ui.service.debian > /dev/null 2>&1
                     ;;
                 arch | manjaro | parch)
-                    fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${ref}/space-ui.service.arch > /dev/null 2>&1
+                    fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${ref}/packaging/space-ui.service.arch > /dev/null 2>&1
                     ;;
                 *)
-                    fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${ref}/space-ui.service.rhel > /dev/null 2>&1
+                    fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${ref}/packaging/space-ui.service.rhel > /dev/null 2>&1
                     ;;
             esac
 

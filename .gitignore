@@ -1,6 +1,9 @@
 # Ignore editor and IDE settings
 .idea/
-.vscode/
+# The shared launch and task settings are kept, the rest of .vscode is not
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
 .cache/
 .sync*
 
@@ -12,17 +15,14 @@ tmp/
 *.tar.gz
 
 # Ignore build and distribution directories
-backup/
 bin/
 dist/
-release/
 node_modules/
 
 # Ignore compiled binaries
 main
 
-# Ignore script and executable files
-/release.sh
+# Ignore the built binary
 /space-ui
 
 # Ignore OS specific files
@@ -43,6 +43,5 @@ docker-compose.override.yml
 /web/app/*
 !/web/app/.gitkeep
 
-# Design mockups and the kit preview, kept outside the repository
+# Design mockups, kept outside the repository
 /web/new-design/
-/kit.html

@@ -226,7 +226,7 @@ update_space-ui() {
 
     if [[ $release == "alpine" ]]; then
         echo -e "${green}Downloading and installing startup unit space-ui.rc...${plain}"
-        if ! fetch /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/space-ui.rc; then
+        if ! cp -f space-ui.rc /etc/init.d/space-ui 2> /dev/null && ! fetch /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/packaging/space-ui.rc; then
             _fail "ERROR: Failed to download startup unit space-ui.rc, please be sure that your server can access GitHub"
         fi
         chmod +x /etc/init.d/space-ui > /dev/null 2>&1
@@ -278,13 +278,13 @@ update_space-ui() {
                 echo -e "${yellow}Service files not found in tar.gz, downloading from GitHub...${plain}"
                 case "${release}" in
                     ubuntu | debian | armbian)
-                        fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/space-ui.service.debian
+                        fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/packaging/space-ui.service.debian
                         ;;
                     arch | manjaro | parch)
-                        fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/space-ui.service.arch
+                        fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/packaging/space-ui.service.arch
                         ;;
                     *)
-                        fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/space-ui.service.rhel
+                        fetch ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/packaging/space-ui.service.rhel
                         ;;
                 esac
 
