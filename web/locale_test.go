@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/web/locale"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/web/locale"
 
 	"github.com/op/go-logging"
 )

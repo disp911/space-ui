@@ -1,8 +1,8 @@
 package job
 
 import (
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/web/service"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/web/service"
 )
 
 // Period represents the time period for traffic resets.

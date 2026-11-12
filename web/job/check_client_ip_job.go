@@ -13,10 +13,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/database"
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/xray"
+	"github.com/disp911/space-ui/v3/database"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/xray"
 )
 
 // IPWithTimestamp tracks an IP address with its last seen timestamp
@@ -81,7 +81,7 @@ func (j *CheckClientIpJob) Run() {
 					shouldClearAccessLog = j.processLogFile()
 				} else {
 					if !f2bInstalled {
-						logger.Warning("[LimitIP] Fail2Ban is not installed, Please install Fail2Ban from the x-ui bash menu.")
+						logger.Warning("[LimitIP] Fail2Ban is not installed, Please install Fail2Ban from the space-ui bash menu.")
 					}
 				}
 			}
@@ -422,8 +422,8 @@ func (j *CheckClientIpJob) updateInboundClientIps(inboundClientIps *model.Inboun
 		keptLive = liveIps[:limitIp]
 		bannedLive := liveIps[limitIp:]
 
-		// log format is load-bearing: x-ui.sh create_iplimit_jails builds
-		// filter.d/3x-ipl.conf with
+		// log format is load-bearing: space-ui.sh create_iplimit_jails builds
+		// filter.d/space-ui-ipl.conf with
 		//   failregex = \[LIMIT_IP\]\s*Email\s*=\s*<F-USER>.+</F-USER>\s*\|\|\s*Disconnecting OLD IP\s*=\s*<ADDR>\s*\|\|\s*Timestamp\s*=\s*\d+
 		// don't change the wording.
 		for _, ipTime := range bannedLive {

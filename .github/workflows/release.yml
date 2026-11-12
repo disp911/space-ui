@@ -1,4 +1,4 @@
-name: Release 3X-UI
+name: Release Space UI
 
 on:
   workflow_dispatch:
@@ -17,9 +17,9 @@ on:
       - "frontend/**"
       - "go.mod"
       - "go.sum"
-      - "x-ui.service.debian"
-      - "x-ui.service.arch"
-      - "x-ui.service.rhel"
+      - "space-ui.service.debian"
+      - "space-ui.service.arch"
+      - "space-ui.service.rhel"
   pull_request:
 
 env:
@@ -130,7 +130,7 @@ jobs:
           name: web-app
           path: web/app
 
-      - name: Build 3X-UI
+      - name: Build Space UI
         run: |
           export CGO_ENABLED=1
           export GOOS=linux
@@ -158,19 +158,19 @@ jobs:
           export CC=$(realpath "$(find "$TOOLCHAIN_DIR/bin" -name '*-gcc.br_real' -type f -executable | head -n1)")
           [ -z "$CC" ] && { echo "No gcc.br_real found in $TOOLCHAIN_DIR/bin" >&2; exit 1; }
           cd -
-          go build -ldflags "-w -s -linkmode external -extldflags '-static'" -o xui-release -v main.go
-          file xui-release
-          ldd xui-release || echo "Static binary confirmed"
+          go build -ldflags "-w -s -linkmode external -extldflags '-static'" -o space-ui-release -v main.go
+          file space-ui-release
+          ldd space-ui-release || echo "Static binary confirmed"
 
-          mkdir x-ui
-          cp xui-release x-ui/
-          cp x-ui.service.debian x-ui/
-          cp x-ui.service.arch x-ui/
-          cp x-ui.service.rhel x-ui/
-          cp x-ui.sh x-ui/
-          mv x-ui/xui-release x-ui/x-ui
-          mkdir x-ui/bin
-          cd x-ui/bin
+          mkdir space-ui
+          cp space-ui-release space-ui/
+          cp space-ui.service.debian space-ui/
+          cp space-ui.service.arch space-ui/
+          cp space-ui.service.rhel space-ui/
+          cp space-ui.sh space-ui/
+          mv space-ui/space-ui-release space-ui/space-ui
+          mkdir space-ui/bin
+          cd space-ui/bin
 
           # Download dependencies
           Xray_URL="https://github.com/XTLS/Xray-core/releases/download/v26.10.31/"
@@ -232,13 +232,13 @@ jobs:
           cd ../..
 
       - name: Package
-        run: tar -zcvf x-ui-linux-${{ matrix.platform }}.tar.gz x-ui
+        run: tar -zcvf space-ui-linux-${{ matrix.platform }}.tar.gz space-ui
 
       - name: Upload files to Artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: x-ui-linux-${{ matrix.platform }}
-          path: ./x-ui-linux-${{ matrix.platform }}.tar.gz
+          name: space-ui-linux-${{ matrix.platform }}
+          path: ./space-ui-linux-${{ matrix.platform }}.tar.gz
 
       - name: Upload files to GH release
         uses: svenstaro/upload-release-action@v2
@@ -249,8 +249,8 @@ jobs:
           # Named after the tag alone; an unnamed release is listed with the
           # tagged commit message tacked on.
           release_name: ${{ github.ref_name }}
-          file: x-ui-linux-${{ matrix.platform }}.tar.gz
-          asset_name: x-ui-linux-${{ matrix.platform }}.tar.gz
+          file: space-ui-linux-${{ matrix.platform }}.tar.gz
+          asset_name: space-ui-linux-${{ matrix.platform }}.tar.gz
           overwrite: true
           prerelease: false
 
@@ -296,7 +296,7 @@ jobs:
             mingw-w64-x86_64-sqlite3
             mingw-w64-x86_64-pkg-config
 
-      - name: Build 3X-UI for Windows (CGO)
+      - name: Build Space UI for Windows (CGO)
         shell: msys2 {0}
         run: |
           export PATH="/c/hostedtoolcache/windows/go/$(ls /c/hostedtoolcache/windows/go | sort -V | tail -n1)/x64/bin:$PATH"
@@ -310,15 +310,15 @@ jobs:
           go version
           gcc --version
 
-          go build -ldflags "-w -s" -o xui-release.exe -v main.go
+          go build -ldflags "-w -s" -o space-ui-release.exe -v main.go
 
       - name: Copy and download resources
         shell: pwsh
         run: |
-          mkdir x-ui
-          Copy-Item xui-release.exe x-ui\x-ui.exe
-          mkdir x-ui\bin
-          cd x-ui\bin
+          mkdir space-ui
+          Copy-Item space-ui-release.exe space-ui\space-ui.exe
+          mkdir space-ui\bin
+          cd space-ui\bin
 
           # Download Xray for Windows
           $Xray_URL = "https://github.com/XTLS/Xray-core/releases/download/v26.10.31/"
@@ -340,13 +340,13 @@ jobs:
       - name: Package to Zip
         shell: pwsh
         run: |
-          Compress-Archive -Path .\x-ui -DestinationPath "x-ui-windows-amd64.zip"
+          Compress-Archive -Path .\space-ui -DestinationPath "space-ui-windows-amd64.zip"
 
       - name: Upload files to Artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: x-ui-windows-amd64
-          path: ./x-ui-windows-amd64.zip
+          name: space-ui-windows-amd64
+          path: ./space-ui-windows-amd64.zip
 
       - name: Upload files to GH release
         uses: svenstaro/upload-release-action@v2
@@ -357,7 +357,7 @@ jobs:
           # Named after the tag alone; an unnamed release is listed with the
           # tagged commit message tacked on.
           release_name: ${{ github.ref_name }}
-          file: x-ui-windows-amd64.zip
-          asset_name: x-ui-windows-amd64.zip
+          file: space-ui-windows-amd64.zip
+          asset_name: space-ui-windows-amd64.zip
           overwrite: true
           prerelease: false

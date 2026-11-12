@@ -245,7 +245,7 @@ const spacing = [2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 56]
   <div class="kit">
     <header class="kit__top">
       <div>
-        <h1 class="kit__title">spacex-ui · kit</h1>
+        <h1 class="kit__title">space-ui · kit</h1>
         <p class="kit__sub">Компоненты v3 во всех состояниях. Ширина окна меньше 768 px показывает мобильные размеры.</p>
       </div>
       <XSegmented
@@ -725,7 +725,7 @@ const spacing = [2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 56]
           <XSettingBlock>
             <div class="kit__row kit__row--wrap">
               <XCodeInput v-model="demoCode" label="Код" style="width: 260px" />
-              <XQrCode value="otpauth://totp/SpaceX%20UI:Administrator?secret=JBSWY3DPEHPK3PXP" copy="JBSWY3DPEHPK3PXP" copy-label="Скопировать токен" :size="120" />
+              <XQrCode value="otpauth://totp/Space%20UI:Administrator?secret=JBSWY3DPEHPK3PXP" copy="JBSWY3DPEHPK3PXP" copy-label="Скопировать токен" :size="120" />
             </div>
             <template #note>
               <XFieldNote tone="err">Неверное имя пользователя или пароль</XFieldNote>

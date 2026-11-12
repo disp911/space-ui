@@ -2,8 +2,8 @@
 package websocket
 
 import (
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/web/global"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/web/global"
 )
 
 // GetHub returns the global WebSocket hub instance.

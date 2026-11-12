@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/database/model"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/database/model"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ import (
 var logDB *gorm.DB
 
 // GetLogDBPath returns the path of the Xray access log database. It sits next
-// to the log files instead of in x-ui.db so that panel backups stay small and
+// to the log files instead of in space-ui.db so that panel backups stay small and
 // the constant stream of log writes never contends with configuration writes.
 func GetLogDBPath() string {
 	return filepath.Join(config.GetLogFolder(), "xraylogs.db")

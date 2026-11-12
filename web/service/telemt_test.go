@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/database"
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/telemt"
+	"github.com/disp911/space-ui/v3/database"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/telemt"
 )
 
 func TestValidateMTProtoClients(t *testing.T) {
@@ -164,7 +164,7 @@ func TestTelemtWebInstanceNeedsThePanelAsFront(t *testing.T) {
 
 func TestCheckSingleMTProtoInbound(t *testing.T) {
 	dir := t.TempDir()
-	if err := database.InitDB(filepath.Join(dir, "x-ui.db")); err != nil {
+	if err := database.InitDB(filepath.Join(dir, "space-ui.db")); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = database.CloseDB() })
@@ -193,7 +193,7 @@ func TestCheckSingleMTProtoInbound(t *testing.T) {
 
 func TestTelemtStatusAndControls(t *testing.T) {
 	dir := t.TempDir()
-	if err := database.InitDB(filepath.Join(dir, "x-ui.db")); err != nil {
+	if err := database.InitDB(filepath.Join(dir, "space-ui.db")); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = database.CloseDB() })

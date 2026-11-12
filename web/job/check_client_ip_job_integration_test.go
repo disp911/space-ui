@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/database"
-	"github.com/disp911/spacex-ui/v2/database/model"
-	xuilogger "github.com/disp911/spacex-ui/v2/logger"
+	"github.com/disp911/space-ui/v3/database"
+	"github.com/disp911/space-ui/v3/database/model"
+	panellogger "github.com/disp911/space-ui/v3/logger"
 	"github.com/op/go-logging"
 )
 
-// 3x-ui logger must be initialised once before any code path that can
+// Space UI logger must be initialised once before any code path that can
 // log a warning. otherwise log.Warningf panics on a nil logger.
 var loggerInitOnce sync.Once
 
@@ -27,14 +27,14 @@ func setupIntegrationDB(t *testing.T) {
 	t.Helper()
 
 	loggerInitOnce.Do(func() {
-		xuilogger.InitLogger(logging.ERROR)
+		panellogger.InitLogger(logging.ERROR)
 	})
 
 	dbDir := t.TempDir()
 	logDir := t.TempDir()
 
-	t.Setenv("XUI_DB_FOLDER", dbDir)
-	t.Setenv("XUI_LOG_FOLDER", logDir)
+	t.Setenv("SPACE_UI_DB_FOLDER", dbDir)
+	t.Setenv("SPACE_UI_LOG_FOLDER", logDir)
 
 	// updateInboundClientIps calls log.SetOutput on the package global,
 	// which would leak to other tests in the same binary.
@@ -45,7 +45,7 @@ func setupIntegrationDB(t *testing.T) {
 		log.SetFlags(origLogFlags)
 	})
 
-	if err := database.InitDB(filepath.Join(dbDir, "3x-ui.db")); err != nil {
+	if err := database.InitDB(filepath.Join(dbDir, "space-ui.db")); err != nil {
 		t.Fatalf("database.InitDB failed: %v", err)
 	}
 	// LIFO cleanup order: this runs before t.TempDir's own cleanup.
@@ -171,10 +171,10 @@ func TestUpdateInboundClientIps_LiveIpNotBannedByStillFreshHistoricals(t *testin
 		t.Errorf("live ip timestamp should match the scan timestamp %d, got %d", now, got)
 	}
 
-	// 3xipl.log must not contain a ban line.
+	// space-ui-ipl.log must not contain a ban line.
 	if info, err := os.Stat(readIpLimitLogPath()); err == nil && info.Size() > 0 {
 		body, _ := os.ReadFile(readIpLimitLogPath())
-		t.Fatalf("3xipl.log should be empty when no ips are banned, got:\n%s", body)
+		t.Fatalf("space-ui-ipl.log should be empty when no ips are banned, got:\n%s", body)
 	}
 }
 
@@ -217,27 +217,27 @@ func TestUpdateInboundClientIps_ExcessLiveIpIsStillBanned(t *testing.T) {
 		t.Errorf("banned IP 192.0.2.9 must NOT be persisted; got %v", persisted)
 	}
 
-	// 3xipl.log must contain the ban line in the exact fail2ban format.
+	// space-ui-ipl.log must contain the ban line in the exact fail2ban format.
 	body, err := os.ReadFile(readIpLimitLogPath())
 	if err != nil {
-		t.Fatalf("read 3xipl.log: %v", err)
+		t.Fatalf("read space-ui-ipl.log: %v", err)
 	}
 	wantSubstr := "[LIMIT_IP] Email = pr4091-abuse || Disconnecting OLD IP = 192.0.2.9"
 	if !contains(string(body), wantSubstr) {
-		t.Fatalf("3xipl.log missing expected ban line %q\nfull log:\n%s", wantSubstr, body)
+		t.Fatalf("space-ui-ipl.log missing expected ban line %q\nfull log:\n%s", wantSubstr, body)
 	}
 }
 
-// readIpLimitLogPath reads the 3xipl.log path the same way the job
+// readIpLimitLogPath reads the space-ui-ipl.log path the same way the job
 // does via xray.GetIPLimitLogPath but without importing xray here
 // just for the path helper (which would pull a lot more deps into the
 // test binary). The env-derived log folder is deterministic.
 func readIpLimitLogPath() string {
-	folder := os.Getenv("XUI_LOG_FOLDER")
+	folder := os.Getenv("SPACE_UI_LOG_FOLDER")
 	if folder == "" {
 		folder = filepath.Join(".", "log")
 	}
-	return filepath.Join(folder, "3xipl.log")
+	return filepath.Join(folder, "space-ui-ipl.log")
 }
 
 func contains(haystack, needle string) bool {

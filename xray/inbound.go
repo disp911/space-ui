@@ -3,7 +3,7 @@ package xray
 import (
 	"bytes"
 
-	"github.com/disp911/spacex-ui/v2/util/json_util"
+	"github.com/disp911/space-ui/v3/util/json_util"
 )
 
 // InboundConfig represents an Xray inbound configuration.

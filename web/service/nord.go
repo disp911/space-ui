@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/util/common"
+	"github.com/disp911/space-ui/v3/util/common"
 )
 
 type NordService struct {

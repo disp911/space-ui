@@ -12,7 +12,7 @@ func TestOldPagesLeadToTheNewScreens(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	engine := gin.New()
 	engine.Use(func(c *gin.Context) { c.Set("base_path", "/secret/") })
-	NewXUIController(engine.Group("/secret/"))
+	NewPanelController(engine.Group("/secret/"))
 
 	for from, to := range map[string]string{
 		"/secret/panel/":         "/secret/",

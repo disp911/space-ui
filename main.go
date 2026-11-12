@@ -1,4 +1,4 @@
-// Package main is the entry point for the 3x-ui web panel application.
+// Package main is the entry point for the Space UI web panel application.
 // It initializes the database, web server, and handles command-line operations for managing the panel.
 package main
 
@@ -12,22 +12,22 @@ import (
 	"syscall"
 	_ "unsafe"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/database"
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/sub"
-	"github.com/disp911/spacex-ui/v2/util/crypto"
-	"github.com/disp911/spacex-ui/v2/util/sys"
-	"github.com/disp911/spacex-ui/v2/web"
-	"github.com/disp911/spacex-ui/v2/web/global"
-	"github.com/disp911/spacex-ui/v2/web/service"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/database"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/sub"
+	"github.com/disp911/space-ui/v3/util/crypto"
+	"github.com/disp911/space-ui/v3/util/sys"
+	"github.com/disp911/space-ui/v3/web"
+	"github.com/disp911/space-ui/v3/web/global"
+	"github.com/disp911/space-ui/v3/web/service"
 
 	"github.com/joho/godotenv"
 	"github.com/op/go-logging"
 )
 
-// runWebServer initializes and starts the web server for the 3x-ui panel.
+// runWebServer initializes and starts the web server for the Space UI panel.
 func runWebServer() {
 	log.Printf("Starting %v %v", config.GetName(), config.GetVersion())
 
@@ -299,7 +299,7 @@ func updateSite(mode, domain string) error {
 		if ib != nil {
 			printSiteInbound(&siteService, ib)
 		}
-		fmt.Println("Restart the panel to apply the mode: x-ui restart")
+		fmt.Println("Restart the panel to apply the mode: space-ui restart")
 	}
 	mode, _ = settingService.GetSiteMode()
 	if mode == service.SitePort {
@@ -423,7 +423,7 @@ func GetListenIP(getListen bool) {
 	}
 }
 
-// migrateDb performs database migration operations for the 3x-ui panel.
+// migrateDb performs database migration operations for the Space UI panel.
 func migrateDb() {
 	inboundService := service.InboundService{}
 
@@ -436,7 +436,7 @@ func migrateDb() {
 	fmt.Println("Migration done!")
 }
 
-// main is the entry point of the 3x-ui application.
+// main is the entry point of the Space UI application.
 // It parses command-line arguments to run the web server, migrate database, or update settings.
 func main() {
 	if len(os.Args) < 2 {
@@ -491,7 +491,7 @@ func main() {
 		fmt.Println()
 		fmt.Println("Commands:")
 		fmt.Println("    run            run web panel")
-		fmt.Println("    migrate        migrate form other/old x-ui")
+		fmt.Println("    migrate        migrate the database")
 		fmt.Println("    setting        set settings")
 		fmt.Println("    site           set where the panel and its website answer")
 		fmt.Println("    selfsteal      put the website behind a REALITY inbound on port 443")

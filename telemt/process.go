@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/config"
+	"github.com/disp911/space-ui/v3/config"
 )
 
 // stopTimeout is how long Stop waits for a graceful exit before killing.

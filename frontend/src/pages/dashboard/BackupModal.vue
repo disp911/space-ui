@@ -16,7 +16,7 @@ async function exportDb() {
   exporting.value = true
   try {
     const { data, name } = await api.file('panel/api/server/getDb')
-    saveFile(data, name ?? 'x-ui.db')
+    saveFile(data, name ?? 'space-ui.db')
   } catch (e) {
     failed(e)
   } finally {

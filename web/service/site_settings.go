@@ -6,13 +6,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/util/common"
-	"github.com/disp911/spacex-ui/v2/web/site"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/util/common"
+	"github.com/disp911/space-ui/v3/web/site"
 )
 
 // SiteSettings is what the panel's settings page sets of the website. The
-// mode is set on the server only (x-ui site, the menu): moving the panel
+// mode is set on the server only (space-ui site, the menu): moving the panel
 // from the browser could leave the administrator outside it.
 type SiteSettings struct {
 	Domain string `json:"domain"`

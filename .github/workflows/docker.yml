@@ -1,4 +1,4 @@
-name: Release 3X-UI for Docker
+name: Release Space UI for Docker
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: |
-            ghcr.io/disp911/spacex-ui
+            ghcr.io/disp911/space-ui
           tags: |
             type=ref,event=branch
             type=ref,event=tag

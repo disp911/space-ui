@@ -1,11 +1,10 @@
-// Package config provides configuration management utilities for the 3x-ui panel,
+// Package config provides configuration management utilities for the Space UI panel,
 // including version information, logging levels, database paths, and environment variable handling.
 package config
 
 import (
 	_ "embed"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -30,12 +29,12 @@ const (
 	Error   LogLevel = "error"
 )
 
-// GetVersion returns the version string of the 3x-ui application.
+// GetVersion returns the version string of the Space UI application.
 func GetVersion() string {
 	return strings.TrimSpace(version)
 }
 
-// GetName returns the name of the 3x-ui application.
+// GetName returns the name of the Space UI application.
 func GetName() string {
 	return strings.TrimSpace(name)
 }
@@ -45,21 +44,21 @@ func GetLogLevel() LogLevel {
 	if IsDebug() {
 		return Debug
 	}
-	logLevel := os.Getenv("XUI_LOG_LEVEL")
+	logLevel := os.Getenv("SPACE_UI_LOG_LEVEL")
 	if logLevel == "" {
 		return Info
 	}
 	return LogLevel(logLevel)
 }
 
-// IsDebug returns true if debug mode is enabled via the XUI_DEBUG environment variable.
+// IsDebug returns true if debug mode is enabled via the SPACE_UI_DEBUG environment variable.
 func IsDebug() bool {
-	return os.Getenv("XUI_DEBUG") == "true"
+	return os.Getenv("SPACE_UI_DEBUG") == "true"
 }
 
-// GetBinFolderPath returns the path to the binary folder, defaulting to "bin" if not set via XUI_BIN_FOLDER.
+// GetBinFolderPath returns the path to the binary folder, defaulting to "bin" if not set via SPACE_UI_BIN_FOLDER.
 func GetBinFolderPath() string {
-	binFolderPath := os.Getenv("XUI_BIN_FOLDER")
+	binFolderPath := os.Getenv("SPACE_UI_BIN_FOLDER")
 	if binFolderPath == "" {
 		binFolderPath = "bin"
 	}
@@ -85,14 +84,14 @@ func getBaseDir() string {
 
 // GetDBFolderPath returns the path to the database folder based on environment variables or platform defaults.
 func GetDBFolderPath() string {
-	dbFolderPath := os.Getenv("XUI_DB_FOLDER")
+	dbFolderPath := os.Getenv("SPACE_UI_DB_FOLDER")
 	if dbFolderPath != "" {
 		return dbFolderPath
 	}
 	if runtime.GOOS == "windows" {
 		return getBaseDir()
 	}
-	return "/etc/x-ui"
+	return "/etc/space-ui"
 }
 
 // GetDBPath returns the full path to the database file.
@@ -116,66 +115,23 @@ func GetCertFolder() string {
 // GetSiteSocket returns the socket the website listens on when Xray holds
 // port 443: a REALITY inbound passes everyone who is not a client to it.
 func GetSiteSocket() string {
-	if s := os.Getenv("XUI_SITE_SOCKET"); s != "" {
+	if s := os.Getenv("SPACE_UI_SITE_SOCKET"); s != "" {
 		return s
 	}
 	if runtime.GOOS == "windows" {
 		return filepath.Join(getBaseDir(), "site.sock")
 	}
-	return "/run/x-ui/site.sock"
+	return "/run/space-ui/site.sock"
 }
 
 // GetLogFolder returns the path to the log folder based on environment variables or platform defaults.
 func GetLogFolder() string {
-	logFolderPath := os.Getenv("XUI_LOG_FOLDER")
+	logFolderPath := os.Getenv("SPACE_UI_LOG_FOLDER")
 	if logFolderPath != "" {
 		return logFolderPath
 	}
 	if runtime.GOOS == "windows" {
 		return filepath.Join(".", "log")
 	}
-	return "/var/log/x-ui"
-}
-
-func copyFile(src, dst string) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, in)
-	if err != nil {
-		return err
-	}
-
-	return out.Sync()
-}
-
-func init() {
-	if runtime.GOOS != "windows" {
-		return
-	}
-	if os.Getenv("XUI_DB_FOLDER") != "" {
-		return
-	}
-	oldDBFolder := "/etc/x-ui"
-	oldDBPath := fmt.Sprintf("%s/%s.db", oldDBFolder, GetName())
-	newDBFolder := GetDBFolderPath()
-	newDBPath := fmt.Sprintf("%s/%s.db", newDBFolder, GetName())
-	_, err := os.Stat(newDBPath)
-	if err == nil {
-		return // new exists
-	}
-	_, err = os.Stat(oldDBPath)
-	if os.IsNotExist(err) {
-		return // old does not exist
-	}
-	_ = copyFile(oldDBPath, newDBPath) // ignore error
+	return "/var/log/space-ui"
 }

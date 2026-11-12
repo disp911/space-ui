@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/web/entity"
-	"github.com/disp911/spacex-ui/v2/web/service"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/web/entity"
+	"github.com/disp911/space-ui/v3/web/service"
 
 	"github.com/gin-gonic/gin"
 )

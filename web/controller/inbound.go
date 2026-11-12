@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/web/service"
-	"github.com/disp911/spacex-ui/v2/web/session"
-	"github.com/disp911/spacex-ui/v2/web/websocket"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/web/service"
+	"github.com/disp911/space-ui/v3/web/session"
+	"github.com/disp911/space-ui/v3/web/websocket"
 
 	"github.com/gin-gonic/gin"
 )

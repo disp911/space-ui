@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/database"
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/logger"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/database"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/logger"
 )
 
 const (

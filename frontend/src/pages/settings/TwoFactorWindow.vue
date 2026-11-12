@@ -20,7 +20,7 @@ const emit = defineEmits<{ verified: [] }>()
 const open = defineModel<boolean>('open', { default: false })
 const { t } = useI18n()
 
-const totp = computed(() => new TOTP({ issuer: 'SpaceX UI', label: 'Administrator', algorithm: 'SHA1', digits: 6, period: 30, secret: props.token }))
+const totp = computed(() => new TOTP({ issuer: 'Space UI', label: 'Administrator', algorithm: 'SHA1', digits: 6, period: 30, secret: props.token }))
 
 const code = ref('')
 const wrong = ref(false)

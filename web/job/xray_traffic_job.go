@@ -3,10 +3,10 @@ package job
 import (
 	"encoding/json"
 
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/web/service"
-	"github.com/disp911/spacex-ui/v2/web/websocket"
-	"github.com/disp911/spacex-ui/v2/xray"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/web/service"
+	"github.com/disp911/space-ui/v3/web/websocket"
+	"github.com/disp911/space-ui/v3/xray"
 
 	"github.com/valyala/fasthttp"
 )

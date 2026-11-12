@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/util/common"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/util/common"
 )
 
 // GetBinaryName returns the Xray binary filename for the current OS and architecture.
@@ -46,17 +46,17 @@ func GetGeoipPath() string {
 
 // GetIPLimitLogPath returns the path to the IP limit log file.
 func GetIPLimitLogPath() string {
-	return config.GetLogFolder() + "/3xipl.log"
+	return config.GetLogFolder() + "/space-ui-ipl.log"
 }
 
 // GetIPLimitBannedLogPath returns the path to the banned IP log file.
 func GetIPLimitBannedLogPath() string {
-	return config.GetLogFolder() + "/3xipl-banned.log"
+	return config.GetLogFolder() + "/space-ui-ipl-banned.log"
 }
 
 // GetIPLimitBannedPrevLogPath returns the path to the previous banned IP log file.
 func GetIPLimitBannedPrevLogPath() string {
-	return config.GetLogFolder() + "/3xipl-banned.prev.log"
+	return config.GetLogFolder() + "/space-ui-ipl-banned.prev.log"
 }
 
 // AccessPersistentLogRetentionDays controls how many days of per-day
@@ -69,7 +69,7 @@ const AccessPersistentLogRetentionDays = 7
 const AccessPersistentLogDateFormat = "2006-01-02"
 
 const (
-	accessPersistentLogPrefix = "3xipl-ap-"
+	accessPersistentLogPrefix = "space-ui-ipl-ap-"
 	accessPersistentLogSuffix = ".log"
 )
 

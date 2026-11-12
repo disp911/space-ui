@@ -15,11 +15,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/database"
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/util/common"
-	"github.com/disp911/spacex-ui/v2/util/random"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/database"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/util/common"
+	"github.com/disp911/space-ui/v3/util/random"
 )
 
 // SiteService switches where the panel and its website answer. Behind

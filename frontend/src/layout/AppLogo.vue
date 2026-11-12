@@ -10,7 +10,7 @@ defineProps<{ large?: boolean }>()
       <circle cx="16" cy="16" r="3.2" fill="var(--acc-ink)" />
       <circle cx="25.2" cy="10.6" r="1.9" fill="var(--acc-ink)" />
     </svg>
-    <span class="logo__name">SpaceX <span class="logo__panel">panel</span></span>
+    <span class="logo__name">Space <span class="logo__panel">panel</span></span>
   </div>
 </template>
 

@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/util/common"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/util/common"
 )
 
 // WarpService provides business logic for Cloudflare WARP integration.
@@ -71,7 +71,7 @@ func (s *WarpService) GetWarpConfig() (string, error) {
 func (s *WarpService) RegWarp(secretKey string, publicKey string) (string, error) {
 	tos := time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
 	hostName, _ := os.Hostname()
-	data := fmt.Sprintf(`{"key":"%s","tos":"%s","type": "PC","model": "x-ui", "name": "%s"}`, publicKey, tos, hostName)
+	data := fmt.Sprintf(`{"key":"%s","tos":"%s","type": "PC","model": "space-ui", "name": "%s"}`, publicKey, tos, hostName)
 
 	url := "https://api.cloudflareclient.com/v0a2158/reg"
 

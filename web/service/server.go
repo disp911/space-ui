@@ -21,13 +21,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/database"
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/util/common"
-	"github.com/disp911/spacex-ui/v2/util/sys"
-	"github.com/disp911/spacex-ui/v2/xray"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/database"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/util/common"
+	"github.com/disp911/space-ui/v3/util/sys"
+	"github.com/disp911/space-ui/v3/xray"
 
 	"github.com/google/uuid"
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -796,12 +796,12 @@ func (s *ServerService) GetLogs(count string, level string, syslog string) []str
 		}
 
 		// Use hardcoded command with validated parameters
-		cmd := exec.Command("journalctl", "-u", "x-ui", "--no-pager", "-n", strconv.Itoa(countInt), "-p", level)
+		cmd := exec.Command("journalctl", "-u", "space-ui", "--no-pager", "-n", strconv.Itoa(countInt), "-p", level)
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		err = cmd.Run()
 		if err != nil {
-			return []string{"Failed to run journalctl command! Make sure systemd is available and x-ui service is registered."}
+			return []string{"Failed to run journalctl command! Make sure systemd is available and space-ui service is registered."}
 		}
 		lines = strings.Split(out.String(), "\n")
 	} else {

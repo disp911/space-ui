@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/logger"
+	"github.com/disp911/space-ui/v3/logger"
 )
 
 // MessageType identifies the kind of WebSocket message.

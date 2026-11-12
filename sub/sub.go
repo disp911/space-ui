@@ -1,4 +1,4 @@
-// Package sub provides subscription server functionality for the 3x-ui panel,
+// Package sub provides subscription server functionality for the Space UI panel,
 // including HTTP/HTTPS servers for serving subscription links and JSON configurations.
 package sub
 
@@ -13,13 +13,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/util/common"
-	webpkg "github.com/disp911/spacex-ui/v2/web"
-	"github.com/disp911/spacex-ui/v2/web/middleware"
-	"github.com/disp911/spacex-ui/v2/web/network"
-	"github.com/disp911/spacex-ui/v2/web/service"
-	"github.com/disp911/spacex-ui/v2/web/spa"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/util/common"
+	webpkg "github.com/disp911/space-ui/v3/web"
+	"github.com/disp911/space-ui/v3/web/middleware"
+	"github.com/disp911/space-ui/v3/web/network"
+	"github.com/disp911/space-ui/v3/web/service"
+	"github.com/disp911/space-ui/v3/web/spa"
 
 	"github.com/gin-gonic/gin"
 )

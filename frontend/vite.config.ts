@@ -7,7 +7,7 @@ const prefix = 'virtual:locale/'
 /** Serves the frontend's translations as virtual:locale/<locale> modules. */
 function translations(): Plugin {
   return {
-    name: 'spacex-translations',
+    name: 'space-translations',
     buildStart() {
       writeSchema()
       this.addWatchFile(translationDir)

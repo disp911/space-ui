@@ -14,12 +14,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/web/network"
-	"github.com/disp911/spacex-ui/v2/web/service"
-	"github.com/disp911/spacex-ui/v2/web/site"
-	"github.com/disp911/spacex-ui/v2/web/site/docsite"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/web/network"
+	"github.com/disp911/space-ui/v3/web/service"
+	"github.com/disp911/space-ui/v3/web/site"
+	"github.com/disp911/space-ui/v3/web/site/docsite"
 
 	"github.com/pires/go-proxyproto"
 )

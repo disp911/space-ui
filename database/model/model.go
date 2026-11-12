@@ -1,11 +1,11 @@
-// Package model defines the database models and data structures used by the 3x-ui panel.
+// Package model defines the database models and data structures used by the Space UI panel.
 package model
 
 import (
 	"fmt"
 
-	"github.com/disp911/spacex-ui/v2/util/json_util"
-	"github.com/disp911/spacex-ui/v2/xray"
+	"github.com/disp911/space-ui/v3/util/json_util"
+	"github.com/disp911/space-ui/v3/xray"
 )
 
 // Protocol represents the protocol type for Xray inbounds.
@@ -44,7 +44,7 @@ func IsHysteria(p Protocol) bool {
 	return p == Hysteria || p == Hysteria2
 }
 
-// User represents a user account in the 3x-ui panel.
+// User represents a user account in the Space UI panel.
 type User struct {
 	Id       int    `json:"id" gorm:"primaryKey;autoIncrement"`
 	Username string `json:"username"`
@@ -118,7 +118,7 @@ func (i *Inbound) GenXrayInboundConfig() *xray.InboundConfig {
 	}
 }
 
-// Setting stores key-value configuration settings for the 3x-ui panel.
+// Setting stores key-value configuration settings for the Space UI panel.
 type Setting struct {
 	Id    int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
 	Key   string `json:"key" form:"key"`
@@ -165,7 +165,7 @@ type Client struct {
 }
 
 // XrayLogEntry is one parsed line of Xray's access log. These rows live in
-// their own database (see database.GetLogDB) rather than in x-ui.db: they are
+// their own database (see database.GetLogDB) rather than in space-ui.db: they are
 // high-volume, disposable operational data, and keeping them out of the panel
 // database keeps backups small and log writes off the configuration database.
 type XrayLogEntry struct {

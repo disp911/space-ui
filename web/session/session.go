@@ -1,4 +1,4 @@
-// Package session provides session management utilities for the 3x-ui web panel.
+// Package session provides session management utilities for the Space UI web panel.
 // It handles user authentication state, login sessions, and session storage using Gin sessions.
 package session
 
@@ -6,8 +6,8 @@ import (
 	"encoding/gob"
 	"net/http"
 
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/logger"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/logger"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"

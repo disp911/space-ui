@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/logger"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/logger"
 )
 
 // PanelService provides business logic for panel management operations.
@@ -43,7 +43,7 @@ func (s *PanelService) RestartPanel(delay time.Duration) error {
 	return nil
 }
 
-// GetUpdateInfo checks GitHub for the latest 3x-ui release.
+// GetUpdateInfo checks GitHub for the latest Space UI release.
 func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
 	latest, err := fetchLatestPanelVersion()
 	if err != nil {
@@ -73,14 +73,14 @@ func (s *PanelService) StartUpdate() error {
 	}
 
 	mainFolder, serviceFolder := resolveUpdateFolders()
-	updateScript := fmt.Sprintf("set -o pipefail; %s -fLs https://raw.githubusercontent.com/disp911/spacex-ui/main/update.sh | %s", shellQuote(curl), shellQuote(bash))
+	updateScript := fmt.Sprintf("set -o pipefail; %s -fLs https://raw.githubusercontent.com/disp911/space-ui/main/update.sh | %s", shellQuote(curl), shellQuote(bash))
 
 	if systemdRun, err := exec.LookPath("systemd-run"); err == nil {
-		unitName := fmt.Sprintf("x-ui-web-update-%d", time.Now().Unix())
+		unitName := fmt.Sprintf("space-ui-web-update-%d", time.Now().Unix())
 		cmd := exec.Command(systemdRun,
 			"--unit", unitName,
-			"--setenv", "XUI_MAIN_FOLDER="+mainFolder,
-			"--setenv", "XUI_SERVICE="+serviceFolder,
+			"--setenv", "SPACE_UI_MAIN_FOLDER="+mainFolder,
+			"--setenv", "SPACE_UI_SERVICE="+serviceFolder,
 			bash, "-lc", updateScript,
 		)
 		out, err := cmd.CombinedOutput()
@@ -99,8 +99,8 @@ func (s *PanelService) StartUpdate() error {
 
 	cmd := exec.Command(bash, "-lc", updateScript)
 	cmd.Env = append(os.Environ(),
-		"XUI_MAIN_FOLDER="+mainFolder,
-		"XUI_SERVICE="+serviceFolder,
+		"SPACE_UI_MAIN_FOLDER="+mainFolder,
+		"SPACE_UI_SERVICE="+serviceFolder,
 	)
 	setDetachedProcess(cmd)
 	if err := cmd.Start(); err != nil {
@@ -115,7 +115,7 @@ func (s *PanelService) StartUpdate() error {
 
 func fetchLatestPanelVersion() (string, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get("https://api.github.com/repos/disp911/spacex-ui/releases/latest")
+	resp, err := client.Get("https://api.github.com/repos/disp911/space-ui/releases/latest")
 	if err != nil {
 		return "", err
 	}
@@ -135,17 +135,17 @@ func fetchLatestPanelVersion() (string, error) {
 }
 
 func resolveUpdateFolders() (string, string) {
-	mainFolder := os.Getenv("XUI_MAIN_FOLDER")
+	mainFolder := os.Getenv("SPACE_UI_MAIN_FOLDER")
 	if mainFolder == "" {
 		if exePath, err := os.Executable(); err == nil {
 			mainFolder = filepath.Dir(exePath)
 		}
 	}
 	if mainFolder == "" {
-		mainFolder = "/usr/local/x-ui"
+		mainFolder = "/usr/local/space-ui"
 	}
 
-	serviceFolder := os.Getenv("XUI_SERVICE")
+	serviceFolder := os.Getenv("SPACE_UI_SERVICE")
 	if serviceFolder == "" {
 		serviceFolder = "/etc/systemd/system"
 	}

@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/disp911/spacex-ui/v2/util/common"
-	"github.com/disp911/spacex-ui/v2/web/site"
+	"github.com/disp911/space-ui/v3/util/common"
+	"github.com/disp911/space-ui/v3/web/site"
 )
 
 // SiteState is what the running website reports of itself.

@@ -6,11 +6,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/database"
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/xray"
+	"github.com/disp911/space-ui/v3/database"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/xray"
 )
 
 // ClearLogsJob clears old log files to prevent disk space issues.
@@ -80,32 +79,8 @@ func (j *ClearLogsJob) Run() {
 		}
 	}
 
-	migrateLegacyAccessPersistentLog()
 	pruneOldAccessPersistentLogs()
 	pruneOldXrayLogRows()
-}
-
-// migrateLegacyAccessPersistentLog moves a pre-upgrade single "3xipl-ap.log"
-// file (from before persistent access logs were split by date) into today's
-// dated file, so its content isn't silently lost the first time this job
-// runs after upgrading.
-func migrateLegacyAccessPersistentLog() {
-	legacyPath := config.GetLogFolder() + "/3xipl-ap.log"
-	if _, err := os.Stat(legacyPath); err != nil {
-		// No legacy file, nothing to migrate.
-		return
-	}
-
-	todayPath := xray.GetAccessPersistentLogPath()
-	if _, err := os.Stat(todayPath); err == nil {
-		// Today's dated file already exists; leave the legacy file alone
-		// rather than overwriting or guessing how to merge them.
-		return
-	}
-
-	if err := os.Rename(legacyPath, todayPath); err != nil {
-		logger.Warning("Failed to migrate legacy persistent access log:", err)
-	}
 }
 
 // pruneOldAccessPersistentLogs deletes per-day persistent access log files

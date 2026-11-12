@@ -1,10 +1,10 @@
-// Package job provides background job implementations for the 3x-ui web panel,
+// Package job provides background job implementations for the Space UI web panel,
 // including traffic monitoring, system checks, and periodic maintenance tasks.
 package job
 
 import (
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/web/service"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/web/service"
 )
 
 // CheckXrayRunningJob monitors Xray process health and restarts it if it crashes.

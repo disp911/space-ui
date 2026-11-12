@@ -1,7 +1,7 @@
 package job
 
 import (
-	"github.com/disp911/spacex-ui/v2/web/service"
+	"github.com/disp911/space-ui/v3/web/service"
 )
 
 // TelemtJob keeps the telemt proxies behind mtproto inbounds in line with

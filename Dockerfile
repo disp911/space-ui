@@ -27,11 +27,11 @@ COPY --from=frontend /app/web/app web/app
 
 ENV CGO_ENABLED=1
 ENV CGO_CFLAGS="-D_LARGEFILE64_SOURCE"
-RUN go build -ldflags "-w -s" -o build/x-ui main.go
+RUN go build -ldflags "-w -s" -o build/space-ui main.go
 RUN ./DockerInit.sh "$TARGETARCH"
 
 # ========================================================
-# Stage: Final Image of 3x-ui
+# Stage: Final Image of Space UI
 # ========================================================
 FROM alpine
 ENV TZ=Asia/Tehran
@@ -47,7 +47,7 @@ RUN apk add --no-cache --update \
 
 COPY --from=builder /app/build/ /app/
 COPY --from=builder /app/DockerEntrypoint.sh /app/
-COPY --from=builder /app/x-ui.sh /usr/bin/x-ui
+COPY --from=builder /app/space-ui.sh /usr/bin/space-ui
 
 
 # Configure fail2ban
@@ -59,11 +59,11 @@ RUN rm -f /etc/fail2ban/jail.d/alpine-ssh.conf \
 
 RUN chmod +x \
   /app/DockerEntrypoint.sh \
-  /app/x-ui \
-  /usr/bin/x-ui
+  /app/space-ui \
+  /usr/bin/space-ui
 
-ENV XUI_ENABLE_FAIL2BAN="true"
+ENV SPACE_UI_ENABLE_FAIL2BAN="true"
 EXPOSE 2053
-VOLUME [ "/etc/x-ui" ]
-CMD [ "./x-ui" ]
+VOLUME [ "/etc/space-ui" ]
+CMD [ "./space-ui" ]
 ENTRYPOINT [ "/app/DockerEntrypoint.sh" ]

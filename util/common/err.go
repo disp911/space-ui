@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/disp911/spacex-ui/v2/logger"
+	"github.com/disp911/space-ui/v3/logger"
 )
 
 // NewErrorf creates a new error with formatted message.

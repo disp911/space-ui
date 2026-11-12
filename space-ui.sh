@@ -70,12 +70,12 @@ os_version=""
 os_version=$(grep "^VERSION_ID" /etc/os-release | cut -d '=' -f2 | tr -d '"' | tr -d '.')
 
 # Declare Variables
-xui_folder="${XUI_MAIN_FOLDER:=/usr/local/x-ui}"
-xui_service="${XUI_SERVICE:=/etc/systemd/system}"
-log_folder="${XUI_LOG_FOLDER:=/var/log/x-ui}"
+space_ui_folder="${SPACE_UI_MAIN_FOLDER:=/usr/local/space-ui}"
+space_ui_service="${SPACE_UI_SERVICE:=/etc/systemd/system}"
+log_folder="${SPACE_UI_LOG_FOLDER:=/var/log/space-ui}"
 mkdir -p "${log_folder}"
-iplimit_log_path="${log_folder}/3xipl.log"
-iplimit_banned_log_path="${log_folder}/3xipl-banned.log"
+iplimit_log_path="${log_folder}/space-ui-ipl.log"
+iplimit_banned_log_path="${log_folder}/space-ui-ipl-banned.log"
 
 confirm() {
     if [[ $# > 1 ]]; then
@@ -108,7 +108,7 @@ before_show_menu() {
 }
 
 install() {
-    bash <(curl -Ls https://raw.githubusercontent.com/disp911/spacex-ui/main/install.sh)
+    bash <(curl -Ls https://raw.githubusercontent.com/disp911/space-ui/main/install.sh)
     if [[ $? == 0 ]]; then
         if [[ $# == 0 ]]; then
             start
@@ -119,7 +119,7 @@ install() {
 }
 
 update() {
-    confirm "This function will update all x-ui components to the latest version, and the data will not be lost. Do you want to continue?" "y"
+    confirm "This function will update all space-ui components to the latest version, and the data will not be lost. Do you want to continue?" "y"
     if [[ $? != 0 ]]; then
         LOGE "Cancelled"
         if [[ $# == 0 ]]; then
@@ -127,7 +127,7 @@ update() {
         fi
         return 0
     fi
-    bash <(curl -Ls https://raw.githubusercontent.com/disp911/spacex-ui/main/update.sh)
+    bash <(curl -Ls https://raw.githubusercontent.com/disp911/space-ui/main/update.sh)
     if [[ $? == 0 ]]; then
         LOGI "Update is complete, Panel has automatically restarted "
         before_show_menu
@@ -145,9 +145,9 @@ update_menu() {
         return 0
     fi
 
-    curl -fLRo /usr/bin/x-ui https://raw.githubusercontent.com/disp911/spacex-ui/main/x-ui.sh
-    chmod +x ${xui_folder}/x-ui.sh
-    chmod +x /usr/bin/x-ui
+    curl -fLRo /usr/bin/space-ui https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.sh
+    chmod +x ${space_ui_folder}/space-ui.sh
+    chmod +x /usr/bin/space-ui
 
     if [[ $? == 0 ]]; then
         echo -e "${green}Update successful. The panel has automatically restarted.${plain}"
@@ -167,7 +167,7 @@ legacy_version() {
         exit 1
     fi
     # Use the entered panel version in the download link
-    install_command="bash <(curl -Ls "https://raw.githubusercontent.com/disp911/spacex-ui/v$tag_version/install.sh") v$tag_version"
+    install_command="bash <(curl -Ls "https://raw.githubusercontent.com/disp911/space-ui/v$tag_version/install.sh") v$tag_version"
 
     echo "Downloading and installing panel version $tag_version..."
     eval $install_command
@@ -189,24 +189,24 @@ uninstall() {
     fi
 
     if [[ $release == "alpine" ]]; then
-        rc-service x-ui stop
-        rc-update del x-ui
-        rm /etc/init.d/x-ui -f
+        rc-service space-ui stop
+        rc-update del space-ui
+        rm /etc/init.d/space-ui -f
     else
-        systemctl stop x-ui
-        systemctl disable x-ui
-        rm ${xui_service}/x-ui.service -f
+        systemctl stop space-ui
+        systemctl disable space-ui
+        rm ${space_ui_service}/space-ui.service -f
         systemctl daemon-reload
         systemctl reset-failed
     fi
 
-    rm /etc/x-ui/ -rf
-    rm ${xui_folder}/ -rf
+    rm /etc/space-ui/ -rf
+    rm ${space_ui_folder}/ -rf
 
     echo ""
     echo -e "Uninstalled Successfully.\n"
     echo "If you need to install this panel again, you can use below command:"
-    echo -e "${green}bash <(curl -Ls https://raw.githubusercontent.com/disp911/spacex-ui/main/install.sh)${plain}"
+    echo -e "${green}bash <(curl -Ls https://raw.githubusercontent.com/disp911/space-ui/main/install.sh)${plain}"
     echo ""
     # Trap the SIGTERM signal
     trap delete_script SIGTERM
@@ -229,15 +229,15 @@ reset_user() {
 
     read -rp "Do you want to disable currently configured two-factor authentication? (y/n): " twoFactorConfirm
     if [[ $twoFactorConfirm != "y" && $twoFactorConfirm != "Y" ]]; then
-        ${xui_folder}/x-ui setting -username "${config_account}" -password "${config_password}" -resetTwoFactor false > /dev/null 2>&1
+        ${space_ui_folder}/space-ui setting -username "${config_account}" -password "${config_password}" -resetTwoFactor false > /dev/null 2>&1
     else
-        ${xui_folder}/x-ui setting -username "${config_account}" -password "${config_password}" -resetTwoFactor true > /dev/null 2>&1
+        ${space_ui_folder}/space-ui setting -username "${config_account}" -password "${config_password}" -resetTwoFactor true > /dev/null 2>&1
         echo -e "Two factor authentication has been disabled."
     fi
 
     echo -e "Panel login username has been reset to: ${green} ${config_account} ${plain}"
     echo -e "Panel login password has been reset to: ${green} ${config_password} ${plain}"
-    echo -e "${green} Please use the new login username and password to access the X-UI panel. Also remember them! ${plain}"
+    echo -e "${green} Please use the new login username and password to access the panel. Also remember them! ${plain}"
     confirm_restart
 }
 
@@ -260,7 +260,7 @@ reset_webbasepath() {
     config_webBasePath=$(gen_random_string 18)
 
     # Apply the new web base path setting
-    ${xui_folder}/x-ui setting -webBasePath "${config_webBasePath}" > /dev/null 2>&1
+    ${space_ui_folder}/space-ui setting -webBasePath "${config_webBasePath}" > /dev/null 2>&1
 
     echo -e "Web base path has been reset to: ${green}${config_webBasePath}${plain}"
     echo -e "${green}Please use the new web base path to access the panel.${plain}"
@@ -275,13 +275,13 @@ reset_config() {
         fi
         return 0
     fi
-    ${xui_folder}/x-ui setting -reset
+    ${space_ui_folder}/space-ui setting -reset
     echo -e "All panel settings have been reset to default."
     restart
 }
 
 check_config() {
-    local info=$(${xui_folder}/x-ui setting -show true)
+    local info=$(${space_ui_folder}/space-ui setting -show true)
     if [[ $? != 0 ]]; then
         LOGE "get current settings error, please check logs"
         show_menu
@@ -299,7 +299,7 @@ set_port() {
         LOGD "Cancelled"
         before_show_menu
     else
-        ${xui_folder}/x-ui setting -port ${port}
+        ${space_ui_folder}/space-ui setting -port ${port}
         echo -e "The port is set, Please restart the panel now, and use the new port ${green}${port}${plain} to access web panel"
         confirm_restart
     fi
@@ -312,14 +312,14 @@ start() {
         LOGI "Panel is running, No need to start again, If you need to restart, please select restart"
     else
         if [[ $release == "alpine" ]]; then
-            rc-service x-ui start
+            rc-service space-ui start
         else
-            systemctl start x-ui
+            systemctl start space-ui
         fi
         sleep 2
         check_status
         if [[ $? == 0 ]]; then
-            LOGI "x-ui Started Successfully"
+            LOGI "space-ui Started Successfully"
         else
             LOGE "panel Failed to start, Probably because it takes longer than two seconds to start, Please check the log information later"
         fi
@@ -337,14 +337,14 @@ stop() {
         LOGI "Panel stopped, No need to stop again!"
     else
         if [[ $release == "alpine" ]]; then
-            rc-service x-ui stop
+            rc-service space-ui stop
         else
-            systemctl stop x-ui
+            systemctl stop space-ui
         fi
         sleep 2
         check_status
         if [[ $? == 1 ]]; then
-            LOGI "x-ui and xray stopped successfully"
+            LOGI "space-ui and xray stopped successfully"
         else
             LOGE "Panel stop failed, Probably because the stop time exceeds two seconds, Please check the log information later"
         fi
@@ -357,14 +357,14 @@ stop() {
 
 restart() {
     if [[ $release == "alpine" ]]; then
-        rc-service x-ui restart
+        rc-service space-ui restart
     else
-        systemctl restart x-ui
+        systemctl restart space-ui
     fi
     sleep 2
     check_status
     if [[ $? == 0 ]]; then
-        LOGI "x-ui and xray Restarted successfully"
+        LOGI "space-ui and xray Restarted successfully"
     else
         LOGE "Panel restart failed, Probably because it takes longer than two seconds to start, Please check the log information later"
     fi
@@ -374,7 +374,7 @@ restart() {
 }
 
 restart_xray() {
-    systemctl reload x-ui
+    systemctl reload space-ui
     LOGI "xray-core Restart signal sent successfully, Please check the log information to confirm whether xray restarted successfully"
     sleep 2
     show_xray_status
@@ -385,9 +385,9 @@ restart_xray() {
 
 status() {
     if [[ $release == "alpine" ]]; then
-        rc-service x-ui status
+        rc-service space-ui status
     else
-        systemctl status x-ui -l
+        systemctl status space-ui -l
     fi
     if [[ $# == 0 ]]; then
         before_show_menu
@@ -396,14 +396,14 @@ status() {
 
 enable() {
     if [[ $release == "alpine" ]]; then
-        rc-update add x-ui default
+        rc-update add space-ui default
     else
-        systemctl enable x-ui
+        systemctl enable space-ui
     fi
     if [[ $? == 0 ]]; then
-        LOGI "x-ui Set to boot automatically on startup successfully"
+        LOGI "space-ui Set to boot automatically on startup successfully"
     else
-        LOGE "x-ui Failed to set Autostart"
+        LOGE "space-ui Failed to set Autostart"
     fi
 
     if [[ $# == 0 ]]; then
@@ -413,14 +413,14 @@ enable() {
 
 disable() {
     if [[ $release == "alpine" ]]; then
-        rc-update del x-ui
+        rc-update del space-ui
     else
-        systemctl disable x-ui
+        systemctl disable space-ui
     fi
     if [[ $? == 0 ]]; then
-        LOGI "x-ui Autostart Cancelled successfully"
+        LOGI "space-ui Autostart Cancelled successfully"
     else
-        LOGE "x-ui Failed to cancel autostart"
+        LOGE "space-ui Failed to cancel autostart"
     fi
 
     if [[ $# == 0 ]]; then
@@ -439,7 +439,7 @@ show_log() {
                 show_menu
                 ;;
             1)
-                grep -F 'x-ui[' /var/log/messages
+                grep -F 'space-ui[' /var/log/messages
                 if [[ $# == 0 ]]; then
                     before_show_menu
                 fi
@@ -460,7 +460,7 @@ show_log() {
                 show_menu
                 ;;
             1)
-                journalctl -u x-ui -e --no-pager -f -p debug
+                journalctl -u space-ui -e --no-pager -f -p debug
                 if [[ $# == 0 ]]; then
                     before_show_menu
                 fi
@@ -510,11 +510,11 @@ disable_bbr() {
         before_show_menu
     fi
 
-    if [ -f "/etc/sysctl.d/99-bbr-x-ui.conf" ]; then
-        old_settings=$(head -1 /etc/sysctl.d/99-bbr-x-ui.conf | tr -d '#')
+    if [ -f "/etc/sysctl.d/99-bbr-space-ui.conf" ]; then
+        old_settings=$(head -1 /etc/sysctl.d/99-bbr-space-ui.conf | tr -d '#')
         sysctl -w net.core.default_qdisc="${old_settings%:*}"
         sysctl -w net.ipv4.tcp_congestion_control="${old_settings#*:}"
-        rm /etc/sysctl.d/99-bbr-x-ui.conf
+        rm /etc/sysctl.d/99-bbr-space-ui.conf
         sysctl --system
     else
         # Replace BBR with CUBIC configurations
@@ -544,7 +544,7 @@ enable_bbr() {
             echo "#$(sysctl -n net.core.default_qdisc):$(sysctl -n net.ipv4.tcp_congestion_control)"
             echo "net.core.default_qdisc = fq"
             echo "net.ipv4.tcp_congestion_control = bbr"
-        } > "/etc/sysctl.d/99-bbr-x-ui.conf"
+        } > "/etc/sysctl.d/99-bbr-space-ui.conf"
         if [ -f "/etc/sysctl.conf" ]; then
             # Backup old settings from sysctl.conf, if any
             sed -i 's/^net.core.default_qdisc/# &/' /etc/sysctl.conf
@@ -568,13 +568,13 @@ enable_bbr() {
 }
 
 update_shell() {
-    curl -fLRo /usr/bin/x-ui -z /usr/bin/x-ui https://github.com/disp911/spacex-ui/raw/main/x-ui.sh
+    curl -fLRo /usr/bin/space-ui -z /usr/bin/space-ui https://github.com/disp911/space-ui/raw/main/space-ui.sh
     if [[ $? != 0 ]]; then
         echo ""
         LOGE "Failed to download script, Please check whether the machine can connect Github"
         before_show_menu
     else
-        chmod +x /usr/bin/x-ui
+        chmod +x /usr/bin/space-ui
         LOGI "Upgrade script succeeded, Please rerun the script"
         before_show_menu
     fi
@@ -583,19 +583,19 @@ update_shell() {
 # 0: running, 1: not running, 2: not installed
 check_status() {
     if [[ $release == "alpine" ]]; then
-        if [[ ! -f /etc/init.d/x-ui ]]; then
+        if [[ ! -f /etc/init.d/space-ui ]]; then
             return 2
         fi
-        if [[ $(rc-service x-ui status | grep -F 'status: started' -c) == 1 ]]; then
+        if [[ $(rc-service space-ui status | grep -F 'status: started' -c) == 1 ]]; then
             return 0
         else
             return 1
         fi
     else
-        if [[ ! -f ${xui_service}/x-ui.service ]]; then
+        if [[ ! -f ${space_ui_service}/space-ui.service ]]; then
             return 2
         fi
-        temp=$(systemctl status x-ui | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
+        temp=$(systemctl status space-ui | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
         if [[ "${temp}" == "running" ]]; then
             return 0
         else
@@ -606,13 +606,13 @@ check_status() {
 
 check_enabled() {
     if [[ $release == "alpine" ]]; then
-        if [[ $(rc-update show | grep -F 'x-ui' | grep default -c) == 1 ]]; then
+        if [[ $(rc-update show | grep -F 'space-ui' | grep default -c) == 1 ]]; then
             return 0
         else
             return 1
         fi
     else
-        temp=$(systemctl is-enabled x-ui)
+        temp=$(systemctl is-enabled space-ui)
         if [[ "${temp}" == "enabled" ]]; then
             return 0
         else
@@ -909,7 +909,7 @@ update_geofiles() {
     for dat in "${dat_files[@]}"; do
         # Remove suffix for remote filename (e.g., geoip_IR -> geoip)
         remote_file="${dat%%_*}"
-        curl -fLRo ${xui_folder}/bin/${dat}.dat -z ${xui_folder}/bin/${dat}.dat \
+        curl -fLRo ${space_ui_folder}/bin/${dat}.dat -z ${space_ui_folder}/bin/${dat}.dat \
             https://github.com/${dat_source}/releases/latest/download/${remote_file}.dat
     done
 }
@@ -961,9 +961,9 @@ update_geo() {
 # 443 with the VPN; or on a port of its own with the same website at the
 # root, leaving 443 free. The panel obtains its certificate itself.
 
-# site_value prints a value `x-ui site` shows, such as "website mode".
+# site_value prints a value `space-ui site` shows, such as "website mode".
 site_value() {
-    ${xui_folder}/x-ui site 2> /dev/null | sed -n "s/^$1: //p"
+    ${space_ui_folder}/space-ui site 2> /dev/null | sed -n "s/^$1: //p"
 }
 
 # server_ips prints this server's public IPv4 and IPv6 addresses, those found.
@@ -985,7 +985,7 @@ port_owner() {
     command -v ss > /dev/null 2>&1 || return 0
     ss -ltnpH "sport = :$1" 2> /dev/null \
         | grep -o '(("[^"]*",pid=[0-9]*' | sed 's/(("//; s/",pid=/ /' \
-        | grep -Ev '^(x-ui|xray-linux-[a-z0-9]*) ' | head -1
+        | grep -Ev '^(space-ui|xray-linux-[a-z0-9]*) ' | head -1
 }
 
 # service_of prints the systemd unit a process runs in, if any.
@@ -1040,7 +1040,7 @@ ask_domain() {
             LOGE "\"${SITE_NAME}\" is not a domain name."
             continue
         fi
-        addrs=$(${xui_folder}/x-ui site -lookup "$SITE_NAME" 2> /dev/null)
+        addrs=$(${space_ui_folder}/space-ui site -lookup "$SITE_NAME" 2> /dev/null)
         if [[ -n "$ips" ]] && echo "$addrs" | grep -qxF -f <(echo "$ips"); then
             LOGI "${SITE_NAME} points at this server."
             return 0
@@ -1069,7 +1069,7 @@ warn_port_80() {
 # it. The website and the panel answer on it.
 ask_port() {
     local port current
-    current=$(${xui_folder}/x-ui setting -show true | grep -Eo '^port: .+' | awk '{print $2}')
+    current=$(${space_ui_folder}/space-ui setting -show true | grep -Eo '^port: .+' | awk '{print $2}')
     while true; do
         read -rp "Port of the panel [default ${current}]: " port
         port=${port:-$current}
@@ -1083,7 +1083,7 @@ ask_port() {
         fi
         break
     done
-    ${xui_folder}/x-ui setting -port "$port" > /dev/null
+    ${space_ui_folder}/space-ui setting -port "$port" > /dev/null
     SITE_PORT=$port
 }
 
@@ -1094,7 +1094,7 @@ setup_selfsteal() {
     ask_domain
     warn_port_80
     local out
-    out=$(${xui_folder}/x-ui selfsteal -domain "$SITE_NAME" 2>&1)
+    out=$(${space_ui_folder}/space-ui selfsteal -domain "$SITE_NAME" 2>&1)
     if [[ $? -ne 0 ]]; then
         echo "$out"
         LOGE "The website could not be put behind REALITY."
@@ -1137,12 +1137,12 @@ setup_own_port() {
         fi
     fi
     if [[ -n "$cert" ]]; then
-        ${xui_folder}/x-ui cert -webCert "$cert" -webCertKey "$key" > /dev/null
+        ${space_ui_folder}/space-ui cert -webCert "$cert" -webCertKey "$key" > /dev/null
     else
-        ${xui_folder}/x-ui cert -reset > /dev/null
+        ${space_ui_folder}/space-ui cert -reset > /dev/null
     fi
     local out
-    out=$(${xui_folder}/x-ui site -mode port -domain "$SITE_NAME" 2>&1)
+    out=$(${space_ui_folder}/space-ui site -mode port -domain "$SITE_NAME" 2>&1)
     if [[ $? -ne 0 ]]; then
         echo "$out"
         LOGE "The panel could not be put on port ${port}."
@@ -1176,8 +1176,8 @@ site_url() {
     local mode name port path
     mode=$(site_value "website mode")
     name=$(site_value "website name")
-    port=$(${xui_folder}/x-ui setting -show true | grep -Eo '^port: .+' | awk '{print $2}')
-    path=$(${xui_folder}/x-ui setting -show true | grep -Eo '^webBasePath: .+' | awk '{print $2}')
+    port=$(${space_ui_folder}/space-ui setting -show true | grep -Eo '^port: .+' | awk '{print $2}')
+    path=$(${space_ui_folder}/space-ui setting -show true | grep -Eo '^webBasePath: .+' | awk '{print $2}')
     is_ipv6 "$name" && name="[${name}]"
     if [[ "$mode" == "reality" ]]; then
         echo "https://${name}${path}"
@@ -1205,9 +1205,9 @@ site_status() {
         if [[ "$code" != "000" ]]; then
             LOGI "The panel answers with a trusted certificate."
         elif [[ "$(curl -sk -o /dev/null -w '%{http_code}' --max-time 5 "$url")" != "000" ]]; then
-            echo -e "${yellow}The panel answers with a temporary self-signed certificate, so the browser warns; it keeps trying to get a real one (see: x-ui log).${plain}"
+            echo -e "${yellow}The panel answers with a temporary self-signed certificate, so the browser warns; it keeps trying to get a real one (see: space-ui log).${plain}"
         else
-            LOGE "The panel does not answer at ${url} yet (see: x-ui log)."
+            LOGE "The panel does not answer at ${url} yet (see: space-ui log)."
         fi
     fi
     echo -e "${green}Access URL: ${url}${plain}"
@@ -1328,7 +1328,7 @@ iplimit_main() {
         3)
             confirm "Proceed with Unbanning everyone from IP Limit jail?" "y"
             if [[ $? == 0 ]]; then
-                fail2ban-client reload --restart --unban 3x-ipl
+                fail2ban-client reload --restart --unban space-ui-ipl
                 truncate -s 0 "${iplimit_banned_log_path}"
                 echo -e "${green}All users Unbanned successfully.${plain}"
                 iplimit_main
@@ -1345,7 +1345,7 @@ iplimit_main() {
             read -rp "Enter the IP address you want to ban: " ban_ip
             ip_validation
             if [[ $ban_ip =~ $ipv4_regex || $ban_ip =~ $ipv6_regex ]]; then
-                fail2ban-client set 3x-ipl banip "$ban_ip"
+                fail2ban-client set space-ui-ipl banip "$ban_ip"
                 echo -e "${green}IP Address ${ban_ip} has been banned successfully.${plain}"
             else
                 echo -e "${red}Invalid IP address format! Please try again.${plain}"
@@ -1356,7 +1356,7 @@ iplimit_main() {
             read -rp "Enter the IP address you want to unban: " unban_ip
             ip_validation
             if [[ $unban_ip =~ $ipv4_regex || $unban_ip =~ $ipv6_regex ]]; then
-                fail2ban-client set 3x-ipl unbanip "$unban_ip"
+                fail2ban-client set space-ui-ipl unbanip "$unban_ip"
                 echo -e "${green}IP Address ${unban_ip} has been unbanned successfully.${plain}"
             else
                 echo -e "${red}Invalid IP address format! Please try again.${plain}"
@@ -1400,7 +1400,7 @@ install_iplimit() {
         # minimal server images (Debian 12+, Ubuntu 24+, fresh RHEL-family).
         # Without `nft` in PATH the default sshd jail fails to ban with
         #   stderr: '/bin/sh: 1: nft: not found'
-        # even though our own 3x-ipl jail uses iptables. Bundling the binary
+        # even though our own space-ui-ipl jail uses iptables. Bundling the binary
         # at install time prevents that confusing log spam for new installs.
         case "${release}" in
             ubuntu)
@@ -1501,9 +1501,9 @@ remove_iplimit() {
     read -rp "Choose an option: " num
     case "$num" in
         1)
-            rm -f /etc/fail2ban/filter.d/3x-ipl.conf
-            rm -f /etc/fail2ban/action.d/3x-ipl.conf
-            rm -f /etc/fail2ban/jail.d/3x-ipl.conf
+            rm -f /etc/fail2ban/filter.d/space-ui-ipl.conf
+            rm -f /etc/fail2ban/action.d/space-ui-ipl.conf
+            rm -f /etc/fail2ban/jail.d/space-ui-ipl.conf
             if [[ $release == "alpine" ]]; then
                 rc-service fail2ban restart
             else
@@ -1581,12 +1581,12 @@ show_banlog() {
 
     if [[ -f "$system_log" ]]; then
         echo -e "${green}Recent system ban activities from fail2ban.log:${plain}"
-        grep "3x-ipl" "$system_log" | grep -E "Ban|Unban" | tail -n 10 || echo -e "${yellow}No recent system ban activities found${plain}"
+        grep "space-ui-ipl" "$system_log" | grep -E "Ban|Unban" | tail -n 10 || echo -e "${yellow}No recent system ban activities found${plain}"
         echo ""
     fi
 
     if [[ -f "${iplimit_banned_log_path}" ]]; then
-        echo -e "${green}3X-IPL ban log entries:${plain}"
+        echo -e "${green}IP limit ban log entries:${plain}"
         if [[ -s "${iplimit_banned_log_path}" ]]; then
             grep -v "INIT" "${iplimit_banned_log_path}" | tail -n 10 || echo -e "${yellow}No ban entries found${plain}"
         else
@@ -1597,7 +1597,7 @@ show_banlog() {
     fi
 
     echo -e "\n${green}Current jail status:${plain}"
-    fail2ban-client status 3x-ipl || echo -e "${yellow}Unable to get jail status${plain}"
+    fail2ban-client status space-ui-ipl || echo -e "${yellow}Unable to get jail status${plain}"
 }
 
 create_iplimit_jails() {
@@ -1612,26 +1612,26 @@ create_iplimit_jails() {
         sed -i '0,/action =/s/backend = auto/backend = systemd/' /etc/fail2ban/jail.conf
     fi
 
-    cat << EOF > /etc/fail2ban/jail.d/3x-ipl.conf
-[3x-ipl]
+    cat << EOF > /etc/fail2ban/jail.d/space-ui-ipl.conf
+[space-ui-ipl]
 enabled=true
 backend=auto
-filter=3x-ipl
-action=3x-ipl
+filter=space-ui-ipl
+action=space-ui-ipl
 logpath=${iplimit_log_path}
 maxretry=2
 findtime=32
 bantime=${bantime}m
 EOF
 
-    cat << EOF > /etc/fail2ban/filter.d/3x-ipl.conf
+    cat << EOF > /etc/fail2ban/filter.d/space-ui-ipl.conf
 [Definition]
 datepattern = ^%%Y/%%m/%%d %%H:%%M:%%S
 failregex   = \[LIMIT_IP\]\s*Email\s*=\s*<F-USER>.+</F-USER>\s*\|\|\s*Disconnecting OLD IP\s*=\s*<ADDR>\s*\|\|\s*Timestamp\s*=\s*\d+
 ignoreregex =
 EOF
 
-    cat << EOF > /etc/fail2ban/action.d/3x-ipl.conf
+    cat << EOF > /etc/fail2ban/action.d/space-ui-ipl.conf
 [INCLUDES]
 before = iptables-allports.conf
 
@@ -1668,10 +1668,10 @@ iplimit_remove_conflicts() {
     )
 
     for file in "${jail_files[@]}"; do
-        # Check for [3x-ipl] config in jail file then remove it
-        if test -f "${file}" && grep -qw '3x-ipl' ${file}; then
-            sed -i "/\[3x-ipl\]/,/^$/d" ${file}
-            echo -e "${yellow}Removing conflicts of [3x-ipl] in jail (${file})!${plain}\n"
+        # Check for [space-ui-ipl] config in jail file then remove it
+        if test -f "${file}" && grep -qw 'space-ui-ipl' ${file}; then
+            sed -i "/\[space-ui-ipl\]/,/^$/d" ${file}
+            echo -e "${yellow}Removing conflicts of [space-ui-ipl] in jail (${file})!${plain}\n"
         fi
     done
 }
@@ -1696,11 +1696,11 @@ SSH_port_forwarding() {
         fi
     done
 
-    local existing_webBasePath=$(${xui_folder}/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}')
-    local existing_port=$(${xui_folder}/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
-    local existing_listenIP=$(${xui_folder}/x-ui setting -getListen true | grep -Eo 'listenIP: .+' | awk '{print $2}')
-    local existing_cert=$(${xui_folder}/x-ui setting -getCert true | grep -Eo 'cert: .+' | awk '{print $2}')
-    local existing_key=$(${xui_folder}/x-ui setting -getCert true | grep -Eo 'key: .+' | awk '{print $2}')
+    local existing_webBasePath=$(${space_ui_folder}/space-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}')
+    local existing_port=$(${space_ui_folder}/space-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
+    local existing_listenIP=$(${space_ui_folder}/space-ui setting -getListen true | grep -Eo 'listenIP: .+' | awk '{print $2}')
+    local existing_cert=$(${space_ui_folder}/space-ui setting -getCert true | grep -Eo 'cert: .+' | awk '{print $2}')
+    local existing_key=$(${space_ui_folder}/space-ui setting -getCert true | grep -Eo 'key: .+' | awk '{print $2}')
 
     local config_listenIP=""
     local listen_choice=""
@@ -1741,7 +1741,7 @@ SSH_port_forwarding() {
                 config_listenIP="127.0.0.1"
                 [[ "$listen_choice" == "2" ]] && read -rp "Enter custom IP to listen on: " config_listenIP
 
-                ${xui_folder}/x-ui setting -listenIP "${config_listenIP}" > /dev/null 2>&1
+                ${space_ui_folder}/space-ui setting -listenIP "${config_listenIP}" > /dev/null 2>&1
                 echo -e "${green}listen IP has been set to ${config_listenIP}.${plain}"
                 echo -e "\n${green}SSH Port Forwarding Configuration:${plain}"
                 echo -e "Standard SSH command:"
@@ -1757,7 +1757,7 @@ SSH_port_forwarding() {
             fi
             ;;
         2)
-            ${xui_folder}/x-ui setting -listenIP 0.0.0.0 > /dev/null 2>&1
+            ${space_ui_folder}/space-ui setting -listenIP 0.0.0.0 > /dev/null 2>&1
             echo -e "${green}Listen IP has been cleared.${plain}"
             restart
             ;;
@@ -1772,33 +1772,33 @@ SSH_port_forwarding() {
 }
 
 show_usage() {
-    echo -e "┌────────────────────────────────────────────────────────────────┐
-│  ${blue}x-ui control menu usages (subcommands):${plain}                       │
-│                                                                │
-│  ${blue}x-ui${plain}                       - Admin Management Script          │
-│  ${blue}x-ui start${plain}                 - Start                            │
-│  ${blue}x-ui stop${plain}                  - Stop                             │
-│  ${blue}x-ui restart${plain}               - Restart                          │
-|  ${blue}x-ui restart-xray${plain}          - Restart Xray                     │
-│  ${blue}x-ui status${plain}                - Current Status                   │
-│  ${blue}x-ui settings${plain}              - Current Settings                 │
-│  ${blue}x-ui site${plain}                  - Website & Certificate            │
-│  ${blue}x-ui enable${plain}                - Enable Autostart on OS Startup   │
-│  ${blue}x-ui disable${plain}               - Disable Autostart on OS Startup  │
-│  ${blue}x-ui log${plain}                   - Check logs                       │
-│  ${blue}x-ui banlog${plain}                - Check Fail2ban ban logs          │
-│  ${blue}x-ui update${plain}                - Update                           │
-│  ${blue}x-ui update-all-geofiles${plain}   - Update all geo files             │
-│  ${blue}x-ui legacy${plain}                - Legacy version                   │
-│  ${blue}x-ui install${plain}               - Install                          │
-│  ${blue}x-ui uninstall${plain}             - Uninstall                        │
-└────────────────────────────────────────────────────────────────┘"
+    echo -e "┌────────────────────────────────────────────────────────────────────┐
+│  ${blue}space-ui control menu usages (subcommands):${plain}                       │
+│                                                                    │
+│  ${blue}space-ui${plain}                       - Admin Management Script          │
+│  ${blue}space-ui start${plain}                 - Start                            │
+│  ${blue}space-ui stop${plain}                  - Stop                             │
+│  ${blue}space-ui restart${plain}               - Restart                          │
+│  ${blue}space-ui restart-xray${plain}          - Restart Xray                     │
+│  ${blue}space-ui status${plain}                - Current Status                   │
+│  ${blue}space-ui settings${plain}              - Current Settings                 │
+│  ${blue}space-ui site${plain}                  - Website & Certificate            │
+│  ${blue}space-ui enable${plain}                - Enable Autostart on OS Startup   │
+│  ${blue}space-ui disable${plain}               - Disable Autostart on OS Startup  │
+│  ${blue}space-ui log${plain}                   - Check logs                       │
+│  ${blue}space-ui banlog${plain}                - Check Fail2ban ban logs          │
+│  ${blue}space-ui update${plain}                - Update                           │
+│  ${blue}space-ui update-all-geofiles${plain}   - Update all geo files             │
+│  ${blue}space-ui legacy${plain}                - Legacy version                   │
+│  ${blue}space-ui install${plain}               - Install                          │
+│  ${blue}space-ui uninstall${plain}             - Uninstall                        │
+└────────────────────────────────────────────────────────────────────┘"
 }
 
 show_menu() {
     echo -e "
 ╔────────────────────────────────────────────────╗
-│   ${green}3X-UI Panel Management Script${plain}                │
+│   ${green}Space UI Panel Management Script${plain}             │
 │   ${green}0.${plain} Exit Script                               │
 │────────────────────────────────────────────────│
 │   ${green}1.${plain} Install                                   │
@@ -1947,7 +1947,7 @@ if [[ $# > 0 ]]; then
         "site-setup")
             # The installer's step: the settings only, the panel starts after;
             # the REALITY client's links go to the file named, if any.
-            [[ -x ${xui_folder}/x-ui ]] || exit 1
+            [[ -x ${space_ui_folder}/space-ui ]] || exit 1
             site_setup || exit 1
             [[ -n "$2" && -n "$SITE_CLIENT" ]] && echo "$SITE_CLIENT" > "$2"
             exit 0

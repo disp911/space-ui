@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/util/crypto"
-	"github.com/disp911/spacex-ui/v2/web/entity"
-	"github.com/disp911/spacex-ui/v2/web/service"
-	"github.com/disp911/spacex-ui/v2/web/session"
+	"github.com/disp911/space-ui/v3/util/crypto"
+	"github.com/disp911/space-ui/v3/web/entity"
+	"github.com/disp911/space-ui/v3/web/service"
+	"github.com/disp911/space-ui/v3/web/session"
 
 	"github.com/gin-gonic/gin"
 )

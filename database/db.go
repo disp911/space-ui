@@ -1,5 +1,5 @@
 // Package database provides database initialization, migration, and management utilities
-// for the 3x-ui panel using GORM with SQLite.
+// for the Space UI panel using GORM with SQLite.
 package database
 
 import (
@@ -12,10 +12,10 @@ import (
 	"path"
 	"slices"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/util/crypto"
-	"github.com/disp911/spacex-ui/v2/xray"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/util/crypto"
+	"github.com/disp911/space-ui/v3/xray"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/disp911/spacex-ui/v2/logger"
+	"github.com/disp911/space-ui/v3/logger"
 )
 
 // NewLogWriter returns a new LogWriter for processing Xray log output.

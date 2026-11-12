@@ -3,11 +3,11 @@ package service
 import (
 	"errors"
 
-	"github.com/disp911/spacex-ui/v2/database"
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/util/crypto"
-	ldaputil "github.com/disp911/spacex-ui/v2/util/ldap"
+	"github.com/disp911/space-ui/v3/database"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/util/crypto"
+	ldaputil "github.com/disp911/space-ui/v3/util/ldap"
 	"github.com/xlzd/gotp"
 	"gorm.io/gorm"
 )

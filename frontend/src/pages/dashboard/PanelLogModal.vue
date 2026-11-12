@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { api, ApiError, saveFile } from '../../api'
 import { XButton, XCheckbox, XEmpty, XMenu, XModal, XStatusDot, type MenuItem } from '../../kit'
 
-/** The panel's own log, or the x-ui unit's journal with SysLog on. */
+/** The panel's own log, or the space-ui unit's journal with SysLog on. */
 const open = defineModel<boolean>('open', { default: false })
 const { t } = useI18n()
 
@@ -38,7 +38,7 @@ const rows = computed(() =>
     if (!m) return { raw }
     const [, time, lvl, rest] = m as unknown as [string, string, string, string]
     const xray = rest.startsWith('XRAY:')
-    return { time, lvl, tone: tones[lvl] ?? 'plain', src: xray ? 'XRAY:' : 'X-UI:', msg: xray ? rest.slice(5).trimStart() : rest }
+    return { time, lvl, tone: tones[lvl] ?? 'plain', src: xray ? 'XRAY:' : 'PANEL:', msg: xray ? rest.slice(5).trimStart() : rest }
   }),
 )
 
@@ -66,7 +66,7 @@ watch(open, (on) => on && load(), { immediate: true })
 watch([count, level, syslog], () => open.value && load())
 
 function download() {
-  saveFile(lines.value.join('\n'), 'x-ui.log')
+  saveFile(lines.value.join('\n'), 'space-ui.log')
 }
 
 // Skeleton bars: message widths vary like real lines.
@@ -76,7 +76,7 @@ const skeleton = [62, 48, 71, 55, 38, 66, 52, 44, 69, 58, 41, 63]
 <template>
   <XModal v-model:open="open" :title="t('dashboard.panelLog')" size="wide" flush full>
     <template #subtitle>
-      {{ t('dashboard.logLines', { n: count }) }} · <span class="mono">journalctl -u x-ui</span>
+      {{ t('dashboard.logLines', { n: count }) }} · <span class="mono">journalctl -u space-ui</span>
     </template>
 
     <div class="log-bar">

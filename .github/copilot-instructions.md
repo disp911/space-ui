@@ -1,7 +1,7 @@
-# 3X-UI Development Guide
+# Space UI Development Guide
 
 ## Project Overview
-3X-UI is a web-based control panel for managing Xray-core servers. It's a Go application using the Gin web framework and a SQLite database, with a Vue 3 + TypeScript frontend embedded into the binary. The panel manages VPN/proxy inbounds and monitors traffic.
+Space UI is a web-based control panel for managing Xray-core servers. It's a Go application using the Gin web framework and a SQLite database, with a Vue 3 + TypeScript frontend embedded into the binary. The panel manages VPN/proxy inbounds and monitors traffic.
 
 ## Architecture
 
@@ -39,7 +39,7 @@ npm ci --prefix frontend
 npm --prefix frontend run build
 
 # Run with debug logging
-XUI_DEBUG=true go run ./main.go
+SPACE_UI_DEBUG=true go run ./main.go
 
 # Frontend with hot reload against a running panel
 PANEL_URL=http://127.0.0.1:2053 npm --prefix frontend run dev
@@ -55,7 +55,7 @@ The main.go accepts flags for admin tasks:
 - Use these by running the binary directly, not via web interface
 
 ### Database Management
-- DB path: Configured via `config.GetDBPath()`, typically `/etc/x-ui/x-ui.db`
+- DB path: Configured via `config.GetDBPath()`, typically `/etc/space-ui/space-ui.db`
 - Models: Located in `database/model/model.go` - Auto-migrated on startup
 - Seeders: Use `HistoryOfSeeders` to prevent re-running migrations
 - Default credentials: admin/admin (hashed with bcrypt)
@@ -85,7 +85,7 @@ func (a *InboundController) getInbounds(c *gin.Context) {
 ```
 
 ### Configuration Management
-- Environment vars: `XUI_DEBUG`, `XUI_LOG_LEVEL`, `XUI_MAIN_FOLDER`
+- Environment vars: `SPACE_UI_DEBUG`, `SPACE_UI_LOG_LEVEL`, `SPACE_UI_MAIN_FOLDER`
 - Config embedded files: `config/version`, `config/name`
 - Use `config.GetLogLevel()`, `config.GetDBPath()` helpers
 
@@ -106,7 +106,7 @@ func (a *InboundController) getInbounds(c *gin.Context) {
 - Xray binary: `{bin_folder}/xray-{os}-{arch}`
 - Xray config: `{bin_folder}/config.json`
 - GeoIP/GeoSite: `{bin_folder}/geoip.dat`, `geosite.dat`
-- Logs: `{log_folder}/3xipl.log`, `3xipl-banned.log`
+- Logs: `{log_folder}/space-ui-ipl.log`, `space-ui-ipl-banned.log`
 
 ### Job Scheduling
 Uses `robfig/cron/v3` for periodic tasks:
@@ -120,7 +120,7 @@ Jobs registered in `web/web.go` during server initialization
 ## Deployment & Scripts
 
 ### Installation Script Pattern
-Both `install.sh` and `x-ui.sh` follow these patterns:
+Both `install.sh` and `space-ui.sh` follow these patterns:
 - Multi-distro support via `$release` variable (ubuntu, debian, centos, arch, etc.)
 - Port detection with `is_port_in_use()` using ss/netstat/lsof
 - Systemd service management with distro-specific unit files (`.service.debian`, `.service.arch`, `.service.rhel`)
@@ -131,16 +131,16 @@ Multi-stage Dockerfile:
 2. **Final**: Alpine-based with fail2ban pre-configured
 
 ### Key File Locations (Production)
-- Binary: `/usr/local/x-ui/`
-- Database: `/etc/x-ui/x-ui.db`
-- Logs: `/var/log/x-ui/`
-- Service: `/etc/systemd/system/x-ui.service.*`
+- Binary: `/usr/local/space-ui/`
+- Database: `/etc/space-ui/space-ui.db`
+- Logs: `/var/log/space-ui/`
+- Service: `/etc/systemd/system/space-ui.service.*`
 
 ## Testing & Debugging
-- Set `XUI_DEBUG=true` for detailed logging
-- Check Xray process: `x-ui.sh` script provides menu for status/logs
-- Database inspection: Direct SQLite access to x-ui.db
-- Traffic debugging: Check `3xipl.log` for IP limit tracking
+- Set `SPACE_UI_DEBUG=true` for detailed logging
+- Check Xray process: `space-ui.sh` script provides menu for status/logs
+- Database inspection: Direct SQLite access to space-ui.db
+- Traffic debugging: Check `space-ui-ipl.log` for IP limit tracking
 
 ## Common Gotchas
 1. **Embedded Frontend**: A release binary carries the frontend built before `go build`; run `npm --prefix frontend run build` first, or use the Vite dev server while working on it

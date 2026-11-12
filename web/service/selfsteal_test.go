@@ -10,14 +10,14 @@ import (
 	"github.com/op/go-logging"
 	"github.com/xtls/xray-core/infra/conf"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/database"
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/logger"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/database"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/logger"
 )
 
 func TestSiteInboundIsWhatXrayTakes(t *testing.T) {
-	ib, client, err := newSiteInbound("docs.example.com", "/run/x-ui/site.sock")
+	ib, client, err := newSiteInbound("docs.example.com", "/run/space-ui/site.sock")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestSiteTarget(t *testing.T) {
 func siteTestDB(t *testing.T) {
 	t.Helper()
 	logger.InitLogger(logging.CRITICAL)
-	if err := database.InitDB(filepath.Join(t.TempDir(), "x-ui.db")); err != nil {
+	if err := database.InitDB(filepath.Join(t.TempDir(), "space-ui.db")); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { database.CloseDB() })

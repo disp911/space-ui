@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/disp911/spacex-ui/v2/database/model"
+	"github.com/disp911/space-ui/v3/database/model"
 	"github.com/xtls/xray-core/infra/conf"
 )
 

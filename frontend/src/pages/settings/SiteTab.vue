@@ -138,7 +138,7 @@ async function renew() {
             <XInput v-bind="a" :model-value="sitePort" mono readonly />
           </XField>
           <XFieldNote tone="info" class="x-wide">
-            <i18n-t scope="global" keypath="settings.siteModeWhere"><template #menu><code>x-ui → 19</code></template></i18n-t>
+            <i18n-t scope="global" keypath="settings.siteModeWhere"><template #menu><code>space-ui → 19</code></template></i18n-t>
           </XFieldNote>
           <XField v-slot="a" :label="t('settings.siteDomain')" :hint="reality ? t('settings.siteDomainReality') : t('settings.siteDomainPort')" :error="errors.domain">
             <XInput v-bind="a" v-model.trim="form.domain" mono placeholder="example.com" :invalid="!!errors.domain" />

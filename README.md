@@ -1,9 +1,9 @@
-# SpaceX UI
+# Space UI
 
 ## Установка
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/disp911/spacex-ui/main/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/disp911/space-ui/main/install.sh)
 ```
 
 ## Как открывается панель
@@ -15,83 +15,89 @@ bash <(curl -Ls https://raw.githubusercontent.com/disp911/spacex-ui/main/install
 
 Если порт 443 занят другой программой, установщик предложит остановить её или перейти к варианту 1.
 
-Режим меняется только на сервере: `x-ui` → 19 → «Set up again».
+Режим меняется только на сервере: `space-ui` → 19 → «Set up again».
 
 ## Сайт
 
 Посетителям без секретного пути панель показывает сайт документации вымышленного проекта. Он создаётся при первой установке и сохраняется в базе, поэтому резервная копия базы возвращает тот же сайт.
 
-Чтобы показывать свой сайт, положите его файлы в `/etc/x-ui/site`, обязательно с `index.html`, и перезапустите панель: `x-ui restart`.
+Чтобы показывать свой сайт, положите его файлы в `/etc/space-ui/site`, обязательно с `index.html`, и перезапустите панель: `space-ui restart`.
 
 ## Установка архивной версии
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/disp911/spacex-ui/main/install.sh) v2.9.5
+bash <(curl -Ls https://raw.githubusercontent.com/disp911/space-ui/main/install.sh) v3.0.0
 ```
+
+Ставятся версии начиная с 3.0.0.
 
 ## Обновление
 
 Обновление сохраняет все настройки, подключения и клиентов.
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/disp911/spacex-ui/main/update.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/disp911/space-ui/main/update.sh)
 ```
 или в меню
 
 ```bash
-x-ui update
+space-ui update
 ```
 
 ## Удаление
 
 > [!WARNING]
-> Удаляются панель, Xray, telemt и база `/etc/x-ui` со всеми подключениями и
+> Удаляются панель, Xray, telemt и база `/etc/space-ui` со всеми подключениями и
 > клиентами. Сохраните резервную копию при необходимости.
 
 Резервная копия базы:
 
 ```bash
-cp /etc/x-ui/x-ui.db ~/x-ui.db.backup
+cp /etc/space-ui/space-ui.db ~/space-ui.db.backup
 ```
 
 Удаление:
 
 ```bash
-x-ui uninstall
+space-ui uninstall
 ```
 
 ## Управление панелью
 
 | Команда | Действие |
 | --- | --- |
-| `x-ui` | Меню управления |
-| `x-ui start` | Запустить панель |
-| `x-ui stop` | Остановить панель |
-| `x-ui restart` | Перезапустить панель |
-| `x-ui restart-xray` | Перезапустить только Xray |
-| `x-ui status` | Состояние панели |
-| `x-ui settings` | Текущие настройки: порт, путь, адрес входа |
-| `x-ui site` | Сайт и сертификат: адрес панели, повторная настройка |
-| `x-ui enable` | Включить автозапуск при загрузке системы |
-| `x-ui disable` | Выключить автозапуск |
-| `x-ui log` | Журнал панели |
-| `x-ui banlog` | Журнал блокировок Fail2ban |
-| `x-ui update` | Обновить панель до последней версии |
-| `x-ui update-all-geofiles` | Обновить geo-файлы |
-| `x-ui legacy` | Установить определённую версию |
-| `x-ui install` | Установить панель |
-| `x-ui uninstall` | Удалить панель |
+| `space-ui` | Меню управления |
+| `space-ui start` | Запустить панель |
+| `space-ui stop` | Остановить панель |
+| `space-ui restart` | Перезапустить панель |
+| `space-ui restart-xray` | Перезапустить только Xray |
+| `space-ui status` | Состояние панели |
+| `space-ui settings` | Текущие настройки: порт, путь, адрес входа |
+| `space-ui site` | Сайт и сертификат: адрес панели, повторная настройка |
+| `space-ui enable` | Включить автозапуск при загрузке системы |
+| `space-ui disable` | Выключить автозапуск |
+| `space-ui log` | Журнал панели |
+| `space-ui banlog` | Журнал блокировок Fail2ban |
+| `space-ui update` | Обновить панель до последней версии |
+| `space-ui update-all-geofiles` | Обновить geo-файлы |
+| `space-ui legacy` | Установить определённую версию |
+| `space-ui install` | Установить панель |
+| `space-ui uninstall` | Удалить панель |
 
 ## Расположение файлов
 
 | Путь | Содержимое |
 | --- | --- |
-| `/usr/local/x-ui/` | Панель, Xray и telemt |
-| `/etc/x-ui/x-ui.db` | База: настройки, подключения, клиенты |
-| `/etc/x-ui/certs/` | Сертификаты, которые получила панель |
-| `/etc/x-ui/site/` | Свой сайт вместо созданного панелью |
-| `/usr/bin/x-ui` | Скрипт меню |
+| `/usr/local/space-ui/` | Панель, Xray и telemt |
+| `/etc/space-ui/space-ui.db` | База: настройки, подключения, клиенты |
+| `/etc/space-ui/certs/` | Сертификаты, которые получила панель |
+| `/etc/space-ui/site/` | Свой сайт вместо созданного панелью |
+| `/usr/bin/space-ui` | Скрипт меню |
 
 ## Если панель недоступна
 
-Зайдите на сервер по SSH и выполните `x-ui` → 19 → 2. Выберите вариант 1 и задайте порт: панель откроется на нём. Адрес панели показывает `x-ui site`.
+Зайдите на сервер по SSH и выполните `space-ui` → 19 → 2. Выберите вариант 1 и задайте порт: панель откроется на нём. Адрес панели показывает `space-ui site`.
+
+## Лицензия
+
+Space UI распространяется по лицензии [GPL-3.0](LICENSE). Проект основан на [3x-ui](https://github.com/MHSanaei/3x-ui) (GPL-3.0) и с тех пор существенно изменён.

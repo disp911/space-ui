@@ -1,4 +1,4 @@
-module github.com/disp911/spacex-ui/v2
+module github.com/disp911/space-ui/v3
 
 go 1.27
 

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/disp911/spacex-ui/v2/web/spa"
+	"github.com/disp911/space-ui/v3/web/spa"
 
 	"github.com/gin-gonic/gin"
 )

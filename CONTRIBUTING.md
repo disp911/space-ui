@@ -1,6 +1,6 @@
 ## Local Development Setup
 
-- Create a directory named `x-ui` in the project root
+- Create a directory named `space-ui` in the project root
 - Rename `.env.example` to `.env`
 - Build the frontend once: `npm ci --prefix frontend && npm --prefix frontend run build`
 - Run `main.go`

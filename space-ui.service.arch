@@ -1,14 +1,14 @@
 [Unit]
-Description=x-ui Service
+Description=space-ui Service
 After=network.target
 Wants=network.target
 
 [Service]
-EnvironmentFile=-/etc/conf.d/x-ui
+EnvironmentFile=-/etc/conf.d/space-ui
 Environment="XRAY_VMESS_AEAD_FORCED=false"
 Type=simple
-WorkingDirectory=/usr/lib/x-ui/
-ExecStart=/usr/lib/x-ui/x-ui
+WorkingDirectory=/usr/lib/space-ui/
+ExecStart=/usr/lib/space-ui/space-ui
 ExecReload=kill -USR1 $MAINPID
 Restart=on-failure
 RestartSec=5s

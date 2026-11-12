@@ -6,8 +6,8 @@ blue='\033[0;34m'
 yellow='\033[0;33m'
 plain='\033[0m'
 
-xui_folder="${XUI_MAIN_FOLDER:=/usr/local/x-ui}"
-xui_service="${XUI_SERVICE:=/etc/systemd/system}"
+space_ui_folder="${SPACE_UI_MAIN_FOLDER:=/usr/local/space-ui}"
+space_ui_service="${SPACE_UI_SERVICE:=/etc/systemd/system}"
 
 # Don't edit this config
 b_source="${BASH_SOURCE[0]}"
@@ -137,92 +137,92 @@ install_base() {
 }
 
 config_after_update() {
-    ${xui_folder}/x-ui migrate
+    ${space_ui_folder}/space-ui migrate
 
-    local existing_webBasePath=$(${xui_folder}/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}' | sed 's#^/##')
+    local existing_webBasePath=$(${space_ui_folder}/space-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}' | sed 's#^/##')
     if [[ ${#existing_webBasePath} -lt 4 ]]; then
         echo -e "${yellow}WebBasePath is missing or too short. Generating a new one...${plain}"
-        ${xui_folder}/x-ui setting -webBasePath "$(gen_random_string 18)" > /dev/null
+        ${space_ui_folder}/space-ui setting -webBasePath "$(gen_random_string 18)" > /dev/null
     fi
 }
 
-update_x-ui() {
-    cd ${xui_folder%/x-ui}/
+update_space-ui() {
+    cd ${space_ui_folder%/space-ui}/
 
-    if [ -f "${xui_folder}/x-ui" ]; then
-        current_xui_version=$(${xui_folder}/x-ui -v)
-        echo -e "${green}Current x-ui version: ${current_xui_version}${plain}"
+    if [ -f "${space_ui_folder}/space-ui" ]; then
+        current_version=$(${space_ui_folder}/space-ui -v)
+        echo -e "${green}Current space-ui version: ${current_version}${plain}"
     else
-        _fail "ERROR: Current x-ui version: unknown"
+        _fail "ERROR: Current space-ui version: unknown"
     fi
 
-    echo -e "${green}Downloading new x-ui version...${plain}"
+    echo -e "${green}Downloading new space-ui version...${plain}"
 
-    tag_version=$(${curl_bin} -Ls "https://api.github.com/repos/disp911/spacex-ui/releases/latest" 2> /dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    tag_version=$(${curl_bin} -Ls "https://api.github.com/repos/disp911/space-ui/releases/latest" 2> /dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     if [[ ! -n "$tag_version" ]]; then
         echo -e "${yellow}Trying to fetch version with IPv4...${plain}"
-        tag_version=$(${curl_bin} -4 -Ls "https://api.github.com/repos/disp911/spacex-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        tag_version=$(${curl_bin} -4 -Ls "https://api.github.com/repos/disp911/space-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
         if [[ ! -n "$tag_version" ]]; then
-            _fail "ERROR: Failed to fetch x-ui version, it may be due to GitHub API restrictions, please try it later"
+            _fail "ERROR: Failed to fetch space-ui version, it may be due to GitHub API restrictions, please try it later"
         fi
     fi
-    echo -e "Got x-ui latest version: ${tag_version}, beginning the installation..."
-    ${curl_bin} -fLRo ${xui_folder}-linux-$(arch).tar.gz https://github.com/disp911/spacex-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz 2> /dev/null
+    echo -e "Got space-ui latest version: ${tag_version}, beginning the installation..."
+    ${curl_bin} -fLRo ${space_ui_folder}-linux-$(arch).tar.gz https://github.com/disp911/space-ui/releases/download/${tag_version}/space-ui-linux-$(arch).tar.gz 2> /dev/null
     if [[ $? -ne 0 ]]; then
         echo -e "${yellow}Trying to fetch version with IPv4...${plain}"
-        ${curl_bin} -4fLRo ${xui_folder}-linux-$(arch).tar.gz https://github.com/disp911/spacex-ui/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz 2> /dev/null
+        ${curl_bin} -4fLRo ${space_ui_folder}-linux-$(arch).tar.gz https://github.com/disp911/space-ui/releases/download/${tag_version}/space-ui-linux-$(arch).tar.gz 2> /dev/null
         if [[ $? -ne 0 ]]; then
-            _fail "ERROR: Failed to download x-ui, please be sure that your server can access GitHub"
+            _fail "ERROR: Failed to download space-ui, please be sure that your server can access GitHub"
         fi
     fi
 
-    if [[ -e ${xui_folder}/ ]]; then
-        echo -e "${green}Stopping x-ui...${plain}"
+    if [[ -e ${space_ui_folder}/ ]]; then
+        echo -e "${green}Stopping space-ui...${plain}"
         if [[ $release == "alpine" ]]; then
-            if [ -f "/etc/init.d/x-ui" ]; then
-                rc-service x-ui stop > /dev/null 2>&1
-                rc-update del x-ui > /dev/null 2>&1
+            if [ -f "/etc/init.d/space-ui" ]; then
+                rc-service space-ui stop > /dev/null 2>&1
+                rc-update del space-ui > /dev/null 2>&1
                 echo -e "${green}Removing old service unit version...${plain}"
-                rm -f /etc/init.d/x-ui > /dev/null 2>&1
+                rm -f /etc/init.d/space-ui > /dev/null 2>&1
             else
-                rm x-ui-linux-$(arch).tar.gz -f > /dev/null 2>&1
-                _fail "ERROR: x-ui service unit not installed."
+                rm space-ui-linux-$(arch).tar.gz -f > /dev/null 2>&1
+                _fail "ERROR: space-ui service unit not installed."
             fi
         else
-            if [ -f "${xui_service}/x-ui.service" ]; then
-                systemctl stop x-ui > /dev/null 2>&1
-                systemctl disable x-ui > /dev/null 2>&1
+            if [ -f "${space_ui_service}/space-ui.service" ]; then
+                systemctl stop space-ui > /dev/null 2>&1
+                systemctl disable space-ui > /dev/null 2>&1
                 echo -e "${green}Removing old systemd unit version...${plain}"
-                rm ${xui_service}/x-ui.service -f > /dev/null 2>&1
+                rm ${space_ui_service}/space-ui.service -f > /dev/null 2>&1
                 systemctl daemon-reload > /dev/null 2>&1
             else
-                rm x-ui-linux-$(arch).tar.gz -f > /dev/null 2>&1
-                _fail "ERROR: x-ui systemd unit not installed."
+                rm space-ui-linux-$(arch).tar.gz -f > /dev/null 2>&1
+                _fail "ERROR: space-ui systemd unit not installed."
             fi
         fi
-        echo -e "${green}Removing old x-ui version...${plain}"
-        rm ${xui_folder} -f > /dev/null 2>&1
-        rm ${xui_folder}/x-ui.service -f > /dev/null 2>&1
-        rm ${xui_folder}/x-ui.service.debian -f > /dev/null 2>&1
-        rm ${xui_folder}/x-ui.service.arch -f > /dev/null 2>&1
-        rm ${xui_folder}/x-ui.service.rhel -f > /dev/null 2>&1
-        rm ${xui_folder}/x-ui -f > /dev/null 2>&1
-        rm ${xui_folder}/x-ui.sh -f > /dev/null 2>&1
+        echo -e "${green}Removing old space-ui version...${plain}"
+        rm ${space_ui_folder} -f > /dev/null 2>&1
+        rm ${space_ui_folder}/space-ui.service -f > /dev/null 2>&1
+        rm ${space_ui_folder}/space-ui.service.debian -f > /dev/null 2>&1
+        rm ${space_ui_folder}/space-ui.service.arch -f > /dev/null 2>&1
+        rm ${space_ui_folder}/space-ui.service.rhel -f > /dev/null 2>&1
+        rm ${space_ui_folder}/space-ui -f > /dev/null 2>&1
+        rm ${space_ui_folder}/space-ui.sh -f > /dev/null 2>&1
         echo -e "${green}Removing old xray version...${plain}"
-        rm ${xui_folder}/bin/xray-linux-amd64 -f > /dev/null 2>&1
+        rm ${space_ui_folder}/bin/xray-linux-amd64 -f > /dev/null 2>&1
         echo -e "${green}Removing old README and LICENSE file...${plain}"
-        rm ${xui_folder}/bin/README.md -f > /dev/null 2>&1
-        rm ${xui_folder}/bin/LICENSE -f > /dev/null 2>&1
+        rm ${space_ui_folder}/bin/README.md -f > /dev/null 2>&1
+        rm ${space_ui_folder}/bin/LICENSE -f > /dev/null 2>&1
     else
-        rm x-ui-linux-$(arch).tar.gz -f > /dev/null 2>&1
-        _fail "ERROR: x-ui not installed."
+        rm space-ui-linux-$(arch).tar.gz -f > /dev/null 2>&1
+        _fail "ERROR: space-ui not installed. Versions before 3.0.0 are not updated: install Space UI anew with install.sh."
     fi
 
-    echo -e "${green}Installing new x-ui version...${plain}"
-    tar zxvf x-ui-linux-$(arch).tar.gz > /dev/null 2>&1
-    rm x-ui-linux-$(arch).tar.gz -f > /dev/null 2>&1
-    cd x-ui > /dev/null 2>&1
-    chmod +x x-ui > /dev/null 2>&1
+    echo -e "${green}Installing new space-ui version...${plain}"
+    tar zxvf space-ui-linux-$(arch).tar.gz > /dev/null 2>&1
+    rm space-ui-linux-$(arch).tar.gz -f > /dev/null 2>&1
+    cd space-ui > /dev/null 2>&1
+    chmod +x space-ui > /dev/null 2>&1
 
     # Check the system's architecture and rename the file accordingly
     if [[ $(arch) == "armv5" || $(arch) == "armv6" || $(arch) == "armv7" ]]; then
@@ -230,70 +230,70 @@ update_x-ui() {
         chmod +x bin/xray-linux-arm > /dev/null 2>&1
     fi
 
-    chmod +x x-ui bin/xray-linux-$(arch) > /dev/null 2>&1
+    chmod +x space-ui bin/xray-linux-$(arch) > /dev/null 2>&1
     chmod +x bin/telemt-linux-$(arch) > /dev/null 2>&1
 
-    echo -e "${green}Installing the x-ui menu of the same release...${plain}"
-    cp -f x-ui.sh /usr/bin/x-ui > /dev/null 2>&1 || _fail "ERROR: x-ui.sh is missing from the release"
+    echo -e "${green}Installing the space-ui menu of the same release...${plain}"
+    cp -f space-ui.sh /usr/bin/space-ui > /dev/null 2>&1 || _fail "ERROR: space-ui.sh is missing from the release"
 
-    chmod +x ${xui_folder}/x-ui.sh > /dev/null 2>&1
-    chmod +x /usr/bin/x-ui > /dev/null 2>&1
-    mkdir -p /var/log/x-ui > /dev/null 2>&1
+    chmod +x ${space_ui_folder}/space-ui.sh > /dev/null 2>&1
+    chmod +x /usr/bin/space-ui > /dev/null 2>&1
+    mkdir -p /var/log/space-ui > /dev/null 2>&1
 
     echo -e "${green}Changing owner...${plain}"
-    chown -R root:root ${xui_folder} > /dev/null 2>&1
+    chown -R root:root ${space_ui_folder} > /dev/null 2>&1
 
-    if [ -f "${xui_folder}/bin/config.json" ]; then
+    if [ -f "${space_ui_folder}/bin/config.json" ]; then
         echo -e "${green}Changing on config file permissions...${plain}"
-        chmod 640 ${xui_folder}/bin/config.json > /dev/null 2>&1
+        chmod 640 ${space_ui_folder}/bin/config.json > /dev/null 2>&1
     fi
 
     if [[ $release == "alpine" ]]; then
-        echo -e "${green}Downloading and installing startup unit x-ui.rc...${plain}"
-        ${curl_bin} -fLRo /etc/init.d/x-ui https://raw.githubusercontent.com/disp911/spacex-ui/main/x-ui.rc > /dev/null 2>&1
+        echo -e "${green}Downloading and installing startup unit space-ui.rc...${plain}"
+        ${curl_bin} -fLRo /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.rc > /dev/null 2>&1
         if [[ $? -ne 0 ]]; then
-            ${curl_bin} -4fLRo /etc/init.d/x-ui https://raw.githubusercontent.com/disp911/spacex-ui/main/x-ui.rc > /dev/null 2>&1
+            ${curl_bin} -4fLRo /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.rc > /dev/null 2>&1
             if [[ $? -ne 0 ]]; then
-                _fail "ERROR: Failed to download startup unit x-ui.rc, please be sure that your server can access GitHub"
+                _fail "ERROR: Failed to download startup unit space-ui.rc, please be sure that your server can access GitHub"
             fi
         fi
-        chmod +x /etc/init.d/x-ui > /dev/null 2>&1
-        chown root:root /etc/init.d/x-ui > /dev/null 2>&1
-        rc-update add x-ui > /dev/null 2>&1
-        rc-service x-ui start > /dev/null 2>&1
+        chmod +x /etc/init.d/space-ui > /dev/null 2>&1
+        chown root:root /etc/init.d/space-ui > /dev/null 2>&1
+        rc-update add space-ui > /dev/null 2>&1
+        rc-service space-ui start > /dev/null 2>&1
     else
-        if [ -f "x-ui.service" ]; then
+        if [ -f "space-ui.service" ]; then
             echo -e "${green}Installing systemd unit...${plain}"
-            cp -f x-ui.service ${xui_service}/ > /dev/null 2>&1
+            cp -f space-ui.service ${space_ui_service}/ > /dev/null 2>&1
             if [[ $? -ne 0 ]]; then
-                echo -e "${red}Failed to copy x-ui.service${plain}"
+                echo -e "${red}Failed to copy space-ui.service${plain}"
                 exit 1
             fi
         else
             service_installed=false
             case "${release}" in
                 ubuntu | debian | armbian)
-                    if [ -f "x-ui.service.debian" ]; then
+                    if [ -f "space-ui.service.debian" ]; then
                         echo -e "${green}Installing debian-like systemd unit...${plain}"
-                        cp -f x-ui.service.debian ${xui_service}/x-ui.service > /dev/null 2>&1
+                        cp -f space-ui.service.debian ${space_ui_service}/space-ui.service > /dev/null 2>&1
                         if [[ $? -eq 0 ]]; then
                             service_installed=true
                         fi
                     fi
                     ;;
                 arch | manjaro | parch)
-                    if [ -f "x-ui.service.arch" ]; then
+                    if [ -f "space-ui.service.arch" ]; then
                         echo -e "${green}Installing arch-like systemd unit...${plain}"
-                        cp -f x-ui.service.arch ${xui_service}/x-ui.service > /dev/null 2>&1
+                        cp -f space-ui.service.arch ${space_ui_service}/space-ui.service > /dev/null 2>&1
                         if [[ $? -eq 0 ]]; then
                             service_installed=true
                         fi
                     fi
                     ;;
                 *)
-                    if [ -f "x-ui.service.rhel" ]; then
+                    if [ -f "space-ui.service.rhel" ]; then
                         echo -e "${green}Installing rhel-like systemd unit...${plain}"
-                        cp -f x-ui.service.rhel ${xui_service}/x-ui.service > /dev/null 2>&1
+                        cp -f space-ui.service.rhel ${space_ui_service}/space-ui.service > /dev/null 2>&1
                         if [[ $? -eq 0 ]]; then
                             service_installed=true
                         fi
@@ -306,55 +306,55 @@ update_x-ui() {
                 echo -e "${yellow}Service files not found in tar.gz, downloading from GitHub...${plain}"
                 case "${release}" in
                     ubuntu | debian | armbian)
-                        ${curl_bin} -4fLRo ${xui_service}/x-ui.service https://raw.githubusercontent.com/disp911/spacex-ui/main/x-ui.service.debian > /dev/null 2>&1
+                        ${curl_bin} -4fLRo ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.service.debian > /dev/null 2>&1
                         ;;
                     arch | manjaro | parch)
-                        ${curl_bin} -4fLRo ${xui_service}/x-ui.service https://raw.githubusercontent.com/disp911/spacex-ui/main/x-ui.service.arch > /dev/null 2>&1
+                        ${curl_bin} -4fLRo ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.service.arch > /dev/null 2>&1
                         ;;
                     *)
-                        ${curl_bin} -4fLRo ${xui_service}/x-ui.service https://raw.githubusercontent.com/disp911/spacex-ui/main/x-ui.service.rhel > /dev/null 2>&1
+                        ${curl_bin} -4fLRo ${space_ui_service}/space-ui.service https://raw.githubusercontent.com/disp911/space-ui/main/space-ui.service.rhel > /dev/null 2>&1
                         ;;
                 esac
 
                 if [[ $? -ne 0 ]]; then
-                    echo -e "${red}Failed to install x-ui.service from GitHub${plain}"
+                    echo -e "${red}Failed to install space-ui.service from GitHub${plain}"
                     exit 1
                 fi
             fi
         fi
-        chown root:root ${xui_service}/x-ui.service > /dev/null 2>&1
-        chmod 644 ${xui_service}/x-ui.service > /dev/null 2>&1
+        chown root:root ${space_ui_service}/space-ui.service > /dev/null 2>&1
+        chmod 644 ${space_ui_service}/space-ui.service > /dev/null 2>&1
         systemctl daemon-reload > /dev/null 2>&1
-        systemctl enable x-ui > /dev/null 2>&1
-        systemctl start x-ui > /dev/null 2>&1
+        systemctl enable space-ui > /dev/null 2>&1
+        systemctl start space-ui > /dev/null 2>&1
     fi
 
     config_after_update
 
-    echo -e "${green}x-ui ${tag_version}${plain} updating finished, it is running now..."
+    echo -e "${green}space-ui ${tag_version}${plain} updating finished, it is running now..."
     echo -e ""
-    echo -e "┌───────────────────────────────────────────────────────┐
-│  ${blue}x-ui control menu usages (subcommands):${plain}              │
-│                                                       │
-│  ${blue}x-ui${plain}              - Admin Management Script          │
-│  ${blue}x-ui start${plain}        - Start                            │
-│  ${blue}x-ui stop${plain}         - Stop                             │
-│  ${blue}x-ui restart${plain}      - Restart                          │
-│  ${blue}x-ui status${plain}       - Current Status                   │
-│  ${blue}x-ui settings${plain}     - Current Settings                 │
-│  ${blue}x-ui site${plain}         - Website & Certificate            │
-│  ${blue}x-ui enable${plain}       - Enable Autostart on OS Startup   │
-│  ${blue}x-ui disable${plain}      - Disable Autostart on OS Startup  │
-│  ${blue}x-ui log${plain}          - Check logs                       │
-│  ${blue}x-ui banlog${plain}       - Check Fail2ban ban logs          │
-│  ${blue}x-ui update${plain}       - Update                           │
-│  ${blue}x-ui legacy${plain}       - Legacy version                   │
-│  ${blue}x-ui install${plain}      - Install                          │
-│  ${blue}x-ui uninstall${plain}    - Uninstall                        │
-└───────────────────────────────────────────────────────┘"
+    echo -e "┌───────────────────────────────────────────────────────────┐
+│  ${blue}space-ui control menu usages (subcommands):${plain}              │
+│                                                           │
+│  ${blue}space-ui${plain}              - Admin Management Script          │
+│  ${blue}space-ui start${plain}        - Start                            │
+│  ${blue}space-ui stop${plain}         - Stop                             │
+│  ${blue}space-ui restart${plain}      - Restart                          │
+│  ${blue}space-ui status${plain}       - Current Status                   │
+│  ${blue}space-ui settings${plain}     - Current Settings                 │
+│  ${blue}space-ui site${plain}         - Website & Certificate            │
+│  ${blue}space-ui enable${plain}       - Enable Autostart on OS Startup   │
+│  ${blue}space-ui disable${plain}      - Disable Autostart on OS Startup  │
+│  ${blue}space-ui log${plain}          - Check logs                       │
+│  ${blue}space-ui banlog${plain}       - Check Fail2ban ban logs          │
+│  ${blue}space-ui update${plain}       - Update                           │
+│  ${blue}space-ui legacy${plain}       - Legacy version                   │
+│  ${blue}space-ui install${plain}      - Install                          │
+│  ${blue}space-ui uninstall${plain}    - Uninstall                        │
+└───────────────────────────────────────────────────────────┘"
 }
 
 echo -e "${green}Running...${plain}"
 install_base
-update_x-ui $1
-/usr/bin/x-ui site-status 2> /dev/null
+update_space-ui $1
+/usr/bin/space-ui site-status 2> /dev/null

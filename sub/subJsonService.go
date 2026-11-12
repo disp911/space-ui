@@ -10,12 +10,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/disp911/spacex-ui/v2/database/model"
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/util/json_util"
-	"github.com/disp911/spacex-ui/v2/util/random"
-	"github.com/disp911/spacex-ui/v2/web/service"
-	"github.com/disp911/spacex-ui/v2/xray"
+	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/util/json_util"
+	"github.com/disp911/space-ui/v3/util/random"
+	"github.com/disp911/space-ui/v3/web/service"
+	"github.com/disp911/space-ui/v3/xray"
 )
 
 //go:embed default.json

@@ -3,13 +3,13 @@ package controller
 import (
 	"net/http"
 
-	"github.com/disp911/spacex-ui/v2/web/service"
-	"github.com/disp911/spacex-ui/v2/web/session"
+	"github.com/disp911/space-ui/v3/web/service"
+	"github.com/disp911/space-ui/v3/web/session"
 
 	"github.com/gin-gonic/gin"
 )
 
-// APIController handles the main API routes for the 3x-ui panel, including inbounds and server management.
+// APIController handles the main API routes for the Space UI panel, including inbounds and server management.
 type APIController struct {
 	BaseController
 	inboundController *InboundController

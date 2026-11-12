@@ -1,4 +1,4 @@
-// Package web provides the main web server implementation for the 3x-ui panel,
+// Package web provides the main web server implementation for the Space UI panel,
 // including HTTP/HTTPS serving, routing, the frontend, and background job scheduling.
 package web
 
@@ -14,18 +14,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/disp911/spacex-ui/v2/config"
-	"github.com/disp911/spacex-ui/v2/logger"
-	"github.com/disp911/spacex-ui/v2/util/common"
-	"github.com/disp911/spacex-ui/v2/web/controller"
-	"github.com/disp911/spacex-ui/v2/web/job"
-	"github.com/disp911/spacex-ui/v2/web/locale"
-	"github.com/disp911/spacex-ui/v2/web/middleware"
-	"github.com/disp911/spacex-ui/v2/web/service"
-	"github.com/disp911/spacex-ui/v2/web/session"
-	"github.com/disp911/spacex-ui/v2/web/site"
-	"github.com/disp911/spacex-ui/v2/web/spa"
-	"github.com/disp911/spacex-ui/v2/web/websocket"
+	"github.com/disp911/space-ui/v3/config"
+	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/util/common"
+	"github.com/disp911/space-ui/v3/web/controller"
+	"github.com/disp911/space-ui/v3/web/job"
+	"github.com/disp911/space-ui/v3/web/locale"
+	"github.com/disp911/space-ui/v3/web/middleware"
+	"github.com/disp911/space-ui/v3/web/service"
+	"github.com/disp911/space-ui/v3/web/session"
+	"github.com/disp911/space-ui/v3/web/site"
+	"github.com/disp911/space-ui/v3/web/spa"
+	"github.com/disp911/space-ui/v3/web/websocket"
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/sessions"
@@ -54,7 +54,7 @@ func AppFS() fs.FS {
 	return app
 }
 
-// Server represents the main web server for the 3x-ui panel with controllers, services, and scheduled jobs.
+// Server represents the main web server for the Space UI panel with controllers, services, and scheduled jobs.
 type Server struct {
 	httpServer *http.Server
 	listener   net.Listener
@@ -77,7 +77,7 @@ type Server struct {
 	siteName, siteAddr string
 
 	index *controller.IndexController
-	panel *controller.XUIController
+	panel *controller.PanelController
 	api   *controller.APIController
 	ws    *controller.WebSocketController
 
@@ -147,7 +147,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 		sessionOptions.MaxAge = sessionMaxAge * 60 // minutes -> seconds
 	}
 	store.Options(sessionOptions)
-	engine.Use(sessions.Sessions("3x-ui", store))
+	engine.Use(sessions.Sessions("space-ui", store))
 	engine.Use(func(c *gin.Context) {
 		c.Set("base_path", basePath)
 	})
@@ -161,13 +161,13 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	// Server messages in the request's language, see controller.I18nWeb.
 	engine.Use(locale.LocalizerMiddleware())
 
-	// Apply the redirect middleware (`/xui` to `/panel`)
+	// Apply the redirect middleware (`/panel/API` to `/panel/api`)
 	engine.Use(middleware.RedirectMiddleware(basePath))
 
 	g := engine.Group(basePath)
 
 	s.index = controller.NewIndexController(g)
-	s.panel = controller.NewXUIController(g)
+	s.panel = controller.NewPanelController(g)
 	s.api = controller.NewAPIController(g, s.customGeoService)
 
 	// The panel's frontend, served from the base path: its files, and for any
