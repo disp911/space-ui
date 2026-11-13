@@ -206,6 +206,7 @@ function onKeydown(e: KeyboardEvent, items: TabItem<K>[]) {
   }
 
   .x-tabs__tab {
+    height: 48px;
     margin-bottom: 0;
   }
 
