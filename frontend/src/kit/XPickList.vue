@@ -79,6 +79,8 @@ const skeleton = [34, 30, 38, 28, 32, 36, 30, 26, 34, 30]
 }
 
 .x-pick__item {
+  /* Concentric inside the box: its radius less the 4px the rows sit in. */
+  border-radius: calc(var(--nest-r) - 4px);
   font: 500 var(--fs-13) / var(--lh-tight) var(--font-mono);
 }
 
@@ -109,11 +111,6 @@ const skeleton = [34, 30, 38, 28, 32, 36, 30, 26, 34, 30]
 @media (max-width: 767px) {
   .x-pick__scroll {
     max-height: 430px;
-  }
-
-  /* As phone menu items. */
-  .x-pick__item {
-    border-radius: var(--r-10);
   }
 }
 </style>

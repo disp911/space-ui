@@ -146,7 +146,7 @@ onBeforeUnmount(() => clearTimeout(timer))
   max-width: min(340px, calc(100vw - 16px));
   padding: 8px 0 6px;
   border: 1px solid var(--line);
-  border-radius: var(--r-10);
+  border-radius: var(--pop-r);
   background: var(--dlg);
   box-shadow: var(--shadow-pop);
 }

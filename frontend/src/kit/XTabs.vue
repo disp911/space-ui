@@ -131,7 +131,7 @@ function onKeydown(e: KeyboardEvent, items: TabItem<K>[]) {
   position: absolute;
   inset: 6px -8px;
   z-index: -1;
-  border-radius: var(--r-8);
+  border-radius: var(--btn-r);
   background: var(--acc-soft);
   opacity: 0;
   pointer-events: none;

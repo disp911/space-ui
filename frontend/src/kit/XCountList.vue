@@ -169,7 +169,7 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
   gap: 8px;
   min-height: 28px;
   padding: 0 8px;
-  border-radius: var(--r-6);
+  border-radius: var(--pop-item-r);
 }
 
 .x-count__item:hover {
@@ -195,7 +195,7 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
   height: 22px;
   padding: 0;
   border: 0;
-  border-radius: var(--r-6);
+  border-radius: var(--btn-r);
   background: transparent;
   color: var(--dim);
   cursor: help;
@@ -224,7 +224,6 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
   .x-count__comment {
     width: var(--ctl-h);
     height: var(--ctl-h);
-    border-radius: var(--r-8);
   }
 }
 </style>

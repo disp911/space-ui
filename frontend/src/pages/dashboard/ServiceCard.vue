@@ -133,7 +133,7 @@ const dash = '—'
   gap: 10px;
   padding: 0;
   border: 0;
-  border-radius: var(--r-8);
+  border-radius: var(--btn-r);
   background: none;
   color: var(--tone);
   font: 600 var(--fs-18) / var(--lh-tight) var(--font-sans);

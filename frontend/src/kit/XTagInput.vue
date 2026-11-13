@@ -357,7 +357,7 @@ function onBlur() {
   min-width: 0;
   height: 30px;
   padding: 0 8px;
-  border-radius: var(--r-8);
+  border-radius: var(--pop-item-r);
   color: var(--fg);
   font: 400 var(--fs-12) / 1 var(--font-sans);
   cursor: pointer;

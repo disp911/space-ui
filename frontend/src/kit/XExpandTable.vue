@@ -191,7 +191,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
   height: 24px;
   padding: 0;
   border: 0;
-  border-radius: var(--r-6);
+  border-radius: var(--btn-r);
   background: transparent;
   color: var(--dim);
   outline: none;

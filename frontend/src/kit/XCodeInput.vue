@@ -51,7 +51,7 @@ function onInput(e: Event) {
   margin: 0;
   padding: 0 56px;
   border: 1px solid var(--field-line);
-  border-radius: var(--r-10);
+  border-radius: var(--ctl-r);
   outline: none;
   background: var(--field);
   color: var(--fg);

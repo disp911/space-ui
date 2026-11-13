@@ -18,7 +18,7 @@ withDefaults(defineProps<{ maxHeight?: number; label?: string }>(), { maxHeight:
   gap: 6px;
   padding: 8px;
   border: 1px solid var(--div);
-  border-radius: var(--r-10);
+  border-radius: var(--ctl-r);
   background: var(--field);
   overflow-y: auto;
   scrollbar-gutter: stable;

@@ -143,7 +143,7 @@ const describedBy = computed(() => (props.error || props.hint ? `${id}-note` : u
   margin: -1px 0;
   padding: 0;
   border: 0;
-  border-radius: var(--r-6);
+  border-radius: var(--btn-r);
   background: transparent;
   color: var(--acc-t);
   cursor: pointer;
