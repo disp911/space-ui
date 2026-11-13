@@ -458,7 +458,7 @@ func processMemory(pid int) uint64 {
 }
 
 func (s *ServerService) AppendCpuSample(t time.Time, v float64) {
-	const capacity = 9000 // ~5 hours @ 2s interval
+	const capacity = 9300 // a little over 5 hours @ 2s, the longest range the dashboard shows
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	p := CPUSample{T: t.Unix(), Cpu: v}

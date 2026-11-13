@@ -9,15 +9,13 @@ import { XButton, XMenu, XSpinner, type MenuItem } from '../../kit'
 const { t } = useI18n()
 
 const ranges = [
-  { bucket: 2, key: 'dashboard.range2m' },
+  { bucket: 5, key: 'dashboard.range5m' },
   { bucket: 30, key: 'dashboard.range30m' },
   { bucket: 60, key: 'dashboard.range1h' },
-  { bucket: 120, key: 'dashboard.range2h' },
-  { bucket: 180, key: 'dashboard.range3h' },
   { bucket: 300, key: 'dashboard.range5h' },
 ] as const
 
-const bucket = ref<number>(2)
+const bucket = ref<number>(5)
 const points = ref<{ t: number; cpu: number }[]>([])
 const current = computed(() => ranges.find((r) => r.bucket === bucket.value) ?? ranges[0])
 const items = computed<MenuItem[]>(() => ranges.map((r) => ({ key: String(r.bucket), label: t(r.key), checked: r.bucket === bucket.value })))
@@ -45,7 +43,7 @@ watch(
     loading.value = true
     load()
     clearInterval(timer)
-    // A new point appears once per bucket; the live view follows the 2 s status.
+    // A new point appears once per bucket, every 30 s at most.
     timer = window.setInterval(load, Math.max(2, Math.min(bucket.value, 30)) * 1000)
   },
   { immediate: true },

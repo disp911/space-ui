@@ -105,13 +105,12 @@ func (a *ServerController) getCpuHistoryBucket(c *gin.Context) {
 		jsonMsg(c, "invalid bucket", fmt.Errorf("bad bucket"))
 		return
 	}
+	// 60 buckets of this many seconds: the last 5 minutes, 30 minutes, 1 hour or 5 hours.
 	allowed := map[int]bool{
-		2:   true, // Real-time view
-		30:  true, // 30s intervals
-		60:  true, // 1m intervals
-		120: true, // 2m intervals
-		180: true, // 3m intervals
-		300: true, // 5m intervals
+		5:   true,
+		30:  true,
+		60:  true,
+		300: true,
 	}
 	if !allowed[bucket] {
 		jsonMsg(c, "invalid bucket", fmt.Errorf("unsupported bucket"))

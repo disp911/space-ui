@@ -74,11 +74,9 @@ export interface MessageSchema {
     "usedOf": string
     "cpuLoad": string
     "range": string
-    "range2m": string
+    "range5m": string
     "range30m": string
     "range1h": string
-    "range2h": string
-    "range3h": string
     "range5h": string
     "peak": string
     "network": string
