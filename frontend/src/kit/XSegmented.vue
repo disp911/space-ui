@@ -96,7 +96,7 @@ function onKeydown(e: KeyboardEvent) {
   height: var(--ctl-h);
   padding: 2px;
   border: 1px solid var(--field-line);
-  border-radius: var(--ctl-r);
+  border-radius: var(--btn-r);
   background: var(--field);
 }
 
@@ -120,7 +120,7 @@ function onKeydown(e: KeyboardEvent) {
 
 .x-seg--scroll .x-seg__track {
   overflow-x: auto;
-  border-radius: var(--ctl-sm-r);
+  border-radius: var(--btn-r);
   scrollbar-width: none;
 }
 
@@ -142,7 +142,7 @@ function onKeydown(e: KeyboardEvent) {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: var(--ctl-sm-r);
+  border-radius: var(--btn-r);
   background: var(--seg);
   box-shadow: var(--shadow-seg);
   pointer-events: none;
@@ -156,7 +156,7 @@ function onKeydown(e: KeyboardEvent) {
   gap: 6px;
   padding: 0 12px;
   border: 0;
-  border-radius: var(--ctl-sm-r);
+  border-radius: var(--btn-r);
   background: transparent;
   color: var(--mut);
   font: 500 var(--fs-12) / 1 var(--font-sans);

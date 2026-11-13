@@ -46,7 +46,7 @@ function toggle(v: T) {
   height: var(--ctl-h);
   padding: 0 6px;
   border: 1px solid var(--field-line);
-  border-radius: var(--ctl-r);
+  border-radius: var(--btn-r);
   background: var(--field);
   color: var(--mut);
   font: 500 var(--ctl-fs) / 1 var(--font-sans);

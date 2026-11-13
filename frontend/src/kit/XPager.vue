@@ -133,7 +133,7 @@ function drawEnd() {
   height: var(--ctl-h);
   padding: 2px;
   border: 1px solid var(--field-line);
-  border-radius: var(--ctl-r);
+  border-radius: var(--btn-r);
   background: var(--field);
 }
 
@@ -144,7 +144,7 @@ function drawEnd() {
   gap: 2px;
   min-width: 0;
   overflow-x: auto;
-  border-radius: var(--ctl-sm-r);
+  border-radius: var(--btn-r);
   scrollbar-width: none;
   touch-action: pan-x;
   user-select: none;
@@ -164,7 +164,7 @@ function drawEnd() {
   top: 0;
   bottom: 0;
   z-index: 1;
-  border-radius: var(--ctl-sm-r);
+  border-radius: var(--btn-r);
   background: var(--acc);
   pointer-events: none;
 }
@@ -177,7 +177,7 @@ function drawEnd() {
   min-width: calc(var(--ctl-h) - 6px);
   padding: 0 8px;
   border: 0;
-  border-radius: var(--ctl-sm-r);
+  border-radius: var(--btn-r);
   background: transparent;
   color: var(--fg2);
   font: 500 var(--fs-13) / 1 var(--font-mono);
@@ -206,7 +206,7 @@ function drawEnd() {
   height: var(--ctl-h);
   padding: 0 10px 0 12px;
   border: 1px solid var(--field-line);
-  border-radius: var(--ctl-r);
+  border-radius: var(--btn-r);
   background: var(--ctrl);
   color: var(--fg2);
   font: 500 var(--fs-12) / 1 var(--font-mono);
