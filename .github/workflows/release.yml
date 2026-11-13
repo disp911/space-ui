@@ -22,7 +22,7 @@ on:
 
 env:
   # telemt MTProto proxy release bundled into Linux amd64/arm64 builds
-  TELEMT_VERSION: "3.5.16"
+  TELEMT_VERSION: "3.5.17"
 
 jobs:
   analyze:
