@@ -234,7 +234,7 @@ const reason = computed(() => (issue.value ? reasons.value[issue.value.kind] : '
 }
 
 .x-code-editor__host :deep(.cm-scroller) {
-  font: 400 var(--fs-12) / 20px var(--font-mono);
+  font: 400 14px / 20px var(--font-code);
 }
 
 .x-code-editor__host :deep(.cm-content) {

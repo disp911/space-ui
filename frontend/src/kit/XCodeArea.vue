@@ -61,7 +61,7 @@ const skeleton = [14, 30, 46, 38, 24, 52, 44, 30, 20, 48, 36, 26, 42, 18]
   border-radius: var(--r-12);
   background: var(--bg);
   clip-path: inset(0 round var(--r-12));
-  font: 400 var(--fs-12) / var(--lh-code) var(--font-mono);
+  font: 400 14px / 20px var(--font-code);
   transition: border-color var(--t-fast);
 }
 
