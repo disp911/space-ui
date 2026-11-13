@@ -354,14 +354,14 @@
 /* Large controls for a whole region, e.g. the login form: 44px; on phones the regular 48. */
 .x-ctl-lg {
   --ctl-h: 44px;
-  --ctl-r: var(--r-12);
+  --ctl-r: var(--r-14);
   --ctl-fs: var(--fs-14);
 }
 
 @media (max-width: 767px) {
   .x-ctl-lg {
     --ctl-h: 48px;
-    --ctl-r: var(--r-12);
+    --ctl-r: var(--r-14);
   }
 }
 

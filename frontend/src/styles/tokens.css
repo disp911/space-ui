@@ -29,6 +29,7 @@
   --r-8: 8px;
   --r-10: 10px;
   --r-12: 12px;
+  --r-14: 14px;
   --r-16: 16px;
   --r-pill: 999px;
   /* Containers, as Apple rounds them: a card by half its row (20px, 24px on phones), so the
@@ -57,7 +58,8 @@
 
   /* Controls (desktop; phones override below) */
   --ctl-h: 34px;
-  --ctl-r: var(--r-10);
+  /* Fields, selects and the rows that share their box: rounded rectangles, as Apple keeps text fields. */
+  --ctl-r: var(--r-12);
   --ctl-fs: var(--fs-13);
   --input-fs: var(--fs-13);
   --btn-px: 16px;
@@ -330,8 +332,8 @@
 /*
  * Phones: sized as iOS apps are, 48px controls and list items and 17px text.
  * The type scale moves up as a whole, so --fs-N is N px on desktop only;
- * icons grow by --icon-k (XIcon). Radii follow the sizes on the scale's
- * rule (28 to 8, 34 and 38 to 10, 44 and 48 to 12), an inner part's radius
+ * icons grow by --icon-k (XIcon). Fields round 12, 14 on phones and in large
+ * controls; buttons are capsules (--btn-r); an inner part's radius
  * being its box's less the padding between them.
  */
 @media (max-width: 767px) {
@@ -346,7 +348,7 @@
     --fs-20: 22px;
     --fs-24: 28px;
     --ctl-h: 48px;
-    --ctl-r: var(--r-12);
+    --ctl-r: var(--r-14);
     --ctl-fs: var(--fs-14);
     --ctl-sm-h: 36px;
     --ctl-sm-r: var(--r-10);

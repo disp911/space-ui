@@ -354,6 +354,7 @@ const spacing = [2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 56]
               <td v-for="s in states" :key="s.key">
                 <XInput
                   mono
+                  type="search"
                   icon="search"
                   placeholder="Поиск"
                   :model-value="s.key === 'focus' ? 'cdn' : ''"

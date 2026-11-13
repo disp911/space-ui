@@ -59,7 +59,7 @@ function setMode(m: 'search' | 'filter') {
 
     <div class="tools__find">
       <XSegmented :model-value="mode" :options="modes" icon-only :label="t('inbounds.mode')" @update:model-value="setMode" />
-      <XInput v-if="mode === 'search'" v-model="search" icon="search" clearable :placeholder="t('inbounds.search')" :aria-label="t('inbounds.search')" class="tools__search" />
+      <XInput v-if="mode === 'search'" v-model="search" type="search" icon="search" clearable :placeholder="t('inbounds.search')" :aria-label="t('inbounds.search')" class="tools__search" />
       <XSegmented v-else v-model="filter" :options="filters" scroll :label="t('inbounds.filter')" class="tools__filter" />
     </div>
 

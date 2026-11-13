@@ -216,7 +216,7 @@ async function download() {
         </XButton>
       </XMenu>
 
-      <XInput v-model="query" icon="search" clearable mono :placeholder="t('dashboard.xlogSearch')" class="xlog-search" />
+      <XInput v-model="query" type="search" icon="search" clearable mono :placeholder="t('dashboard.xlogSearch')" class="xlog-search" />
 
       <XMenu v-slot="{ props }" :items="kindItems" :title="t('dashboard.xlogTypes')" placement="bottom-start" sheet multiple @select="shown[$event as Kind] = !shown[$event as Kind]">
         <XButton

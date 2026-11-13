@@ -45,7 +45,7 @@ defineExpose({ focus: () => input.value?.focus() })
 <template>
   <div
     v-bind="wrapper"
-    :class="['x-field-box', 'x-input', { 'x-field-box--mono': mono, 'is-disabled': disabled, 'is-invalid': invalid, 'is-modified': modified }]"
+    :class="['x-field-box', 'x-input', { 'x-input--search': type === 'search', 'x-field-box--mono': mono, 'is-disabled': disabled, 'is-invalid': invalid, 'is-modified': modified }]"
   >
     <XIcon v-if="icon" :name="icon" :size="14" class="x-input__icon" />
     <input
@@ -101,6 +101,17 @@ defineExpose({ focus: () => input.value?.focus() })
   font: inherit;
   color: inherit;
   text-overflow: ellipsis;
+}
+
+/* A search field is a capsule, as Apple draws search; the browser's own clear cross gives way to ours. */
+.x-input--search {
+  padding-left: 14px;
+  border-radius: var(--btn-r);
+}
+
+.x-input__control::-webkit-search-cancel-button,
+.x-input__control::-webkit-search-decoration {
+  appearance: none;
 }
 
 .x-input__control::placeholder {
