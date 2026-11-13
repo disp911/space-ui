@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { globeColors, globeFrame, globeSvg, restAngle } from './globe'
+import { globeColors, globeFrame, restAngle } from './globe'
 
-/** large is the login page's mark: it turns, unless motion is reduced. */
-const props = defineProps<{ large?: boolean }>()
+/**
+ * The panel's mark, turning in the menu and on the login page alike unless
+ * motion is reduced; large is the login page's size. It draws some 30 frames
+ * a second, enough for its slow turn, and nothing while it is hidden.
+ */
+defineProps<{ large?: boolean }>()
 
-const mark = globeSvg()
 const canvas = ref<HTMLCanvasElement>()
 let frame = 0
+let resize: ResizeObserver | undefined
 
 function paint(el: HTMLCanvasElement, angle: number) {
   const size = el.clientWidth
+  if (!size) return
   const dpr = window.devicePixelRatio || 1
   if (el.width !== Math.round(size * dpr)) {
     el.width = Math.round(size * dpr)
@@ -34,26 +39,33 @@ function paint(el: HTMLCanvasElement, angle: number) {
 
 onMounted(() => {
   const el = canvas.value
-  if (!props.large || !el) return
+  if (!el) return
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    paint(el, restAngle)
+    // Still, drawn again whenever it changes size, such as a hidden menu shown.
+    resize = new ResizeObserver(() => paint(el, restAngle))
+    resize.observe(el)
     return
   }
   const start = performance.now()
+  let last = -Infinity
   const tick = (now: number) => {
-    const t = (now - start) / 1000
-    paint(el, restAngle + t * 0.3)
+    if (now - last >= 32) {
+      last = now
+      paint(el, restAngle + ((now - start) / 1000) * 0.3)
+    }
     frame = requestAnimationFrame(tick)
   }
   frame = requestAnimationFrame(tick)
 })
-onBeforeUnmount(() => cancelAnimationFrame(frame))
+onBeforeUnmount(() => {
+  cancelAnimationFrame(frame)
+  resize?.disconnect()
+})
 </script>
 
 <template>
   <div :class="['logo', { 'logo--large': large }]">
-    <canvas v-if="large" ref="canvas" class="logo__mark" aria-hidden="true" />
-    <span v-else class="logo__mark" aria-hidden="true" v-html="mark" />
+    <canvas ref="canvas" class="logo__mark" aria-hidden="true" />
     <span class="logo__name">Space <span class="logo__panel">panel</span></span>
   </div>
 </template>
@@ -62,51 +74,37 @@ onBeforeUnmount(() => cancelAnimationFrame(frame))
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
 }
 
+/* One size everywhere: the height of the kit's controls on desktop. */
 .logo__mark {
   display: block;
   flex: none;
-  width: 26px;
-  height: 26px;
-}
-
-.logo__mark :deep(svg) {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.logo--large {
-  gap: 12px;
-}
-
-.logo--large .logo__mark {
-  width: 32px;
-  height: 32px;
-}
-
-.logo--large .logo__name {
-  font-size: var(--fs-16);
-}
-
-@media (max-width: 767px) {
-  .logo--large .logo__mark {
-    width: 28px;
-    height: 28px;
-  }
-
-  .logo--large .logo__name {
-    font-size: var(--fs-14);
-  }
+  width: 34px;
+  height: 34px;
 }
 
 .logo__name {
-  font: 600 var(--fs-14) / 1 var(--font-sans);
+  font: 600 var(--fs-16) / 1 var(--font-sans);
   letter-spacing: -.3px;
   white-space: nowrap;
+}
+
+.logo--large {
+  gap: 14px;
+}
+
+.logo--large .logo__name {
+  font-size: var(--fs-18);
+}
+
+/* Phones scale the type up (--fs-16 is 18px there), so the login page keeps 18px. */
+@media (max-width: 767px) {
+  .logo--large .logo__name {
+    font-size: var(--fs-16);
+  }
 }
 
 .logo__panel {
