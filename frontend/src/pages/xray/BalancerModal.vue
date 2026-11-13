@@ -106,7 +106,7 @@ const title = computed(() => (props.balancer ? t('xray.balEdit') : t('xray.balAd
 </script>
 
 <template>
-  <XModal v-model:open="open" :title="title" cancel scroll-body>
+  <XModal v-model:open="open" :title="title" size="md" cancel scroll-body stack>
     <div class="balancer">
       <XField v-slot="a" :label="t('xray.outTag')">
         <XInput v-bind="a" v-model="form.tag" mono :invalid="tagWrong" :placeholder="t('xray.balTagHint')" />

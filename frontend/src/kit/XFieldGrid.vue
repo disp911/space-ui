@@ -11,7 +11,8 @@ import { useStack } from './media'
  * top lines them up at their top instead, e.g. a field beside a taller list.
  * tight sets them 8px apart, e.g. the rows of a list of fields. In a window
  * that stacks its fields there is one column, on desktop too; phoneColumns
- * stay, as they hold one control made of parts, e.g. a field and its button.
+ * stay, for what belongs on one line: a field and its button, an address and
+ * its port.
  */
 const props = withDefaults(
   defineProps<{ cols?: 1 | 2 | 3 | 4; phone?: 1 | 2 | 4; columns?: string; phoneColumns?: string; top?: boolean; tight?: boolean }>(),

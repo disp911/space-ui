@@ -120,7 +120,7 @@ async function save() {
 </script>
 
 <template>
-  <XModal v-model:open="open" :title="editing ? t('inbounds.editClient') : t('inbounds.addClient')" size="form" cancel scroll-body :dismissible="!saving">
+  <XModal v-model:open="open" :title="editing ? t('inbounds.editClient') : t('inbounds.addClient')" size="md" cancel scroll-body stack :dismissible="!saving">
     <div v-if="inbound && form" class="client-window">
       <XStateBar v-if="editing && (expired || exhausted)">Account is {{ expired ? 'Expired' : 'Traffic Ended' }} And Disabled</XStateBar>
       <ClientFields :client="c" :protocol="inbound.protocol" :method="form.settings.method" :flow="canFlow(form)">

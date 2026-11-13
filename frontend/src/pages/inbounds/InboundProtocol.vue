@@ -319,7 +319,7 @@ const webFrontOk = location.protocol === 'https:' && (location.port === '' || lo
 
     <!-- Tunnel -->
     <template v-if="p === 'tunnel'">
-      <XFieldGrid>
+      <XFieldGrid columns="minmax(0, 1fr) 120px" phone-columns="minmax(0, 1fr) 120px">
         <XField v-slot="a" :label="t('inbounds.targetAddress')">
           <XInput v-bind="a" v-model.trim="s.address" mono />
         </XField>

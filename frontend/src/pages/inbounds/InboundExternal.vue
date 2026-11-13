@@ -49,12 +49,13 @@ const alpnOptions: Option[] = alpns.map((v) => ({ value: v, label: v }))
         <XNestCard v-for="(r, i) in rows" :key="i" :title="r.remark || String(i + 1)">
           <XFieldGrid :cols="1">
             <XField v-slot="a" label="Force TLS">
-              <XFieldGrid :cols="2" phone-columns="repeat(2, minmax(0, 1fr))">
-                <XSelect v-bind="a" v-model="r.forceTls" :options="tlsOptions" />
-                <XNumber v-model="r.port" block :min="1" :max="65535" :aria-label="t('inbounds.colPort')" />
-              </XFieldGrid>
+              <XSelect v-bind="a" v-model="r.forceTls" :options="tlsOptions" />
             </XField>
-            <XInput v-model.trim="r.dest" mono :placeholder="t('inbounds.host')" :aria-label="t('inbounds.host')" />
+            <!-- Host and port share a line. -->
+            <XFieldGrid columns="minmax(0, 1fr) 120px" phone-columns="minmax(0, 1fr) 120px">
+              <XInput v-model.trim="r.dest" mono :placeholder="t('inbounds.host')" :aria-label="t('inbounds.host')" />
+              <XNumber v-model="r.port" block :min="1" :max="65535" :aria-label="t('inbounds.colPort')" />
+            </XFieldGrid>
             <template v-if="r.forceTls === 'tls'">
               <XInput v-model.trim="r.sni" mono placeholder="SNI" aria-label="SNI" />
               <XSelect :model-value="r.fingerprint" :options="fingerprintOptions" placeholder="Fingerprint" aria-label="Fingerprint" @update:model-value="r.fingerprint = $event" />

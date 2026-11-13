@@ -172,23 +172,26 @@ const title = computed(() => (props.rule ? t('xray.ruleEdit', { n: props.index +
 
       <hr class="rule__line" />
 
-      <XField v-slot="a" label="Source IPs" :help="t('xray.useComma')">
-        <XTagInput v-bind="a" v-model="form.sourceIP" :groups="ipGroups" mono placeholder="e.g. 0.0.0.0/8, fc00::/7, geoip:ir" />
-      </XField>
-      <XFieldGrid>
-        <XField v-slot="a" label="Source Port" :help="t('xray.useComma')">
-          <XInput v-bind="a" v-model="form.sourcePort" mono placeholder="53,443,1000-2000" />
+      <!-- Addresses and their ports share a line, in a window that stacks its fields too. -->
+      <XFieldGrid columns="minmax(0, 1fr) 160px" phone-columns="minmax(0, 1fr) 120px" top>
+        <XField v-slot="a" label="Source IPs" :help="t('xray.useComma')">
+          <XTagInput v-bind="a" v-model="form.sourceIP" :groups="ipGroups" mono placeholder="e.g. 0.0.0.0/8, fc00::/7, geoip:ru" />
         </XField>
-        <XField v-slot="a" label="VLESS Route" :help="t('xray.useComma')">
-          <XInput v-bind="a" v-model="form.vlessRoute" mono placeholder="53,443,1000-2000" />
+        <XField v-slot="a" label="Source Port" :help="t('xray.useComma')">
+          <XInput v-bind="a" v-model="form.sourcePort" mono placeholder="53,443" />
         </XField>
       </XFieldGrid>
-      <XField v-slot="a" label="Local IPs" :help="t('xray.ruleLocalHelp')">
-        <XTagInput v-bind="a" v-model="form.localIP" :groups="ipGroups" mono placeholder="e.g. 10.0.0.1, 2001:db8::1" />
+      <XField v-slot="a" label="VLESS Route" :help="t('xray.useComma')">
+        <XInput v-bind="a" v-model="form.vlessRoute" mono placeholder="53,443,1000-2000" />
       </XField>
-      <XField v-slot="a" label="Local Port" :help="t('xray.useComma')">
-        <XInput v-bind="a" v-model="form.localPort" mono placeholder="443,8443" />
-      </XField>
+      <XFieldGrid columns="minmax(0, 1fr) 160px" phone-columns="minmax(0, 1fr) 120px" top>
+        <XField v-slot="a" label="Local IPs" :help="t('xray.ruleLocalHelp')">
+          <XTagInput v-bind="a" v-model="form.localIP" :groups="ipGroups" mono placeholder="e.g. 10.0.0.1, 2001:db8::1" />
+        </XField>
+        <XField v-slot="a" label="Local Port" :help="t('xray.useComma')">
+          <XInput v-bind="a" v-model="form.localPort" mono placeholder="443,8443" />
+        </XField>
+      </XFieldGrid>
 
       <hr class="rule__line" />
 
@@ -204,20 +207,20 @@ const title = computed(() => (props.rule ? t('xray.ruleEdit', { n: props.index +
 
       <hr class="rule__line" />
 
-      <XField v-slot="a" label="IP" :help="t('xray.useComma')">
-        <XTagInput v-bind="a" v-model="form.ip" :groups="ipGroups" mono placeholder="e.g. 0.0.0.0/8, fc00::/7, geoip:ir" />
-      </XField>
+      <XFieldGrid columns="minmax(0, 1fr) 160px" phone-columns="minmax(0, 1fr) 120px" top>
+        <XField v-slot="a" label="IP" :help="t('xray.useComma')">
+          <XTagInput v-bind="a" v-model="form.ip" :groups="ipGroups" mono placeholder="e.g. 0.0.0.0/8, fc00::/7, geoip:ru" />
+        </XField>
+        <XField v-slot="a" label="Port" :help="t('xray.useComma')">
+          <XInput v-bind="a" v-model="form.port" mono placeholder="53,443" />
+        </XField>
+      </XFieldGrid>
       <XField v-slot="a" label="Domain" :help="t('xray.useComma')">
         <XTagInput v-bind="a" v-model="form.domain" :groups="domainGroups" mono placeholder="e.g. google.com, geosite:cn" />
       </XField>
-      <XFieldGrid>
-        <XField v-slot="a" label="User" :help="t('xray.useComma')">
-          <XInput v-bind="a" v-model="form.user" placeholder="email address" />
-        </XField>
-        <XField v-slot="a" label="Port" :help="t('xray.useComma')">
-          <XInput v-bind="a" v-model="form.port" mono placeholder="53,443,1000-2000" />
-        </XField>
-      </XFieldGrid>
+      <XField v-slot="a" label="User" :help="t('xray.useComma')">
+        <XInput v-bind="a" v-model="form.user" placeholder="email address" />
+      </XField>
       <XField v-slot="a" label="Process" :help="t('xray.ruleProcessHelp')">
         <XTagInput v-bind="a" v-model="form.process" mono placeholder="e.g. chrome.exe, /usr/bin/curl" />
       </XField>

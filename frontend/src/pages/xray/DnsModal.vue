@@ -100,19 +100,20 @@ const title = computed(() => (props.server != null ? t('xray.dnsEditN', { n: pro
 </script>
 
 <template>
-  <XModal v-model:open="open" :title="title" cancel>
+  <XModal v-model:open="open" :title="title" size="md" cancel scroll-body stack>
     <div class="dns">
-      <XFieldGrid columns="minmax(0, 1fr) 96px 160px" :phone="2">
-        <XField v-slot="a" :label="t('xray.outAddress')" class="x-wide-phone">
+      <!-- Address and port share a line, in a window that stacks its fields too. -->
+      <XFieldGrid columns="minmax(0, 1fr) 120px" phone-columns="minmax(0, 1fr) 120px">
+        <XField v-slot="a" :label="t('xray.outAddress')">
           <XInput v-bind="a" v-model="form.address" mono />
         </XField>
         <XField v-slot="a" :label="t('xray.port')">
           <XNumber v-bind="a" block v-model="form.port" :min="1" :max="65535" />
         </XField>
-        <XField v-slot="a" :label="t('xray.dnsStrategy')">
-          <XSelect v-bind="a" v-model="form.queryStrategy" :options="strategies" mono />
-        </XField>
       </XFieldGrid>
+      <XField v-slot="a" :label="t('xray.dnsStrategy')">
+        <XSelect v-bind="a" v-model="form.queryStrategy" :options="strategies" mono />
+      </XField>
 
       <XInputList v-model="form.domains" :title="t('xray.dnsDomains')" mono />
       <XInputList v-model="form.expectIPs" :title="t('xray.dnsExpectIPs')" mono />

@@ -32,7 +32,7 @@ const title = computed(() => (props.pool ? t('xray.fakeEditN', { n: props.index 
 </script>
 
 <template>
-  <XModal v-model:open="open" :title="title" cancel>
+  <XModal v-model:open="open" :title="title" size="md" cancel scroll-body stack>
     <XFieldGrid>
       <XField v-slot="a" :label="t('xray.fakePool')">
         <XInput v-bind="a" v-model="form.ipPool" mono />

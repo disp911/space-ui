@@ -150,7 +150,8 @@ async function save() {
           <XSelect v-bind="a" v-model="protocol" :options="protocolOptions" :disabled="editing" mono />
         </XField>
       </XFieldGrid>
-      <XFieldGrid>
+      <!-- Address and port share a line, in a window that stacks its fields too. -->
+      <XFieldGrid columns="minmax(0, 1fr) 120px" phone-columns="minmax(0, 1fr) 120px">
         <XField v-slot="a" :label="t('inbounds.listen')" :help="t('inbounds.listenHelp')">
           <XInput v-bind="a" v-model.trim="f.listen" mono />
         </XField>

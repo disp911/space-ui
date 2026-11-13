@@ -99,7 +99,7 @@ async function save() {
 </script>
 
 <template>
-  <XModal v-model:open="open" :title="`${t('inbounds.addBulk')} ${inbound?.remark ?? ''}`" size="form" cancel scroll-body :dismissible="!saving">
+  <XModal v-model:open="open" :title="`${t('inbounds.addBulk')} ${inbound?.remark ?? ''}`" size="md" cancel scroll-body stack :dismissible="!saving">
     <div v-if="inbound" class="bulk">
       <XField v-slot="a" :label="t('inbounds.method')">
         <XSelect v-bind="a" v-model="method" :options="methodOptions" />
