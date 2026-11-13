@@ -40,7 +40,7 @@ withDefaults(defineProps<{ label: string; text: string; tone?: Tone }>(), { tone
 .x-copy-block__text {
   padding: var(--sp-8) var(--sp-10);
   border: 1px solid var(--div);
-  border-radius: var(--r-8);
+  border-radius: var(--nest-r);
   background: var(--tint);
   color: var(--fg2);
   font: 400 var(--fs-11) / var(--lh-code) var(--font-mono);

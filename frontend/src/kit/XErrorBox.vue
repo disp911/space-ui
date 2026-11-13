@@ -21,7 +21,7 @@ const lines = computed(() => props.text.split('\n').filter(Boolean))
   padding: 8px 12px;
   overflow: auto;
   border: 1px solid var(--err-line);
-  border-radius: var(--r-8);
+  border-radius: var(--nest-r);
   background: var(--err-bg);
   color: var(--err-t);
   font: 400 var(--fs-11) / var(--lh-code) var(--font-mono);

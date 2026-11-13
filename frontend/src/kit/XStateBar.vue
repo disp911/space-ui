@@ -18,7 +18,7 @@ withDefaults(defineProps<{ tone?: 'ok' | 'warn' | 'err' }>(), { tone: 'err' })
   min-height: 32px;
   margin: 0;
   padding: 8px 12px;
-  border-radius: var(--r-10);
+  border-radius: var(--nest-r);
   font: 600 var(--fs-13) / var(--lh-tight) var(--font-sans);
   text-align: center;
 }

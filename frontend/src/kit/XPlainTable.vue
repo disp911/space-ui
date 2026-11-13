@@ -94,7 +94,7 @@ const fitted = computed(() => props.columns.slice(1).filter((c) => c.fit))
   min-width: 0;
   overflow: clip;
   border: 1px solid var(--div);
-  border-radius: var(--r-10);
+  border-radius: var(--nest-r);
   background: var(--card);
 }
 

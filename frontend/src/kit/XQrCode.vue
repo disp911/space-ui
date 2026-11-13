@@ -65,7 +65,7 @@ onBeforeUnmount(() => clearTimeout(timer))
   flex: none;
   padding: 0;
   border: 0;
-  border-radius: var(--r-10);
+  border-radius: var(--nest-r);
   background: #fff;
   box-shadow: 0 0 0 1px var(--line);
 }
@@ -96,7 +96,7 @@ onBeforeUnmount(() => clearTimeout(timer))
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: var(--r-8);
+  border-radius: var(--btn-r);
   background: var(--acc);
   color: var(--acc-ink);
   box-shadow: 0 0 0 3px var(--dlg);

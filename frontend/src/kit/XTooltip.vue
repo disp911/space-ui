@@ -71,7 +71,7 @@ watch(
   max-width: 280px;
   padding: 6px 10px;
   border: 1px solid var(--line);
-  border-radius: var(--r-8);
+  border-radius: var(--r-12);
   background: var(--dlg);
   color: var(--fg2);
   box-shadow: var(--shadow-pop);

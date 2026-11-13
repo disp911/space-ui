@@ -93,7 +93,7 @@ watch(() => props.text, (text) => !text && (open.value = false))
   padding: 10px 12px;
   overflow: auto;
   border: 1px solid var(--div);
-  border-radius: var(--r-10);
+  border-radius: var(--nest-r);
   background: var(--nest);
   color: var(--fg2);
   font: 400 var(--fs-11) / var(--lh-code) var(--font-mono);

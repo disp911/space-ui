@@ -19,7 +19,7 @@ defineProps<{ label: string }>()
   min-width: 0;
   padding: var(--sp-10) var(--sp-6);
   border: 1px solid var(--div);
-  border-radius: var(--r-10);
+  border-radius: var(--nest-r);
   background: var(--tint);
   text-align: center;
 }

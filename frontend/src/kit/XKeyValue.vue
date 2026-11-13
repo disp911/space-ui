@@ -31,7 +31,7 @@ defineProps<{ rows: { label: string; value?: string; key?: string }[]; plain?: b
   margin: 0;
   overflow: clip;
   border: 1px solid var(--div);
-  border-radius: var(--r-10);
+  border-radius: var(--nest-r);
 }
 
 .x-kv__row {
@@ -127,10 +127,6 @@ defineProps<{ rows: { label: string; value?: string; key?: string }[]; plain?: b
 }
 
 @media (max-width: 767px) {
-  .x-kv {
-    border-radius: var(--nest-r);
-  }
-
   .x-kv__row {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--sp-4);
