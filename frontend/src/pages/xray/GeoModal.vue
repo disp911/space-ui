@@ -198,7 +198,7 @@ async function remove() {
 
 .geo__ext {
   padding: 2px 6px;
-  border-radius: var(--r-6);
+  border-radius: var(--chip-r);
   background: var(--hov);
   color: var(--fg2);
   font: 400 var(--fs-12) / var(--lh-tight) var(--font-mono);

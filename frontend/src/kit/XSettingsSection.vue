@@ -92,9 +92,9 @@ const { t } = useI18n()
 
 .x-settings__chevron {
   flex: none;
-  border-radius: 2px;
+  border-radius: 50%;
   color: var(--dim);
-  /* The focus box is always full size and only fades in, so it never grows out of a square. */
+  /* The focus ring is always full size and only fades in, so it never grows out of a circle. */
   box-shadow: 0 0 0 4px transparent, 0 0 0 5px transparent;
   transition: transform var(--t-fast), color var(--t-fast), background-color var(--t-fast), box-shadow var(--t-fast);
 }

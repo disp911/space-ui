@@ -73,7 +73,7 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
   height: var(--chip-h);
   padding: 0 8px;
   border: 1px solid var(--tone-line);
-  border-radius: var(--r-6);
+  border-radius: var(--chip-r);
   background: var(--tone-bg);
   color: var(--tone-t);
   font: 500 var(--fs-12) / 1 var(--font-mono);

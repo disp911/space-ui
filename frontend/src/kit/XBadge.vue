@@ -23,7 +23,7 @@ withDefaults(defineProps<{
   height: var(--badge-h);
   padding: 0 6px;
   border: 1px solid transparent;
-  border-radius: var(--r-6);
+  border-radius: var(--chip-r);
   font: 600 var(--fs-11) / 1 var(--font-sans);
   white-space: nowrap;
 }

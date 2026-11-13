@@ -76,10 +76,11 @@
   --check: 16px;
   --check-r: var(--r-4);
   --chip-h: 22px;
-  --chip-r: var(--r-6);
+  /* Chips, badges, tags and counters are capsules, as Apple draws tokens and badges. */
+  --chip-r: var(--r-pill);
   --badge-h: 20px;
   --counter-h: 16px;
-  --counter-r: var(--r-4);
+  --counter-r: var(--r-pill);
   /* Menus and popovers, and the items inside them (the box's radius less its 4px padding). */
   --pop-r: var(--r-12);
   --pop-item-r: var(--r-8);
@@ -362,10 +363,8 @@
     --check: 24px;
     --check-r: var(--r-6);
     --chip-h: 28px;
-    --chip-r: var(--r-8);
     --badge-h: 24px;
     --counter-h: 20px;
-    --counter-r: var(--r-6);
     --pop-r: var(--r-16);
     --pop-item-r: var(--r-12);
     --icon-k: 1.2;

@@ -286,7 +286,7 @@
   height: 16px;
   padding: 0;
   border: 0;
-  border-radius: var(--r-4);
+  border-radius: var(--btn-r);
   background: transparent;
   color: var(--dim);
   outline: none;

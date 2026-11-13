@@ -85,7 +85,7 @@ onBeforeUnmount(() => clearTimeout(timer))
   height: var(--chip-h);
   padding: 0 var(--sp-4) 0 var(--sp-8);
   border: 1px solid var(--chip-line);
-  border-radius: var(--r-6);
+  border-radius: var(--chip-r);
   background: var(--chip);
   color: var(--fg2);
   font: 400 var(--fs-12) / 1 var(--font-sans);
@@ -131,7 +131,7 @@ onBeforeUnmount(() => clearTimeout(timer))
   flex: none;
   height: 16px;
   padding: 0 4px;
-  border-radius: var(--r-4);
+  border-radius: var(--counter-r);
   background: var(--hov);
   color: var(--mut);
   font: 500 var(--fs-10) / 16px var(--font-mono);
