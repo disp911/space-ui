@@ -161,10 +161,11 @@
   --acc-press: #316B94;
 
   /* Status tones: solid, text, tint background, tint line */
-  --ok: #2FD4A0;
-  --ok-t: #5FE0B6;
-  --ok-bg: rgba(47, 212, 160, .12);
-  --ok-line: rgba(47, 212, 160, .4);
+  /* Success is a muted sage green, quieter than the accent. */
+  --ok: #4E9A78;
+  --ok-t: #86C2A4;
+  --ok-bg: rgba(78, 154, 120, .14);
+  --ok-line: rgba(78, 154, 120, .4);
   --warn: #E8A13A;
   --warn-t: #F0B75C;
   /* Body text of warnings, quieter than the title */
@@ -268,10 +269,10 @@
   --acc-hover: #37729E;
   --acc-press: #285677;
 
-  --ok: #0A7A59;
-  --ok-t: #0A7A59;
-  --ok-bg: rgba(10, 122, 89, .08);
-  --ok-line: rgba(10, 122, 89, .3);
+  --ok: #3A7158;
+  --ok-t: #335F4B;
+  --ok-bg: rgba(58, 113, 88, .09);
+  --ok-line: rgba(58, 113, 88, .3);
   --warn: #B4761A;
   --warn-t: #8A5A10;
   --warn-x: #7A6337;
