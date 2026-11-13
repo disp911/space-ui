@@ -145,6 +145,7 @@ watch(() => route.fullPath, () => (drawerOpen.value = false))
   }
 
   .topbar__host {
+    margin-top: 4px;
     overflow: hidden;
     color: var(--dim);
     font: 400 var(--fs-11) / var(--lh-text) var(--font-mono);
