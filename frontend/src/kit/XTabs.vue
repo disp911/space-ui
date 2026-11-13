@@ -11,8 +11,8 @@ export interface TabItem<K extends string = string> {
 }
 
 /**
- * Page tabs. On wide screens labels sit on a line with an accent ink under the
- * current one; on phones they are pills in a strip that scrolls sideways.
+ * Page tabs: labels on a line with an accent ink under the current one. A strip
+ * that does not fit scrolls sideways, on wide screens as on phones.
  */
 const props = defineProps<{
   items: TabItem<K>[]
@@ -77,13 +77,26 @@ function onKeydown(e: KeyboardEvent, items: TabItem<K>[]) {
   min-width: 0;
   /* Takes the width it is given: a long strip scrolls instead of widening the page. */
   contain: inline-size;
+  /* The line under the tabs is drawn by the frame, so the fade of a strip that scrolls leaves it whole. */
+  box-shadow: inset 0 -1px var(--div);
 }
 
+/* Tabs that do not fit scroll sideways at any width, fading out at an edge with more beyond it. */
 .x-tabs__strip {
   position: relative;
   display: flex;
   gap: 24px;
-  border-bottom: 1px solid var(--div);
+  /* Room for the focus tint, which reaches 8px past a label: the labels stay where they were. */
+  margin-inline: -8px;
+  padding-inline: 8px;
+  overflow-x: auto;
+  /* The current tab scrolls into view clear of the fade. */
+  scroll-padding-inline: 32px;
+  scrollbar-width: none;
+}
+
+.x-tabs__strip::-webkit-scrollbar {
+  display: none;
 }
 
 .x-tabs__tab {
@@ -94,7 +107,6 @@ function onKeydown(e: KeyboardEvent, items: TabItem<K>[]) {
   align-items: center;
   gap: 8px;
   height: 40px;
-  margin-bottom: -1px;
   padding: 0 1px;
   border: 0;
   background: none;
@@ -180,38 +192,22 @@ function onKeydown(e: KeyboardEvent, items: TabItem<K>[]) {
 
 .x-tabs__ink {
   position: absolute;
-  bottom: -1px;
+  bottom: 0;
   height: 2px;
   border-radius: var(--r-pill);
   background: var(--acc);
   pointer-events: none;
 }
 
-/*
- * Phones: the same labels and ink in a strip that scrolls sideways, fading out
- * at an edge with more tabs beyond it. The fade is a mask on the strip, so the
- * line is drawn under it by the frame and stays whole; the ink sits on it.
- */
+/* Phones: the strip runs from edge to edge, its tabs 48px high like the other controls there. */
 @media (max-width: 767px) {
-  .x-tabs {
-    box-shadow: inset 0 -1px var(--div);
-  }
-
   .x-tabs__strip {
+    margin-inline: 0;
     padding: 0 14px;
-    overflow-x: auto;
-    /* The current tab scrolls into view clear of the fade. */
-    scroll-padding-inline: 32px;
-    border-bottom: 0;
   }
 
   .x-tabs__tab {
     height: 48px;
-    margin-bottom: 0;
-  }
-
-  .x-tabs__ink {
-    bottom: 0;
   }
 }
 </style>
