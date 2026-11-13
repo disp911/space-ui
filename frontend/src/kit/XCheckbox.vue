@@ -96,7 +96,7 @@ const model = defineModel<boolean>({ default: false })
   height: var(--ctl-h);
   padding: 0 12px;
   border: 1px solid var(--field-line);
-  border-radius: var(--ctl-r);
+  border-radius: var(--btn-r);
   background: var(--ctrl);
   font-weight: 500;
   transition: border-color var(--t-fast), box-shadow var(--t-fast);

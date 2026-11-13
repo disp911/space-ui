@@ -80,9 +80,11 @@
   --icon-l: 16px;
   /* How much every icon grows: 1 on desktop, more on phones. */
   --icon-k: 1;
+  /* Buttons are capsules and icon buttons circles, as Apple's controls are: one radius at every size. */
+  --btn-r: var(--r-pill);
   /* Square icon buttons and icon squares: the regular control size, also inside .x-ctl-lg */
   --btn-sq: var(--ctl-h);
-  --btn-sq-r: var(--ctl-r);
+  --btn-sq-r: var(--btn-r);
   /* Icon in a regular button and in the squares */
   --btn-icon: 16px;
   /* An inline button's box (28px, 36px on phones), and the room around its 14px icon: a column label over such buttons starts this far in, over the icon. */

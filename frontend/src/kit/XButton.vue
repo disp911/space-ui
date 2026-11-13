@@ -87,7 +87,7 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
   height: var(--ctl-h);
   padding: 0 var(--btn-px);
   border: 1px solid transparent;
-  border-radius: var(--ctl-r);
+  border-radius: var(--btn-r);
   font: 600 var(--ctl-fs) / 1 var(--font-sans);
   white-space: nowrap;
   text-decoration: none;
@@ -111,7 +111,7 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
   height: var(--ctl-sm-h);
   padding: 0 10px;
   gap: 6px;
-  border-radius: var(--ctl-sm-r);
+  border-radius: var(--btn-r);
   font-size: var(--ctl-sm-fs);
 }
 
@@ -176,7 +176,7 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
     width: 100%;
     height: var(--ctl-h);
     padding: 0 var(--btn-px);
-    border-radius: var(--ctl-r);
+    border-radius: var(--btn-r);
     font-size: var(--ctl-fs);
   }
 

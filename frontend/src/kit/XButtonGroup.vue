@@ -13,7 +13,7 @@ defineProps<{ label?: string }>()
   flex: none;
   overflow: clip;
   border: 1px solid var(--field-line);
-  border-radius: var(--ctl-r);
+  border-radius: var(--btn-r);
   background: var(--ctrl);
 }
 
