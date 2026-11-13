@@ -7,7 +7,7 @@ import type { IconName } from './icons'
 
 const props = withDefaults(
   defineProps<{
-    variant?: 'primary' | 'secondary' | 'soft' | 'danger' | 'ghost' | 'ghost-danger' | 'dashed'
+    variant?: 'primary' | 'secondary' | 'soft' | 'ok' | 'danger' | 'ghost' | 'ghost-danger' | 'dashed'
     /** sm is for text buttons; a square icon button is always the regular size. */
     size?: 'md' | 'sm'
     icon?: IconName
@@ -301,6 +301,25 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
 .x-btn--soft:hover:not(:disabled),
 .x-btn--soft.is-hover {
   border-color: var(--acc);
+}
+
+/* ok: pale green, as danger is pale red; e.g. an update waiting */
+.x-btn--ok {
+  background: var(--ok-bg);
+  border-color: var(--ok-line);
+  color: var(--ok-t);
+}
+.x-btn--ok:hover:not(:disabled),
+.x-btn--ok.is-hover {
+  border-color: var(--ok);
+}
+.x-btn--ok:focus-visible,
+.x-btn--ok.is-focus {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ok);
+}
+.x-btn--ok:active:not(:disabled),
+.x-btn--ok.is-active {
+  border-color: var(--ok);
 }
 
 /* danger */

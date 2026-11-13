@@ -322,6 +322,12 @@ const spacing = [2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 56]
               </td>
             </tr>
             <tr>
+              <th><b>Button</b><code>ok</code></th>
+              <td v-for="s in states" :key="s.key">
+                <XButton v-if="!has(s.key, 'invalid', 'modified')" variant="ok" size="sm" :class="s.cls" :disabled="s.key === 'disabled'">Обновить панель: 3.0.1</XButton>
+              </td>
+            </tr>
+            <tr>
               <th><b>Button</b><code>danger</code></th>
               <td v-for="s in states" :key="s.key">
                 <XButton v-if="!has(s.key, 'invalid', 'modified')" variant="danger" :class="s.cls" :disabled="s.key === 'disabled'">Сбросить</XButton>

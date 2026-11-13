@@ -194,7 +194,7 @@ const dash = '—'
           <div class="version">
             <span class="version__label">{{ t('dashboard.panelVersion') }}</span>
             <span class="mono version__value">v{{ config.version }}</span>
-            <XButton v-if="update?.updateAvailable" variant="soft" size="sm" phone-block class="version__update" @click="updateOpen = true">
+            <XButton v-if="update?.updateAvailable" variant="ok" size="sm" phone-block class="version__update" @click="updateOpen = true">
               <template #icon><XStatusDot size="sm" blink /></template>
               {{ t('dashboard.update', { version: update.latestVersion }) }}
             </XButton>
