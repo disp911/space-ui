@@ -20,7 +20,7 @@ function pick(item: PickItem) {
   if (!item.current) emit('pick', item.key)
 }
 
-// Ten rows, the height of ten entries, so the window does not change size when they arrive; bar widths vary like real entries.
+// Ten grey rows while loading; the box has one height in every state. Bar widths vary like real entries.
 const skeleton = [34, 30, 38, 28, 32, 36, 30, 26, 34, 30]
 </script>
 
@@ -56,6 +56,9 @@ const skeleton = [34, 30, 38, 28, 32, 36, 30, 26, 34, 30]
   display: flex;
   min-width: 0;
   min-height: 0;
+  /* One height whatever is inside — grey bars, a few entries, many or none — so the window keeps its
+     size when the list arrives; the rows scroll inside, and a short window may still shrink the box. */
+  height: calc(360px + 10px);
   padding: 4px 2px 4px 0;
   border: 1px solid var(--field-line);
   border-radius: var(--nest-r);
@@ -66,7 +69,6 @@ const skeleton = [34, 30, 38, 28, 32, 36, 30, 26, 34, 30]
 .x-pick__scroll {
   flex: 1;
   min-width: 0;
-  max-height: 360px;
   padding: 0 2px 0 4px;
   overflow-y: auto;
   /* Longer lists scroll here; the room for the scrollbar is kept, so rows do not move when it appears. */
@@ -106,11 +108,13 @@ const skeleton = [34, 30, 38, 28, 32, 36, 30, 26, 34, 30]
 .x-pick__empty {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
 }
 
 @media (max-width: 767px) {
-  .x-pick__scroll {
-    max-height: 430px;
+  .x-pick {
+    height: calc(430px + 10px);
   }
 }
 </style>
