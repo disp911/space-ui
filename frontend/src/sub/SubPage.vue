@@ -33,7 +33,7 @@ const codes = computed(() => {
 })
 
 const status = computed(() => (props.data ? statusOf(props.data) : 'inactive'))
-const statusTone = computed<Tone>(() => ({ active: 'ok', unlimited: 'unl', inactive: 'err' } as const)[status.value])
+const statusTone = computed<Tone>(() => ({ active: 'ok', unlimited: 'ok', inactive: 'err' } as const)[status.value])
 const statusText = computed(() => ({ active: t('sub.active'), unlimited: t('sub.unlimited'), inactive: t('sub.inactive') })[status.value])
 
 const rows = computed(() => {

@@ -187,10 +187,11 @@
   --err-bg: rgba(242, 85, 90, .12);
   --err-line: rgba(242, 85, 90, .4);
   --err-ring: rgba(242, 85, 90, .16);
-  --unl: #B18CFF;
-  --unl-t: #C9B0FF;
-  --unl-bg: rgba(177, 140, 255, .12);
-  --unl-line: rgba(177, 140, 255, .4);
+  /* Sky blue: unlimited, protocols and subscription links; apart from the cornflower of --on. */
+  --unl: #4FB3E8;
+  --unl-t: #8FD0F2;
+  --unl-bg: rgba(79, 179, 232, .12);
+  --unl-line: rgba(79, 179, 232, .4);
   --on: #7AA7FF;
   --on-t: #A3C1FF;
   --on-bg: rgba(122, 167, 255, .12);
@@ -205,11 +206,11 @@
   --mod-bg: rgba(122, 167, 255, .06);
   --mod-line: rgba(122, 167, 255, .5);
 
-  /* Outgoing traffic; incoming uses the accent. Also proxied connections in the Xray log. */
-  --upload: #9A92E8;
-  --upload-t: #B5AFF0;
-  --upload-bg: rgba(154, 146, 232, .12);
-  --upload-line: rgba(154, 146, 232, .4);
+  /* Proxied connections in the Xray log, debug lines in the panel log: the sky blue of --unl. */
+  --upload: var(--unl);
+  --upload-t: var(--unl-t);
+  --upload-bg: var(--unl-bg);
+  --upload-line: var(--unl-line);
 
   /* Usage bars, search highlight */
   --bar-track: rgba(255, 255, 255, .08);
@@ -293,10 +294,10 @@
   --err-bg: rgba(196, 42, 49, .08);
   --err-line: rgba(196, 42, 49, .3);
   --err-ring: rgba(196, 42, 49, .13);
-  --unl: #7B4FE0;
-  --unl-t: #6339C9;
-  --unl-bg: rgba(123, 79, 224, .08);
-  --unl-line: rgba(123, 79, 224, .3);
+  --unl: #1E7AB0;
+  --unl-t: #1A6A99;
+  --unl-bg: rgba(30, 122, 176, .08);
+  --unl-line: rgba(30, 122, 176, .3);
   --on: #2F6BD8;
   --on-t: #2459B8;
   --on-bg: rgba(47, 107, 216, .08);
@@ -308,11 +309,6 @@
 
   --mod-bg: rgba(47, 107, 216, .05);
   --mod-line: rgba(47, 107, 216, .5);
-
-  --upload: #5E56C0;
-  --upload-t: #4F47AD;
-  --upload-bg: rgba(94, 86, 192, .08);
-  --upload-line: rgba(94, 86, 192, .3);
 
   --bar-track: rgba(16, 20, 28, .08);
   --bar-unl: #C3C8D1;

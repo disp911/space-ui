@@ -20,7 +20,7 @@ const states = computed(() => {
     { key: 'off', tone: 'off' as Tone, label: t('inbounds.stDisabled'), items: list(c.deactive) },
     { key: 'err', tone: 'err' as Tone, label: t('inbounds.stDepleted'), items: list(c.depleted) },
     { key: 'warn', tone: 'warn' as Tone, label: t('inbounds.stExpiring'), items: list(c.expiring) },
-    { key: 'on', tone: 'on' as Tone, label: t('inbounds.stOnline'), items: list(c.online), dot: true },
+    { key: 'on', tone: 'ok' as Tone, label: t('inbounds.stOnline'), items: list(c.online), dot: true },
   ].filter((s) => s.items.length)
 })
 </script>

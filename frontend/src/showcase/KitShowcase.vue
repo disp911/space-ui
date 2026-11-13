@@ -482,7 +482,7 @@ const spacing = [2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 56]
             <XChip tone="off" mono>1</XChip>
             <XChip tone="err" mono>2</XChip>
             <XChip tone="warn" mono>2</XChip>
-            <XChip tone="on" dot mono>4</XChip>
+            <XChip tone="ok" dot mono>4</XChip>
             <XChip tone="unl" icon="infinity" mono>3</XChip>
             <XChip tone="neutral" mono>12 ГБ / ∞</XChip>
           </div>
@@ -981,7 +981,7 @@ const spacing = [2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 56]
             <div class="kit__row kit__row--wrap">
               <XCountList tone="off" label="Отключено" :items="demoEmails.slice(1, 2)" labelled />
               <XCountList tone="err" label="Исчерпано" :items="demoEmails" labelled />
-              <XCountList tone="on" label="Онлайн" :items="demoEmails.slice(0, 1)" dot labelled />
+              <XCountList tone="ok" label="Онлайн" :items="demoEmails.slice(0, 1)" dot labelled />
             </div>
           </XSummaryStat>
         </div>
