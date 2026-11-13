@@ -31,7 +31,7 @@ const phone = usePhone()
   min-width: 0;
   padding: var(--sp-14);
   border: 1px solid var(--div);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--tint);
 }
 </style>

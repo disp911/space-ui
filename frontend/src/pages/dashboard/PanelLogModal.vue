@@ -171,9 +171,9 @@ const skeleton = [62, 48, 71, 55, 38, 66, 52, 44, 69, 58, 41, 63]
   height: 482px;
   padding: 4px 2px 4px 0;
   border: 1px solid var(--line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--bg);
-  clip-path: inset(0 round var(--r-12));
+  clip-path: inset(0 round var(--nest-r));
 }
 
 .log-scroll {

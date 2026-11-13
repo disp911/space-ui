@@ -27,7 +27,7 @@ defineProps<{
   min-width: 0;
   padding: 12px 14px 14px;
   border: 1px solid var(--div);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--nest);
 }
 

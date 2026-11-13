@@ -77,9 +77,9 @@ const skeleton = [72, 58, 80, 64, 50, 76, 60, 68, 54, 74, 62, 70, 56, 66]
   flex-direction: column;
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--bg);
-  clip-path: inset(0 round var(--r-12));
+  clip-path: inset(0 round var(--nest-r));
 }
 
 .x-table__head,

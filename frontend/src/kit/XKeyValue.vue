@@ -128,7 +128,7 @@ defineProps<{ rows: { label: string; value?: string; key?: string }[]; plain?: b
 
 @media (max-width: 767px) {
   .x-kv {
-    border-radius: var(--r-12);
+    border-radius: var(--nest-r);
   }
 
   .x-kv__row {

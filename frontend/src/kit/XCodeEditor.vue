@@ -213,7 +213,7 @@ const reason = computed(() => (issue.value ? reasons.value[issue.value.kind] : '
 .x-code-editor {
   overflow: hidden;
   border: 1px solid var(--field-line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--field);
   transition: border-color var(--t-fast);
 }

@@ -53,7 +53,7 @@ watch(() => props.open, (on, was) => on !== !!was && lockScroll(on), { immediate
   max-width: 420px;
   padding: 20px;
   border: 1px solid var(--line);
-  border-radius: var(--r-16);
+  border-radius: var(--win-r);
   background: var(--dlg);
   box-shadow: var(--shadow-modal);
 }

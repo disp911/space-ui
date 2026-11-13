@@ -27,7 +27,7 @@ defineProps<{ title: string; modified?: boolean; columns?: number }>()
 .x-nest-card {
   min-width: 0;
   border: 1px solid var(--div);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--card);
 }
 

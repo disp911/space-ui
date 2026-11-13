@@ -48,7 +48,7 @@ const icon = computed<IconName>(() => (props.tone === 'ok' ? 'check' : props.ton
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--tone-line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--tone-bg);
   color: var(--fg2);
   font: 400 var(--fs-13) / var(--lh-text) var(--font-sans);
@@ -101,6 +101,8 @@ const icon = computed<IconName>(() => (props.tone === 'ok' ? 'check' : props.ton
 .x-notice--compact {
   align-items: center;
   padding: 6px 6px 6px 12px;
+  /* Its small capsule buttons sit 6px in, so the notice rounds concentric round them. */
+  border-radius: calc(var(--ctl-sm-h) / 2 + 6px);
   font-size: var(--fs-12);
   line-height: var(--lh-tight);
 }

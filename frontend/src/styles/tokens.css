@@ -31,6 +31,12 @@
   --r-12: 12px;
   --r-16: 16px;
   --r-pill: 999px;
+  /* Containers, as Apple rounds them: a card by half its row (20px, 24px on phones), so the
+     capsules near its edge sit concentric; a box inside a card, a notice or a toast 16px;
+     a window or a sheet 28px, round its close circle and footer capsules. */
+  --card-r: 20px;
+  --nest-r: var(--r-16);
+  --win-r: 28px;
 
   /* Spacing */
   --sp-1: 1px;
@@ -348,6 +354,7 @@
     --ctl-fs: var(--fs-14);
     --ctl-sm-h: 36px;
     --ctl-sm-r: var(--r-10);
+    --card-r: 24px;
     --btn-icon: 20px;
     --input-fs: var(--fs-14);
     --menu-item-h: 48px;

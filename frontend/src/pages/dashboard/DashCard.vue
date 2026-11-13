@@ -20,7 +20,7 @@ defineProps<{ title: string }>()
   min-width: 0;
   padding: 10px 20px 14px;
   border: 1px solid var(--line);
-  border-radius: var(--r-16);
+  border-radius: var(--card-r);
   background: var(--card);
 }
 

@@ -47,7 +47,7 @@ const { t } = useI18n()
 .x-settings {
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: var(--r-16);
+  border-radius: var(--card-r);
   background: var(--card);
   /* Tinted rows follow the rounded corners; popups are teleported, so nothing is cut. */
   overflow: clip;

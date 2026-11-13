@@ -191,7 +191,7 @@ const fitted = computed(() => props.columns.slice(1).filter((c) => c.fit))
 
 /* Phones: a list with taller rows and buttons of the regular square size. */
 .x-ptable--phone {
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
 }
 
 .x-ptable--phone.x-ptable--list tr {
@@ -227,7 +227,7 @@ const fitted = computed(() => props.columns.slice(1).filter((c) => c.fit))
   justify-content: center;
   height: 96px;
   border: 1px dashed var(--field-line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   color: var(--dim);
 }
 
@@ -238,7 +238,7 @@ const fitted = computed(() => props.columns.slice(1).filter((c) => c.fit))
   min-width: 0;
   padding: var(--sp-12) var(--sp-6) var(--sp-6) var(--sp-12);
   border: 1px solid var(--div);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--card);
 }
 

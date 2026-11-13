@@ -32,12 +32,12 @@ defineProps<{
 .x-card {
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: var(--r-16);
+  border-radius: var(--card-r);
   background: var(--card);
 }
 
 .x-card--nested {
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--nest);
 }
 

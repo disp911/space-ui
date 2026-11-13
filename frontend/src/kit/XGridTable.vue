@@ -260,7 +260,7 @@ function rowStyle(k: number) {
 .x-grid {
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: var(--r-16);
+  border-radius: var(--card-r);
   background: var(--card);
 }
 
@@ -277,7 +277,7 @@ function rowStyle(k: number) {
 }
 
 .x-grid__head {
-  border-radius: calc(var(--r-16) - 1px) calc(var(--r-16) - 1px) 0 0;
+  border-radius: calc(var(--card-r) - 1px) calc(var(--card-r) - 1px) 0 0;
   background: var(--field);
 }
 
@@ -301,7 +301,7 @@ function rowStyle(k: number) {
 }
 
 .x-grid:not(.x-grid--phone) .x-grid__row:last-child {
-  border-radius: 0 0 calc(var(--r-16) - 1px) calc(var(--r-16) - 1px);
+  border-radius: 0 0 calc(var(--card-r) - 1px) calc(var(--card-r) - 1px);
 }
 
 .x-grid:not(.is-dragging) .x-grid__row:hover {
@@ -419,16 +419,16 @@ function rowStyle(k: number) {
 
 /* Inside a card. */
 .x-grid--nested {
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: none;
 }
 
 .x-grid--nested .x-grid__head {
-  border-radius: calc(var(--r-12) - 1px) calc(var(--r-12) - 1px) 0 0;
+  border-radius: calc(var(--nest-r) - 1px) calc(var(--nest-r) - 1px) 0 0;
 }
 
 .x-grid--nested:not(.x-grid--phone) .x-grid__row:last-child {
-  border-radius: 0 0 calc(var(--r-12) - 1px) calc(var(--r-12) - 1px);
+  border-radius: 0 0 calc(var(--nest-r) - 1px) calc(var(--nest-r) - 1px);
 }
 
 /* Phones: a card per row. */
@@ -443,12 +443,12 @@ function rowStyle(k: number) {
 .x-grid--phone .x-grid__row {
   position: relative;
   border: 1px solid var(--line);
-  border-radius: var(--r-16);
+  border-radius: var(--card-r);
   background: var(--card);
 }
 
 .x-grid--phone.x-grid--nested .x-grid__row {
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--nest);
 }
 

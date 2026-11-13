@@ -56,7 +56,7 @@ watch(() => props.text, (text) => !text && (open.value = false))
   width: min(560px, calc(100vw - 16px));
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--dlg);
   box-shadow: var(--shadow-pop);
 }

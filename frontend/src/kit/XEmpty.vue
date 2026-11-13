@@ -41,7 +41,7 @@ withDefaults(defineProps<{ title?: string; hint?: string; icon?: IconName; tone?
   min-height: 0;
   padding: 28px 16px;
   border: 1px dashed var(--field-line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
 }
 
 /* With the card's 16px around it: 44px above and below, 20px at the sides. */

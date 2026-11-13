@@ -109,7 +109,7 @@ const area = computed(() => (line.value ? `${line.value} L${W} ${H} L0 ${H} Z` :
   position: relative;
   overflow: hidden;
   border: 1px solid var(--field-line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--field);
 }
 

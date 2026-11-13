@@ -84,7 +84,7 @@ function toggle(v: T) {
   flex: none;
   width: 16px;
   height: 16px;
-  border-radius: var(--r-4);
+  border-radius: 50%;
   background: var(--acc);
   color: var(--acc-ink);
   font: 600 var(--fs-10) / 16px var(--font-mono);

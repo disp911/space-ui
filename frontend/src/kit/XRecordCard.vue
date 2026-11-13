@@ -47,7 +47,7 @@ defineProps<{
   min-width: 0;
   padding: 12px;
   border: 1px solid var(--field-line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--field);
   color: var(--fg2);
 }

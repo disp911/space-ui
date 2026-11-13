@@ -237,7 +237,7 @@ onBeforeUnmount(() => clearInterval(timer))
   max-width: 396px;
   padding: 32px;
   border: 1px solid var(--line);
-  border-radius: var(--r-16);
+  border-radius: var(--card-r);
   background: color-mix(in srgb, var(--card) 86%, transparent);
   box-shadow: var(--shadow-modal);
   backdrop-filter: blur(10px);

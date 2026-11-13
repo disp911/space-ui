@@ -58,9 +58,9 @@ const skeleton = [34, 30, 38, 28, 32, 36, 30, 26, 34, 30]
   min-height: 0;
   padding: 4px 2px 4px 0;
   border: 1px solid var(--field-line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--field);
-  clip-path: inset(0 round var(--r-12));
+  clip-path: inset(0 round var(--nest-r));
 }
 
 .x-pick__scroll {

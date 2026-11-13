@@ -164,7 +164,7 @@ onBeforeUnmount(() => {
   /* In the middle of the screen; a window taller than it starts at the top and scrolls. */
   margin: auto 0;
   border: 1px solid var(--line);
-  border-radius: var(--r-16);
+  border-radius: var(--win-r);
   background: var(--card);
   box-shadow: var(--shadow-modal);
   outline: none;
@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
     max-height: 100%;
     margin: 0;
     border-bottom: 0;
-    border-radius: var(--r-16) var(--r-16) 0 0;
+    border-radius: var(--win-r) var(--win-r) 0 0;
     box-shadow: var(--shadow-sheet);
   }
 

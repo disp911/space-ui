@@ -136,7 +136,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
 .x-expand {
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: var(--r-16);
+  border-radius: var(--card-r);
   background: var(--card);
 }
 
@@ -161,7 +161,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
 
 .x-expand__head:first-child {
   border-top: 0;
-  border-radius: calc(var(--r-16) - 1px) calc(var(--r-16) - 1px) 0 0;
+  border-radius: calc(var(--card-r) - 1px) calc(var(--card-r) - 1px) 0 0;
 }
 
 .x-expand__item {
@@ -262,7 +262,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
   /* A hovered last row keeps to the rounded corners; popups are teleported, so nothing else is cut. */
   overflow: clip;
   border: 1px solid var(--div);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--nest);
 }
 

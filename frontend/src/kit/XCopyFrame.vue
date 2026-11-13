@@ -50,7 +50,7 @@ async function copy() {
 .x-copy-frame__text {
   padding: var(--sp-20) var(--sp-16) var(--sp-14);
   border: 1px solid var(--div);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--tint);
   color: var(--fg2);
   font: 400 var(--fs-12) / var(--lh-code) var(--font-mono);

@@ -225,7 +225,7 @@ function choose(item: MenuItem) {
   max-height: calc(100% - 48px);
   padding: 10px 12px calc(16px + env(safe-area-inset-bottom));
   border-width: 1px 0 0;
-  border-radius: var(--r-16) var(--r-16) 0 0;
+  border-radius: var(--win-r) var(--win-r) 0 0;
   box-shadow: var(--shadow-sheet);
 }
 

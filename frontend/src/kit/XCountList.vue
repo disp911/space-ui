@@ -124,7 +124,7 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
   max-width: calc(100vw - 16px);
   padding: 6px;
   border: 1px solid var(--line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--dlg);
   box-shadow: var(--shadow-pop);
 }

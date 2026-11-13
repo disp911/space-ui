@@ -39,7 +39,7 @@ const notes = [72, 60, 80, 66]
 .x-settings-skeleton__card {
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: var(--r-16);
+  border-radius: var(--card-r);
   background: var(--card);
 }
 

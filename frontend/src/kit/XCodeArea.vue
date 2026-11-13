@@ -58,9 +58,9 @@ const skeleton = [14, 30, 46, 38, 24, 52, 44, 30, 20, 48, 36, 26, 42, 18]
   min-height: 0;
   padding: 4px 2px 4px 0;
   border: 1px solid var(--field-line);
-  border-radius: var(--r-12);
+  border-radius: var(--nest-r);
   background: var(--bg);
-  clip-path: inset(0 round var(--r-12));
+  clip-path: inset(0 round var(--nest-r));
   font: 400 14px / 20px var(--font-code);
   transition: border-color var(--t-fast);
 }
