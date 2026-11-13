@@ -211,6 +211,9 @@ func TestCheckOutboundsRefusesWhatXrayRefuses(t *testing.T) {
 	}
 	trojan := `{"outbounds":[{"tag":"tj","protocol":"trojan","settings":{"servers":[{"address":"203.0.113.5","port":443,"password":"x"}]}}]}`
 	tls := `,"streamSettings":{"network":"tcp","security":"tls","tlsSettings":{"serverName":"example.com"}}`
+	freedom := func(rule string) string {
+		return `{"outbounds":[{"tag":"direct","protocol":"freedom","settings":{"finalRules":[` + rule + `]}}]}`
+	}
 	for _, c := range []struct {
 		name, config string
 		refused      bool
@@ -221,7 +224,13 @@ func TestCheckOutboundsRefusesWhatXrayRefuses(t *testing.T) {
 		{"vless to a private address", vless("10.0.0.2", ""), false},
 		{"trojan without TLS", trojan, true},
 		{"no outbounds", `{"outbounds":[]}`, false},
-		{"others pass", `{"outbounds":[{"protocol":"freedom","settings":{}}]}`, false},
+		{"freedom without final rules", `{"outbounds":[{"protocol":"freedom","settings":{}}]}`, false},
+		{"freedom block rule with delay and log level", freedom(`{"action":"block","port":"53","delay":"30-90","logLevel":"none"}`), false},
+		{"freedom allow rule", freedom(`{"action":"allow","network":"tcp","port":"443"}`), false},
+		{"freedom allow rule with a delay", freedom(`{"action":"allow","delay":"30-90"}`), true},
+		{"freedom allow rule with a log level", freedom(`{"action":"allow","logLevel":"none"}`), true},
+		{"freedom unknown log level", freedom(`{"action":"block","logLevel":"loud"}`), true},
+		{"others pass", `{"outbounds":[{"protocol":"blackhole","settings":{}}]}`, false},
 	} {
 		err := new(XraySettingService).CheckXrayConfig(c.config)
 		if (err != nil) != c.refused {

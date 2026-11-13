@@ -5,7 +5,7 @@ import {
   XField, XFieldGrid, XInlineButton, XInput, XInputList, XListHead, XNest, XNestCard, XNumber, XSection, XSelect, XSwitch, XTagInput, type Option,
 } from '../../kit'
 import { wireguardKeys } from '../../wireguard'
-import type { Outbound } from './model'
+import { options, type Outbound } from './model'
 import {
   canFlow, canVisionSeed, defaultDnsRule, defaultFinalRule, defaultPeer, domainStrategies, flows, hasUser, server, ssMethods, user,
   blackholeWrong, isIp, items, vmessSecurities,
@@ -229,9 +229,14 @@ const remove = (list: unknown[], i: number) => list.splice(i, 1)
             <XField v-slot="a" label="IP" :help="t('xray.hintIpRule')">
               <XTagInput v-bind="a" v-model="r.ip" mono placeholder="geoip:cn,10.0.0.0/8" />
             </XField>
-            <XField v-if="r.action === 'block'" v-slot="a" label="Block Delay">
-              <XInput v-bind="a" v-model="r.blockDelay" mono placeholder="30-90" />
-            </XField>
+            <template v-if="r.action === 'block'">
+              <XField v-slot="a" label="Delay">
+                <XInput v-bind="a" v-model="r.delay" mono placeholder="30-90" />
+              </XField>
+              <XField v-slot="a" label="Log Level">
+                <XSelect v-bind="a" v-model="r.logLevel" :options="list(options.logLevel, true)" mono />
+              </XField>
+            </template>
           </XFieldGrid>
         </XNestCard>
       </XListHead>

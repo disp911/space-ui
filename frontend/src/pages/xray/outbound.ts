@@ -176,7 +176,7 @@ export const defaultSockopt = () => ({
   interface: '',
 })
 export const defaultMux = () => ({ enabled: true, concurrency: 8, xudpConcurrency: 16, xudpProxyUDP443: 'reject' })
-export const defaultFinalRule = () => ({ action: 'block', network: '', port: '', ip: [], blockDelay: '' })
+export const defaultFinalRule = () => ({ action: 'block', network: '', port: '', ip: [], delay: '', logLevel: '' })
 export const defaultDnsRule = () => ({ action: 'direct', qType: '', domain: '' })
 export const defaultQuic = () => ({
   congestion: 'bbr',
@@ -253,7 +253,15 @@ export function finalize(input: Outbound): Outbound {
     }
     if (empty(s.reverse?.tag)) delete s.reverse
   }
-  if (o.protocol === 'freedom') for (const k of ['domainStrategy', 'redirect', 'fragment', 'noises', 'finalRules']) if (empty(s[k])) delete s[k]
+  if (o.protocol === 'freedom') {
+    // Xray takes a delay and a log level on block rules only, and will not start with them on an allow rule.
+    // blockDelay, its old name, would win over delay in Xray, so it goes; the window shows delay only.
+    for (const r of Array.isArray(s.finalRules) ? s.finalRules : []) {
+      delete r.blockDelay
+      for (const k of ['delay', 'logLevel']) if (r.action !== 'block' || empty(r[k])) delete r[k]
+    }
+    for (const k of ['domainStrategy', 'redirect', 'fragment', 'noises', 'finalRules']) if (empty(s[k])) delete s[k]
+  }
   if (o.protocol === 'wireguard') {
     if (empty(s.reserved)) delete s.reserved
     s.remoteDNS = (s.remoteDNS ?? []).map((v: string) => String(v).trim()).filter(Boolean)

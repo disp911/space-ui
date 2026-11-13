@@ -706,15 +706,66 @@ export function newEch(sni: string) {
 /** VLESS Encryption pairs, one per authentication, labelled as the server names them. */
 export const newVlessEnc = () => api.get<{ auths?: { label: string; decryption: string; encryption: string }[] }>('panel/api/server/getNewVlessEnc')
 
-/** What TUN's autoSystemWfpBlockLeak takes: dns, windnsclient, misconfigtun or a port as tcp/853 or udp/53. */
-export function wfpLeakWrong(values: unknown): boolean {
-  if (!Array.isArray(values)) return false
-  return values.some((v) => {
-    const s = String(v).trim().toLowerCase()
-    if (['dns', 'windnsclient', 'misconfigtun'].includes(s)) return false
-    const m = /^(tcp|udp)\/(\d+)$/.exec(s)
-    return !m || Number(m[2]) < 1 || Number(m[2]) > 65535
-  })
+/** A value of TUN's autoSystemWfpBlockLeak as Xray reads it (proxy/tun/wfp_leak.go); name is empty for TCP and UDP to ports. */
+interface WfpLeak { name: string; low: number; high: number }
+
+const octet = String.raw`(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)`
+const ipv4Prefix = new RegExp(String.raw`^${octet}(\.${octet}){3}/(3[0-2]|[12]?\d)$`)
+
+/** An IPv6 prefix as Go's netip reads it, IPv4-mapped ones refused: Windows checks those as IPv4. */
+function ipv6Prefix(text: string): boolean {
+  const [addr, bits, more] = text.split('/')
+  if (more !== undefined || bits === undefined || !/^(12[0-8]|1[01]\d|[1-9]?\d)$/.test(bits) || !addr || addr.includes('%')) return false
+  try {
+    const host = new URL(`http://[${addr}]/`).hostname.slice(1, -1)
+    return !/^::ffff:[0-9a-f]{1,4}:[0-9a-f]{1,4}$/.test(host)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * dns, windnsclient, misconfigtun, all, allexceptlan, icmp, tcp or udp, the
+ * latter two with /port or /low-high, or such ports alone for both; a CIDR in
+ * front limits any of them, an IPv6 one in brackets: 1.1.1.0/24:53, [::/0]:all.
+ */
+function parseWfpLeak(raw: string): WfpLeak | null {
+  let value = raw
+  const v6 = value.startsWith('[')
+  const cut = v6 ? value.indexOf(']:') : value.indexOf(':')
+  if (cut >= 0) {
+    const cidr = v6 ? value.slice(1, cut) : value.slice(0, cut)
+    if (!(v6 ? ipv6Prefix(cidr) : ipv4Prefix.test(cidr))) return null
+    value = value.slice(cut + (v6 ? 2 : 1))
+  } else if (v6) return null
+  const slash = value.indexOf('/')
+  const name = slash < 0 ? value : value.slice(0, slash)
+  let ports = slash < 0 ? '' : value.slice(slash + 1)
+  if (['dns', 'windnsclient', 'misconfigtun', 'all', 'allexceptlan', 'icmp'].includes(name)) return slash < 0 ? { name, low: 0, high: 0 } : null
+  let proto = ''
+  if (name === 'tcp' || name === 'udp') {
+    proto = name
+    if (slash < 0) return { name, low: 0, high: 0 }
+  } else if (slash >= 0) return null
+  else ports = name
+  const m = /^(\d+)(?:-(\d+))?$/.exec(ports)
+  const low = m ? Number(m[1]) : 0
+  const high = m?.[2] !== undefined ? Number(m[2]) : low
+  if (!m || low < 1 || low > 65535 || high > 65535 || high < low) return null
+  return { name: proto, low, high }
+}
+
+const leaksOf = (values: unknown): string[] => (Array.isArray(values) ? values.map((v) => String(v).trim().toLowerCase()) : [])
+
+/** A value of autoSystemWfpBlockLeak Xray does not take. */
+export const wfpLeakWrong = (values: unknown) => leaksOf(values).some((v) => !parseWfpLeak(v))
+
+/** Whether a leak keeps the system's DNS, TCP or UDP port 53 or Windows' DNS Client, inside the TUN: then the TUN needs DNS servers. */
+function blocksDns(value: string): boolean {
+  const l = parseWfpLeak(value)
+  if (!l) return false
+  if (['dns', 'allexceptlan', 'windnsclient', 'all'].includes(l.name)) return true
+  return (l.name === '' || l.name === 'tcp' || l.name === 'udp') && (l.low === 0 || (l.low <= 53 && 53 <= l.high))
 }
 
 const filledList = (v: unknown) => Array.isArray(v) && v.some((x) => String(x).trim())
@@ -726,11 +777,11 @@ const filledList = (v: unknown) => Array.isArray(v) && v.some((x) => String(x).t
  * servers on the TUN (Windows). Each names the field that is missing.
  */
 export function tunMissing(s: Record<string, any> | undefined) {
-  const leaks: string[] = Array.isArray(s?.autoSystemWfpBlockLeak) ? s.autoSystemWfpBlockLeak.map((v: unknown) => String(v).trim().toLowerCase()) : []
+  const leaks = leaksOf(s?.autoSystemWfpBlockLeak)
   return {
     gateway: !!s?.autoSystemDnsToGateway && !filledList(s?.gateway),
     routingTable: leaks.length > 0 && !filledList(s?.autoSystemRoutingTable),
-    dns: leaks.some((v) => ['dns', 'udp/53', 'tcp/53', 'windnsclient'].includes(v)) && !filledList(s?.dns),
+    dns: leaks.some(blocksDns) && !filledList(s?.dns),
   }
 }
 

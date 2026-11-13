@@ -40,8 +40,10 @@ func (s *XraySettingService) CheckXrayConfig(XrayTemplateConfig string) error {
 	return checkOutbounds(xrayConfig.OutboundConfigs)
 }
 
-// checkOutbounds builds the VLESS and Trojan outbounds as Xray does: it will
-// not start with one that goes to a public address unencrypted.
+// checkOutbounds builds the VLESS, Trojan and Freedom outbounds as Xray does:
+// it will not start with VLESS or Trojan going to a public address
+// unencrypted, nor with a Freedom final rule that is wrong, e.g. a delay or a
+// log level on an "allow" rule.
 func checkOutbounds(raw []byte) error {
 	if len(raw) == 0 {
 		return nil
@@ -56,7 +58,7 @@ func checkOutbounds(raw []byte) error {
 			Protocol string `json:"protocol"`
 		}
 		json.Unmarshal(o, &head)
-		if head.Protocol != "vless" && head.Protocol != "trojan" {
+		if head.Protocol != "vless" && head.Protocol != "trojan" && head.Protocol != "freedom" {
 			continue
 		}
 		var c conf.OutboundDetourConfig

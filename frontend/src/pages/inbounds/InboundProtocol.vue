@@ -28,7 +28,7 @@ const s = computed(() => props.f.settings)
 const p = computed(() => props.f.protocol)
 const list = (values: string[]): Option[] => values.map((v) => ({ value: v, label: v }))
 /** What Xray's TUN blocks from leaking past it on Windows: DNS, its client, a broken TUN, or a port such as 53. */
-const wfpLeaks = [{ options: list(['dns', 'windnsclient', 'misconfigtun', 'udp/53', 'tcp/853']) }]
+const wfpLeaks = [{ options: list(['dns', 'windnsclient', 'misconfigtun', 'all', 'allexceptlan', 'icmp', 'udp/53', 'tcp/853']) }]
 const networkOptions: Option[] = [
   { value: 'tcp,udp', label: 'TCP,UDP' },
   { value: 'tcp', label: 'TCP' },
