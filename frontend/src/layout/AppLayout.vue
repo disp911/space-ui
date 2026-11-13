@@ -148,7 +148,7 @@ watch(() => route.fullPath, () => (drawerOpen.value = false))
     margin-top: 4px;
     overflow: hidden;
     color: var(--dim);
-    font: 400 var(--fs-11) / var(--lh-text) var(--font-mono);
+    font: 400 var(--fs-12) / var(--lh-text) var(--font-mono);
     white-space: nowrap;
     text-overflow: ellipsis;
   }

@@ -85,7 +85,7 @@ defineProps<{ title: string; fixed?: boolean; busy?: boolean }>()
   margin: 4px 0 0;
   overflow: hidden;
   color: var(--dim);
-  font-size: var(--fs-12);
+  font-size: var(--fs-14);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
