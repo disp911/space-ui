@@ -247,8 +247,9 @@ const reason = computed(() => (issue.value ? reasons.value[issue.value.kind] : '
   border-left-color: var(--fg);
 }
 
-.x-code-editor__host :deep(.cm-selectionBackground),
-.x-code-editor__host :deep(.cm-focused .cm-selectionBackground) {
+/* As specific as CodeMirror's own rule, which paints a focused selection pale lilac under light text. */
+.x-code-editor__host :deep(.cm-editor > .cm-scroller > .cm-selectionLayer .cm-selectionBackground),
+.x-code-editor__host :deep(.cm-editor.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground) {
   background: var(--acc-soft);
 }
 
