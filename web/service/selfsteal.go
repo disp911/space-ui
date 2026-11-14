@@ -268,7 +268,7 @@ func newSiteInbound(domain, socket string) (*model.Inbound, *model.Client, error
 			"mldsa65Seed":  "",
 			"settings": map[string]any{
 				"publicKey":     base64.RawURLEncoding.EncodeToString(key.PublicKey().Bytes()),
-				"fingerprint":   "chrome",
+				"fingerprint":   "firefox",
 				"serverName":    "",
 				"spiderX":       "/",
 				"mldsa65Verify": "",

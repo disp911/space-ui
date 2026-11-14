@@ -236,3 +236,23 @@ func TestInboundTag(t *testing.T) {
 		}
 	}
 }
+
+func TestNewSiteInboundOffersFirefox(t *testing.T) {
+	ib, _, err := newSiteInbound("example.com", "/run/site.sock")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stream struct {
+		RealitySettings struct {
+			Settings struct {
+				Fingerprint string `json:"fingerprint"`
+			} `json:"settings"`
+		} `json:"realitySettings"`
+	}
+	if err := json.Unmarshal([]byte(ib.StreamSettings), &stream); err != nil {
+		t.Fatal(err)
+	}
+	if fp := stream.RealitySettings.Settings.Fingerprint; fp != "firefox" {
+		t.Fatalf("fingerprint %q, want firefox", fp)
+	}
+}
