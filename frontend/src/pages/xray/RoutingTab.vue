@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { XButton, XCard, XEmpty, XGridTable, XRouteTarget, XValueChip, type GridColumn, type MenuItem } from '../../kit'
+import { XButton, XCard, XChip, XEmpty, XGridTable, XRouteTarget, XValueChip, type GridColumn, type MenuItem } from '../../kit'
 import { useXrayForm } from './form'
 import { ruleGroups, ruleTarget, type Rule } from './model'
 import RuleModal from './RuleModal.vue'
@@ -22,7 +22,8 @@ const columns = computed<GridColumn[]>(() => [
 const chips = (r: Rule, key: string) =>
   (ruleGroups.find((g) => g.key === key)?.parts ?? []).map(([label, read]) => ({ label, values: read(r) })).filter((c) => c.values.length)
 
-const blank = (r: Rule, key: string) => (key === 'target' ? !ruleTarget(r) : !chips(r, key).length)
+// A rule with no target is not blank but wrong: Xray will not start with it.
+const blank = (r: Rule, key: string) => key !== 'target' && !chips(r, key).length
 
 const menu = (): MenuItem[] => [
   { key: 'edit', label: t('xray.edit'), icon: 'edit' },
@@ -84,7 +85,8 @@ function saveRule(rule: Rule) {
         <XValueChip v-for="c in chips(row, g.key)" :key="c.label" :label="c.label" :values="c.values" />
       </template>
       <template #cell-target="{ row }">
-        <XRouteTarget :tag="ruleTarget(row)!.tag" :balancer="ruleTarget(row)!.kind === 'balancer'" />
+        <XRouteTarget v-if="ruleTarget(row)" :tag="ruleTarget(row)!.tag" :balancer="ruleTarget(row)!.kind === 'balancer'" />
+        <XChip v-else tone="err">{{ t('xray.ruleNoTarget') }}</XChip>
       </template>
     </XGridTable>
     <XCard v-else>

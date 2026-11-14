@@ -9,7 +9,7 @@ import AppPage from '../layout/AppPage.vue'
 import { cause } from './settings/form'
 import { formKey } from './xray/form'
 import {
-  changes, defaultTestUrl, fieldValue, insecure, tabs, type FieldKey, type TabKey, type XrayConfig, type XrayReply, type XraySetting,
+  changes, defaultTestUrl, fieldValue, insecure, ruleTarget, tabs, type FieldKey, type Rule, type TabKey, type XrayConfig, type XrayReply, type XraySetting,
 } from './xray/model'
 import GeneralTab from './xray/GeneralTab.vue'
 import AdvancedTab from './xray/AdvancedTab.vue'
@@ -122,7 +122,16 @@ const showBanner = computed(() => ready.value && !bannerClosed.value && insecure
 // --- Save -------------------------------------------------------------------
 
 const saving = ref(false)
-const canSave = computed(() => ready.value && dirty.value > 0 && !saving.value && !restarting.value)
+/** The first rule with nowhere to send its traffic, counted from 1: Xray will not start with it. */
+const noTargetRule = computed(() => {
+  const rules = (draft.value?.config.routing?.rules ?? []) as Rule[]
+  return rules.findIndex((r) => !ruleTarget(r)) + 1
+})
+const canSave = computed(() => ready.value && dirty.value > 0 && !noTargetRule.value && !saving.value && !restarting.value)
+const saveTitle = computed(() => {
+  if (canSave.value || saving.value) return undefined
+  return noTargetRule.value ? t('xray.ruleNoTargetHelp', { n: noTargetRule.value }) : t('settings.nothingToSave')
+})
 
 async function save() {
   if (!canSave.value || !draft.value) return
@@ -175,9 +184,10 @@ async function restart() {
     </template>
     <template #subtitle>{{ t('xray.subtitle') }}</template>
     <template #actions>
-      <XStatusText v-if="status" tone="mod">{{ status }}</XStatusText>
+      <XStatusText v-if="ready && noTargetRule" tone="err">{{ t('xray.ruleNoTargetN', { n: noTargetRule }) }}</XStatusText>
+      <XStatusText v-else-if="status" tone="mod">{{ status }}</XStatusText>
       <XProcessError v-if="result" v-model:open="resultOpen" :title="t('xray.startError')" :text="result" />
-      <XButton variant="primary" icon="check" :disabled="!canSave && !saving" :loading="saving" :title="canSave || saving ? undefined : t('settings.nothingToSave')" @click="save">
+      <XButton variant="primary" icon="check" :disabled="!canSave && !saving" :loading="saving" :title="saveTitle" @click="save">
         {{ saving ? t('settings.saving') : t('settings.save') }}
       </XButton>
       <XButton variant="primary" icon="refresh" :disabled="!canRestart" :loading="restarting" :title="canRestart ? undefined : t('settings.saveFirst')" @click="restart">
@@ -204,10 +214,11 @@ async function restart() {
 
     <template #bar>
       <XActionBar>
-        <template v-if="status" #state>
-          <XStatusText tone="mod">{{ status }}</XStatusText>
+        <template v-if="(ready && noTargetRule) || status" #state>
+          <XStatusText v-if="ready && noTargetRule" tone="err">{{ t('xray.ruleNoTargetN', { n: noTargetRule }) }}</XStatusText>
+          <XStatusText v-else tone="mod">{{ status }}</XStatusText>
         </template>
-        <XButton variant="primary" :disabled="!canSave && !saving" :loading="saving" @click="save">
+        <XButton variant="primary" :disabled="!canSave && !saving" :loading="saving" :title="saveTitle" @click="save">
           {{ saving ? t('settings.saving') : t('settings.save') }}
         </XButton>
         <XButton variant="primary" icon="refresh" :disabled="!canRestart" :pending="ready && !!dirty" :loading="restarting" @click="restart">

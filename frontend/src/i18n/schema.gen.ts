@@ -464,6 +464,9 @@ export interface MessageSchema {
     "ruleInbound": string
     "ruleOutbound": string
     "ruleN": string
+    "ruleNoTarget": string
+    "ruleNoTargetN": string
+    "ruleNoTargetHelp": string
     "edit": string
     "delete": string
     "ruleEdit": string
