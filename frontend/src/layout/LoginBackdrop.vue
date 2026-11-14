@@ -20,10 +20,10 @@ const waves = [
 <style scoped>
 /* Colours of the mockup; only this screen uses them. */
 .backdrop {
-  --glow: rgba(58, 122, 168, .2);
-  --wave-1: #3A7AA8;
-  --wave-2: #8BB9DD;
-  --wave-3: #12253A;
+  --glow: rgba(10, 132, 255, .2);
+  --wave-1: #0A84FF;
+  --wave-2: #64B0FF;
+  --wave-3: #0B2645;
   --wave-1-opacity: .3;
   --wave-2-opacity: .2;
   --wave-3-opacity: .42;
@@ -45,8 +45,8 @@ const waves = [
 }
 
 :root[data-theme='light'] .backdrop {
-  --glow: rgba(47, 100, 140, .14);
-  --wave-3: #2F648C;
+  --glow: rgba(0, 122, 255, .14);
+  --wave-3: #007AFF;
   --wave-1-opacity: .34;
   --wave-2-opacity: .22;
   --wave-3-opacity: .3;

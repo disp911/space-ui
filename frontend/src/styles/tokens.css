@@ -162,16 +162,16 @@
   --scrollbar: #2A3141;
   --scrollbar-hover: #3A4352;
 
-  /* Accent: steel blue. --acc-t is its tone for text and icons on the page's surfaces. */
-  --acc: #3A7AA8;
-  --acc-t: #8BB9DD;
+  /* Accent: Apple's system blue (#0A84FF dark, #007AFF light). --acc-t is its tone for text and icons on the page's surfaces. */
+  --acc: #0A84FF;
+  --acc-t: #64B0FF;
   --acc-ink: #FFFFFF;
-  --acc-soft: #15253A;
-  --acc-line: rgba(58, 122, 168, .6);
-  --acc-ring: rgba(58, 122, 168, .2);
-  --acc-glow: rgba(58, 122, 168, .35);
-  --acc-hover: #4588B8;
-  --acc-press: #316B94;
+  --acc-soft: #122A45;
+  --acc-line: rgba(10, 132, 255, .6);
+  --acc-ring: rgba(10, 132, 255, .2);
+  --acc-glow: rgba(10, 132, 255, .35);
+  --acc-hover: #2B95FF;
+  --acc-press: #0A74E0;
 
   /* Status tones: solid, text, tint background, tint line */
   /* Success is a muted sage green, quieter than the accent. */
@@ -273,15 +273,15 @@
   --scrollbar: #C9CED7;
   --scrollbar-hover: #AAB1BC;
 
-  --acc: #2F648C;
-  --acc-t: #2A5A7E;
+  --acc: #007AFF;
+  --acc-t: #0067D6;
   --acc-ink: #FFFFFF;
-  --acc-soft: #E6EEF5;
-  --acc-line: rgba(47, 100, 140, .5);
-  --acc-ring: rgba(47, 100, 140, .15);
-  --acc-glow: rgba(47, 100, 140, .22);
-  --acc-hover: #37729E;
-  --acc-press: #285677;
+  --acc-soft: #E5F1FF;
+  --acc-line: rgba(0, 122, 255, .5);
+  --acc-ring: rgba(0, 122, 255, .15);
+  --acc-glow: rgba(0, 122, 255, .22);
+  --acc-hover: #2A8CFF;
+  --acc-press: #0062CC;
 
   --ok: #3A7158;
   --ok-t: #335F4B;

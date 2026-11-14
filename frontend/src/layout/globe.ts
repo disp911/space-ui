@@ -1,5 +1,5 @@
 /**
- * The panel's mark: a dotted Earth turning on the kit's steel-blue accent (--acc of
+ * The panel's mark: a dotted Earth turning on Apple's system blue, the kit's accent (--acc of
  * the light theme, which reads in both themes). One geometry serves the static
  * mark in the menu, the favicon (built into the page, see vite.config.ts) and
  * the turning mark on the login page. Nothing here touches the DOM, so the
@@ -10,7 +10,7 @@ type Vec = [number, number, number]
 
 /** Colours of the mark; it keeps them in both themes, the favicon has no theme. */
 export const globeColors = {
-  tile: '#2F648C',
+  tile: '#007AFF',
   land: '#ffffff',
   sea: 'rgba(255,255,255,.16)',
 }
