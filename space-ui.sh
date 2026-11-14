@@ -436,94 +436,6 @@ show_log() {
     fi
 }
 
-bbr_menu() {
-    echo -e "${green}\t1.${plain} Enable BBR"
-    echo -e "${green}\t2.${plain} Disable BBR"
-    echo -e "${green}\t0.${plain} Back to Main Menu"
-    read -rp "Choose an option: " choice
-    case "$choice" in
-        0)
-            show_menu
-            ;;
-        1)
-            enable_bbr
-            bbr_menu
-            ;;
-        2)
-            disable_bbr
-            bbr_menu
-            ;;
-        *)
-            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
-            bbr_menu
-            ;;
-    esac
-}
-
-disable_bbr() {
-
-    if [[ $(sysctl -n net.ipv4.tcp_congestion_control) != "bbr" ]] || [[ ! $(sysctl -n net.core.default_qdisc) =~ ^(fq|cake)$ ]]; then
-        echo -e "${yellow}BBR is not currently enabled.${plain}"
-        before_show_menu
-    fi
-
-    if [ -f "/etc/sysctl.d/99-bbr-space-ui.conf" ]; then
-        old_settings=$(head -1 /etc/sysctl.d/99-bbr-space-ui.conf | tr -d '#')
-        sysctl -w net.core.default_qdisc="${old_settings%:*}"
-        sysctl -w net.ipv4.tcp_congestion_control="${old_settings#*:}"
-        rm /etc/sysctl.d/99-bbr-space-ui.conf
-        sysctl --system
-    else
-        # Replace BBR with CUBIC configurations
-        if [ -f "/etc/sysctl.conf" ]; then
-            sed -i 's/net.core.default_qdisc=fq/net.core.default_qdisc=pfifo_fast/' /etc/sysctl.conf
-            sed -i 's/net.ipv4.tcp_congestion_control=bbr/net.ipv4.tcp_congestion_control=cubic/' /etc/sysctl.conf
-            sysctl -p
-        fi
-    fi
-
-    if [[ $(sysctl -n net.ipv4.tcp_congestion_control) != "bbr" ]]; then
-        echo -e "${green}BBR has been replaced with CUBIC successfully.${plain}"
-    else
-        echo -e "${red}Failed to replace BBR with CUBIC. Please check your system configuration.${plain}"
-    fi
-}
-
-enable_bbr() {
-    if [[ $(sysctl -n net.ipv4.tcp_congestion_control) == "bbr" ]] && [[ $(sysctl -n net.core.default_qdisc) =~ ^(fq|cake)$ ]]; then
-        echo -e "${green}BBR is already enabled!${plain}"
-        before_show_menu
-    fi
-
-    # Enable BBR
-    if [ -d "/etc/sysctl.d/" ]; then
-        {
-            echo "#$(sysctl -n net.core.default_qdisc):$(sysctl -n net.ipv4.tcp_congestion_control)"
-            echo "net.core.default_qdisc = fq"
-            echo "net.ipv4.tcp_congestion_control = bbr"
-        } > "/etc/sysctl.d/99-bbr-space-ui.conf"
-        if [ -f "/etc/sysctl.conf" ]; then
-            # Backup old settings from sysctl.conf, if any
-            sed -i 's/^net.core.default_qdisc/# &/' /etc/sysctl.conf
-            sed -i 's/^net.ipv4.tcp_congestion_control/# &/' /etc/sysctl.conf
-        fi
-        sysctl --system
-    else
-        sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
-        sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf
-        echo "net.core.default_qdisc=fq" | tee -a /etc/sysctl.conf
-        echo "net.ipv4.tcp_congestion_control=bbr" | tee -a /etc/sysctl.conf
-        sysctl -p
-    fi
-
-    # Verify that BBR is enabled
-    if [[ $(sysctl -n net.ipv4.tcp_congestion_control) == "bbr" ]]; then
-        echo -e "${green}BBR has been enabled successfully.${plain}"
-    else
-        echo -e "${red}Failed to enable BBR. Please check your system configuration.${plain}"
-    fi
-}
-
 # 0: running, 1: not running, 2: not installed
 check_status() {
     if [[ $release == "alpine" ]]; then
@@ -1706,12 +1618,11 @@ show_menu() {
 │  ${green}19.${plain} Firewall Management                       │
 │  ${green}20.${plain} SSH Port Forwarding                       │
 │────────────────────────────────────────────────│
-│  ${green}21.${plain} Enable BBR                                │
-│  ${green}22.${plain} Update Geo Files                          │
+│  ${green}21.${plain} Update Geo Files                          │
 ╚────────────────────────────────────────────────╝
 "
     show_status
-    echo && read -rp "Please enter your selection [0-22]: " num
+    echo && read -rp "Please enter your selection [0-21]: " num
 
     case "${num}" in
         0)
@@ -1778,13 +1689,10 @@ show_menu() {
             check_install && SSH_port_forwarding
             ;;
         21)
-            bbr_menu
-            ;;
-        22)
             update_geo
             ;;
         *)
-            LOGE "Please enter the correct number [0-22]"
+            LOGE "Please enter the correct number [0-21]"
             ;;
     esac
 }
