@@ -171,8 +171,9 @@ const details = computed(() => {
 
 <template>
   <XModal v-model:open="open" title="Cloudflare WARP" :dismissible="busy !== 'reg' && busy !== 'del'">
-    <!-- While the account is looked up a spinner stands where «Create» would be. -->
+    <!-- While the account is looked up a spinner stands where «Create» would be, both under a line saying which. -->
     <div v-if="!data" class="warp warp--empty">
+      <span class="warp__state">{{ busy === 'load' ? t('xray.warpChecking') : t('xray.warpNone') }}</span>
       <span v-if="busy === 'load'" class="warp__wait" role="status"><XSpinner :size="16" /></span>
       <XButton v-else variant="primary" :loading="busy === 'reg'" @click="register">{{ t('xray.create') }}</XButton>
     </div>
@@ -220,6 +221,11 @@ const details = computed(() => {
 .warp--empty {
   align-items: center;
   padding: 16px 0;
+}
+
+.warp__state {
+  color: var(--mut);
+  font-size: var(--fs-14);
 }
 
 .warp__wait {

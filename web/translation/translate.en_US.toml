@@ -644,6 +644,8 @@
 "publicKey" = "Public key"
 "newKey" = "Make a new key"
 "warpKeyWrong" = "The key does not match the WARP account"
+"warpChecking" = "Checking the account…"
+"warpNone" = "No WARP account"
 "endpoint" = "Endpoint"
 "psk" = "Pre-shared key"
 "peer" = "Peer {n}"

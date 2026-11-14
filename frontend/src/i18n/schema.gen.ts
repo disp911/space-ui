@@ -555,6 +555,8 @@ export interface MessageSchema {
     "publicKey": string
     "newKey": string
     "warpKeyWrong": string
+    "warpChecking": string
+    "warpNone": string
     "endpoint": string
     "psk": string
     "peer": string
