@@ -32,6 +32,8 @@ const props = defineProps<{
   /** The most it grows to before it scrolls, in pixels; phoneHeight on phones. */
   height?: number
   phoneHeight?: number
+  /** The table takes that height whatever its rows, none, a few or many, so a window keeps its size when they arrive. */
+  fixed?: boolean
 }>()
 
 const phone = usePhone()
@@ -65,7 +67,7 @@ const fitted = computed(() => props.columns.slice(1).filter((c) => c.fit))
     </div>
   </div>
 
-  <div v-else :class="['x-ptable', { 'x-ptable--list': !head, 'x-ptable--phone': phone, 'x-ptable--scroll': !!maxHeight }]" :style="{ maxHeight }">
+  <div v-else :class="['x-ptable', { 'x-ptable--list': !head, 'x-ptable--phone': phone, 'x-ptable--scroll': !!maxHeight }]" :style="fixed ? { height: maxHeight } : { maxHeight }">
     <table>
       <thead v-if="head">
         <tr>
@@ -91,6 +93,9 @@ const fitted = computed(() => props.columns.slice(1).filter((c) => c.fit))
 
 <style scoped>
 .x-ptable {
+  /* The full width it is given, also in a field's row of controls. */
+  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
   overflow: clip;
   border: 1px solid var(--div);

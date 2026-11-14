@@ -817,6 +817,23 @@ export interface MessageSchema {
     "ipLog": string
     "ipLogDesc": string
     "ipLogMtprotoDesc": string
+    "ipAddress": string
+    "ipWhen": string
+    "ipNow": string
+    "ipRecent": string
+    "ipNone": string
+    "denySource": string
+    "sourceDenied": string
+    "sourceDeny": string
+    "sourceDenyDesc": string
+    "sourceDenyPlaceholder": string
+    "sourceDenyRestart": string
+    "ipLimitMode": string
+    "ipLimitModeDesc": string
+    "ipModeLive": string
+    "ipModeWindow": string
+    "ipModeBoth": string
+    "ipLimitWindow": string
     "ipLogClear": string
     "first": string
     "last": string

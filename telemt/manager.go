@@ -20,6 +20,9 @@ type Instance struct {
 	TLSDomain string
 	// Web, when set, also serves the users as a Telegram WEB proxy.
 	Web *WebInstance
+	// IPLimitMode and IPLimitWindow are the unique-IP accounting; see Settings.
+	IPLimitMode   string
+	IPLimitWindow int
 	// Users are all valid clients, enabled or not; Emails maps their telemt
 	// user names to the panel client emails they stand for.
 	Users  []User
@@ -201,6 +204,7 @@ func (m *Manager) syncLocked(w Instance) error {
 	s := Settings{
 		Listen: w.Listen, Port: w.Port, TLSDomain: w.TLSDomain,
 		MetricsPort: inst.metricsPort, APIPort: inst.apiPort, APIToken: inst.apiToken,
+		IPLimitMode: w.IPLimitMode, IPLimitWindow: w.IPLimitWindow,
 	}
 	if web := w.Web; web != nil {
 		s.Web = &Web{
@@ -217,7 +221,7 @@ func (m *Manager) syncLocked(w Instance) error {
 
 	dir := m.baseDir(w.InboundID)
 	configPath := filepath.Join(dir, "telemt.toml")
-	if running && inst.runningKey == s.restartKey() {
+	if running && inst.runningKey == s.restartKey()+sourceDenyKey(w.Users) {
 		if string(data) == string(inst.config) {
 			return nil
 		}
@@ -247,7 +251,7 @@ func (m *Manager) syncLocked(w Instance) error {
 		return err
 	}
 	inst.proc = proc
-	inst.runningKey = s.restartKey()
+	inst.runningKey = s.restartKey() + sourceDenyKey(w.Users)
 	inst.config = data
 	inst.seen = nil
 	inst.lastErr = ""

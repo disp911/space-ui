@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -68,6 +69,10 @@ type TelemtService struct {
 // mtprotoSettings is the settings JSON of an mtproto inbound.
 type mtprotoSettings struct {
 	TlsDomain string `json:"tlsDomain"`
+	// IpLimitMode and IpLimitWindow are how telemt counts a client's unique
+	// IPs against its limit; empty and 0 keep telemt's defaults.
+	IpLimitMode   string `json:"ipLimitMode,omitempty"`
+	IpLimitWindow int    `json:"ipLimitWindow,omitempty"`
 	// Web is the Telegram WEB proxy of the inbound; see prepareMTProtoWeb.
 	Web     *mtprotoWeb    `json:"web,omitempty"`
 	Clients []model.Client `json:"clients"`
@@ -216,6 +221,12 @@ func validateMTProtoInbound(inbound *model.Inbound, clients []model.Client) erro
 	if inbound.Listen != "" && net.ParseIP(inbound.Listen) == nil {
 		return fmt.Errorf("mtproto listen address must be an IP, got %q", inbound.Listen)
 	}
+	if m := settings.IpLimitMode; m != "" && !slices.Contains(telemt.IPLimitModes, m) {
+		return fmt.Errorf("unknown unique IP accounting %q", m)
+	}
+	if w := settings.IpLimitWindow; w < 0 || w > telemt.MaxIPLimitWindow {
+		return fmt.Errorf("unique IP window must be 1 to %d seconds", telemt.MaxIPLimitWindow)
+	}
 	if w := settings.Web; w.on() {
 		if !telemt.ValidWebHost(w.Host) || !telemt.ValidWebBasePath(w.Path) {
 			return fmt.Errorf("WEB proxy: %q is not a domain name", w.Host)
@@ -227,7 +238,8 @@ func validateMTProtoInbound(inbound *model.Inbound, clients []model.Client) erro
 	return validateMTProtoClients(inbound.Protocol, clients)
 }
 
-// validateMTProtoClients checks the secrets of clients of an mtproto inbound.
+// validateMTProtoClients checks the secrets and denied sources of clients of
+// an mtproto inbound.
 func validateMTProtoClients(protocol model.Protocol, clients []model.Client) error {
 	if protocol != model.MTProto {
 		return nil
@@ -235,6 +247,9 @@ func validateMTProtoClients(protocol model.Protocol, clients []model.Client) err
 	for _, c := range clients {
 		if !telemt.ValidSecret(c.ID) {
 			return fmt.Errorf("client %q: secret must be 32 lowercase hex characters", c.Email)
+		}
+		if _, err := telemt.NormalizeSourceDeny(c.SourceDeny); err != nil {
+			return fmt.Errorf("client %q: %w", c.Email, err)
 		}
 	}
 	return nil
@@ -274,6 +289,9 @@ func (s *TelemtService) desiredInstances() ([]telemt.Instance, error) {
 			Port:      inbound.Port,
 			TLSDomain: settings.TlsDomain,
 			Emails:    map[string]string{},
+
+			IPLimitMode:   settings.IpLimitMode,
+			IPLimitWindow: settings.IpLimitWindow,
 		}
 		webWarning := ""
 		if w := settings.Web; w.on() {
@@ -323,6 +341,7 @@ func mtprotoUser(name string, c model.Client, disabled bool) telemt.User {
 		MaxTCPConns:  max(c.MaxConns, 0),
 		RateUpBps:    mbitToBps(c.RateUp),
 		RateDownBps:  mbitToBps(c.RateDown),
+		SourceDeny:   c.SourceDeny,
 	}
 	if c.ExpiryTime > 0 {
 		u.Expires = time.UnixMilli(c.ExpiryTime)

@@ -55,8 +55,11 @@ func TestRealTelemt(t *testing.T) {
 		Tag:       "inbound-18443",
 		Port:      18443,
 		TLSDomain: "www.google.com",
+		// The unique-IP accounting and denied sources must be accepted too.
+		IPLimitMode:   "combined",
+		IPLimitWindow: 60,
 		Users: []User{
-			{Name: "alice", Secret: strings.Repeat("ab", 16), MaxUniqueIPs: 2, MaxTCPConns: 8, RateUpBps: 5_000_000, RateDownBps: 20_000_000, Expires: time.Now().Add(24 * time.Hour)},
+			{Name: "alice", Secret: strings.Repeat("ab", 16), MaxUniqueIPs: 2, MaxTCPConns: 8, RateUpBps: 5_000_000, RateDownBps: 20_000_000, Expires: time.Now().Add(24 * time.Hour), SourceDeny: []string{"203.0.113.7", "2001:db8::/32"}},
 			{Name: "bob.pc", Secret: strings.Repeat("cd", 16), RateUpBps: MaxRateBps},
 			{Name: "dave", Secret: strings.Repeat("12", 16), Disabled: true},
 		},

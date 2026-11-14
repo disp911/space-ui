@@ -245,3 +245,18 @@ func TestProcessMemory(t *testing.T) {
 		t.Fatal("the test process must report its memory")
 	}
 }
+
+func TestValidateMTProtoClientsChecksDeniedSources(t *testing.T) {
+	ok := model.Client{Email: "a", ID: strings.Repeat("ab", 16), SourceDeny: []string{"203.0.113.7", "10.0.0.0/8", "2001:db8::/32"}}
+	if err := validateMTProtoClients(model.MTProto, []model.Client{ok}); err != nil {
+		t.Fatalf("valid denied sources refused: %v", err)
+	}
+	bad := ok
+	bad.SourceDeny = []string{"example.com"}
+	if err := validateMTProtoClients(model.MTProto, []model.Client{bad}); err == nil {
+		t.Fatal("a domain as a denied source was accepted")
+	}
+	if err := validateMTProtoClients(model.VLESS, []model.Client{bad}); err != nil {
+		t.Fatalf("other protocols are not checked: %v", err)
+	}
+}

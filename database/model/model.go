@@ -154,6 +154,7 @@ type Client struct {
 	RateUp     int            `json:"rateUp,omitempty"`             // MTProto upload limit in Mbit/s; 0 is unlimited
 	RateDown   int            `json:"rateDown,omitempty"`           // MTProto download limit in Mbit/s; 0 is unlimited
 	MaxConns   int            `json:"maxConns,omitempty"`           // MTProto concurrent connection limit; 0 is unlimited
+	SourceDeny []string       `json:"sourceDeny,omitempty"`         // MTProto addresses or networks the client is refused from
 	TotalGB    int64          `json:"totalGB" form:"totalGB"`       // Total traffic limit in GB
 	ExpiryTime int64          `json:"expiryTime" form:"expiryTime"` // Expiration timestamp
 	Enable     bool           `json:"enable" form:"enable"`         // Whether the client is enabled

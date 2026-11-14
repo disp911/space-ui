@@ -2,12 +2,14 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../../api'
-import { toast, XButton, XChip, XField, XModal, XPopConfirm, XStateBar, XTextarea, type Tone } from '../../kit'
+import {
+  toast, XButton, XChip, XField, XInlineButton, XModal, XPlainTable, XPopConfirm, XSpinner, XStateBar, XTextarea, type PlainColumn, type Tone,
+} from '../../kit'
 import { formatBytes } from '../../i18n/format'
 import { useInbounds } from '../../stores/inbounds'
 import { cause } from '../settings/form'
 import ClientFields from './ClientFields.vue'
-import { canFlow, finalClient, fromDb, newClient } from './inbound'
+import { canFlow, finalClient, fromDb, newClient, sourceDenyWrong } from './inbound'
 import { clientKey, usedOf, type Client, type ClientStat, type DbInbound } from './model'
 
 /**
@@ -37,6 +39,7 @@ watch(open, (on) => {
   stat.value = props.client ? { ...(props.inbound.clientStats ?? []).find((x) => x.email === props.client!.email)! } : null
   if (!stat.value?.email) stat.value = null
   ips.value = ''
+  ipRows.value = []
   if (ipLog.value) void loadIps()
 })
 
@@ -75,13 +78,34 @@ const ipsLoading = ref(false)
 const clearingIps = ref(false)
 const ipLines = computed(() => Math.min(10, Math.max(3, ips.value.split('\n').length)))
 
+/** MTProto: telemt's addresses of the client, live or seen within its window ("ip (recently)"), each with a lock that denies it. */
+const ipRows = ref<{ ip: string; recent: boolean }[]>([])
+const ipColumns = computed<PlainColumn[]>(() => [
+  { key: 'ip', label: t('inbounds.ipAddress') },
+  { key: 'when', label: t('inbounds.ipWhen') },
+  { key: 'deny', fit: true },
+])
+const bare = (v: string) => v.trim().replace(/\/(32|128)$/, '')
+const denyList = (): string[] => (Array.isArray(c.value.sourceDeny) ? c.value.sourceDeny : [])
+const denied = (ip: string) => denyList().some((v) => bare(String(v)) === ip)
+function deny(ip: string) {
+  if (!denied(ip)) c.value.sourceDeny = [...denyList(), ip]
+}
+
 async function loadIps() {
   ipsLoading.value = true
   try {
     const list = await api.post<string[] | string>(`panel/api/inbounds/clientIps/${encodeURIComponent(props.client!.email)}`)
     ips.value = Array.isArray(list) ? list.join('\n') : String(list ?? '')
+    ipRows.value = Array.isArray(list)
+      ? list.map((line) => {
+          const [ip = '', rest] = String(line).split(' (')
+          return { ip, recent: rest !== undefined }
+        })
+      : []
   } catch (e) {
     ips.value = cause(e)
+    ipRows.value = []
   } finally {
     ipsLoading.value = false
   }
@@ -125,11 +149,27 @@ async function save() {
       <XStateBar v-if="editing && (expired || exhausted)">Account is {{ expired ? 'Expired' : 'Traffic Ended' }} And Disabled</XStateBar>
       <ClientFields :client="c" :protocol="inbound.protocol" :method="form.settings.method" :flow="canFlow(form)">
         <template v-if="ipLog" #ips>
+          <XField v-if="mtproto" :label="t('inbounds.ipLog')" :help="t('inbounds.ipLogMtprotoDesc')">
+            <XPlainTable :columns="ipColumns" :rows="ipRows" :row-key="(r) => r.ip" :height="160" fixed>
+              <template #cell-ip="{ row }"><span class="client-window__ip">{{ row.ip }}</span></template>
+              <template #cell-when="{ row }">
+                <XChip :tone="row.recent ? 'neutral' : 'ok'" :dot="!row.recent">{{ row.recent ? t('inbounds.ipRecent') : t('inbounds.ipNow') }}</XChip>
+              </template>
+              <template #cell-deny="{ row }">
+                <XInlineButton icon="lock" danger :label="denied(row.ip) ? t('inbounds.sourceDenied') : t('inbounds.denySource')" :disabled="denied(row.ip)" @click="deny(row.ip)" />
+              </template>
+              <template #empty>
+                <XSpinner v-if="ipsLoading" :size="16" />
+                <span v-else class="client-window__none">{{ t('inbounds.ipNone') }}</span>
+              </template>
+            </XPlainTable>
+          </XField>
           <XField
+            v-else
             v-slot="a"
             :label="t('inbounds.ipLog')"
-            :help="mtproto ? t('inbounds.ipLogMtprotoDesc') : t('inbounds.ipLogDesc')"
-            :action="mtproto ? undefined : t('inbounds.ipLogClear')"
+            :help="t('inbounds.ipLogDesc')"
+            :action="t('inbounds.ipLogClear')"
             action-icon="delete"
             :action-loading="clearingIps"
             @action="clearIps"
@@ -154,7 +194,7 @@ async function save() {
     </div>
 
     <template #footer>
-      <XButton variant="primary" :loading="saving" @click="save">{{ editing ? t('inbounds.submitEdit') : t('inbounds.submitAdd') }}</XButton>
+      <XButton variant="primary" :loading="saving" :disabled="mtproto && sourceDenyWrong(c.sourceDeny)" @click="save">{{ editing ? t('inbounds.submitEdit') : t('inbounds.submitAdd') }}</XButton>
     </template>
   </XModal>
 </template>
@@ -171,5 +211,14 @@ async function save() {
   align-items: center;
   gap: 8px;
   min-height: var(--ctl-h);
+}
+
+.client-window__ip {
+  font: 400 var(--fs-12) / var(--lh-tight) var(--font-mono);
+}
+
+.client-window__none {
+  color: var(--mut);
+  font-size: var(--fs-12);
 }
 </style>

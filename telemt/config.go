@@ -8,7 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/netip"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -33,7 +35,20 @@ type Settings struct {
 	APIToken string
 	// Web, when set, also serves the users as a Telegram WEB proxy.
 	Web *Web
+	// IPLimitMode is how telemt counts a user's unique IPs against its
+	// limit: one of IPLimitModes, empty for telemt's default (active_window).
+	IPLimitMode string
+	// IPLimitWindow is the window in seconds of the time_window and combined
+	// modes; 0 leaves telemt's default of 30.
+	IPLimitWindow int
 }
+
+// IPLimitModes are the ways telemt counts unique IPs: live connections only,
+// addresses seen within the window, or both.
+var IPLimitModes = []string{"active_window", "time_window", "combined"}
+
+// MaxIPLimitWindow caps the unique-IP window at a week.
+const MaxIPLimitWindow = 7 * 24 * 3600
 
 // Web is the WEB proxy of an inbound: Telegram reaches it over HTTPS at
 // https://Host/BasePath/, through a TLS front that forwards that subtree to
@@ -80,6 +95,62 @@ type User struct {
 	RateUpBps, RateDownBps uint64
 	// Expires is when telemt stops accepting the user; zero never expires.
 	Expires time.Time
+	// SourceDeny are the networks telemt refuses the user from, as CIDRs;
+	// see NormalizeSourceDeny.
+	SourceDeny []string
+}
+
+// MaxSourceDeny caps the networks denied to one user.
+const MaxSourceDeny = 256
+
+// NormalizeSourceDeny checks a user's denied sources, addresses or networks
+// in CIDR notation, and returns them as telemt reads them: a lone address as
+// a /32 or /128 network, a network masked to its prefix, each once and in
+// order.
+func NormalizeSourceDeny(values []string) ([]string, error) {
+	if len(values) > MaxSourceDeny {
+		return nil, fmt.Errorf("at most %d denied sources per client", MaxSourceDeny)
+	}
+	out := make([]string, 0, len(values))
+	seen := map[string]bool{}
+	for _, v := range values {
+		v = strings.TrimSpace(v)
+		if v == "" {
+			continue
+		}
+		var prefix netip.Prefix
+		if strings.Contains(v, "/") {
+			p, err := netip.ParsePrefix(v)
+			if err != nil || p.Addr().Zone() != "" {
+				return nil, fmt.Errorf("invalid denied source %q: an address or a network such as 203.0.113.0/24", v)
+			}
+			prefix = p.Masked()
+		} else {
+			a, err := netip.ParseAddr(v)
+			if err != nil || a.Zone() != "" {
+				return nil, fmt.Errorf("invalid denied source %q: an address or a network such as 203.0.113.0/24", v)
+			}
+			prefix = netip.PrefixFrom(a, a.BitLen())
+		}
+		if s := prefix.String(); !seen[s] {
+			seen[s] = true
+			out = append(out, s)
+		}
+	}
+	return out, nil
+}
+
+// sourceDenyKey captures the users' denied sources: telemt applies them only
+// on a new generation, which a reload does not start, so a change restarts
+// the process.
+func sourceDenyKey(users []User) string {
+	var b strings.Builder
+	for _, u := range users {
+		if len(u.SourceDeny) > 0 {
+			fmt.Fprintf(&b, "|deny|%s=%s", u.Name, strings.Join(u.SourceDeny, ","))
+		}
+	}
+	return b.String()
 }
 
 // MaxRateBps is the highest per-direction rate telemt accepts.
@@ -133,6 +204,12 @@ func (s Settings) Validate() error {
 	}
 	if s.MetricsPort < 1 || s.MetricsPort > 65535 || s.MetricsPort == s.Port {
 		return fmt.Errorf("invalid metrics port %d", s.MetricsPort)
+	}
+	if s.IPLimitMode != "" && !slices.Contains(IPLimitModes, s.IPLimitMode) {
+		return fmt.Errorf("invalid unique IP mode %q", s.IPLimitMode)
+	}
+	if s.IPLimitWindow < 0 || s.IPLimitWindow > MaxIPLimitWindow {
+		return fmt.Errorf("invalid unique IP window %d s", s.IPLimitWindow)
 	}
 	if s.APIPort != 0 {
 		if s.APIPort < 1 || s.APIPort > 65535 || s.APIPort == s.Port || s.APIPort == s.MetricsPort {
@@ -260,6 +337,10 @@ type fileAccess struct {
 	UserMaxTCPConns  map[string]int           `toml:"user_max_tcp_conns,omitempty"`
 	UserExpirations  map[string]string        `toml:"user_expirations,omitempty"`
 	UserRateLimits   map[string]fileRateLimit `toml:"user_rate_limits,omitempty"`
+	UserSourceDeny   map[string][]string      `toml:"user_source_deny,omitempty"`
+	// The unique-IP accounting of all users; empty and 0 keep telemt's defaults.
+	UserMaxUniqueIPsMode       string `toml:"user_max_unique_ips_mode,omitempty"`
+	UserMaxUniqueIPsWindowSecs int    `toml:"user_max_unique_ips_window_secs,omitempty"`
 }
 
 type fileRateLimit struct {
@@ -292,6 +373,10 @@ func BuildConfig(s Settings, users []User) ([]byte, error) {
 		UserMaxTCPConns:  map[string]int{},
 		UserExpirations:  map[string]string{},
 		UserRateLimits:   map[string]fileRateLimit{},
+		UserSourceDeny:   map[string][]string{},
+
+		UserMaxUniqueIPsMode:       s.IPLimitMode,
+		UserMaxUniqueIPsWindowSecs: s.IPLimitWindow,
 	}
 	for _, u := range users {
 		if !userNamePattern.MatchString(u.Name) {
@@ -321,6 +406,13 @@ func BuildConfig(s Settings, users []User) ([]byte, error) {
 		}
 		if u.RateUpBps > 0 || u.RateDownBps > 0 {
 			access.UserRateLimits[u.Name] = fileRateLimit{UpBps: u.RateUpBps, DownBps: u.RateDownBps}
+		}
+		deny, err := NormalizeSourceDeny(u.SourceDeny)
+		if err != nil {
+			return nil, fmt.Errorf("user %q: %w", u.Name, err)
+		}
+		if len(deny) > 0 {
+			access.UserSourceDeny[u.Name] = deny
 		}
 	}
 

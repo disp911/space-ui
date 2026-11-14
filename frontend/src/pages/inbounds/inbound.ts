@@ -610,7 +610,11 @@ export function finalClient(f: InboundForm, client: Json): Json {
     if (!canFlow(f)) c.flow = ''
     if (empty(c.reverse?.tag)) delete c.reverse
   }
-  if (f.protocol === 'mtproto') for (const k of ['rateUp', 'rateDown', 'maxConns']) if (!c[k]) delete c[k]
+  if (f.protocol === 'mtproto') {
+    for (const k of ['rateUp', 'rateDown', 'maxConns']) if (!c[k]) delete c[k]
+    c.sourceDeny = (Array.isArray(c.sourceDeny) ? c.sourceDeny : []).map((v: unknown) => String(v).trim()).filter(Boolean)
+    if (!c.sourceDeny.length) delete c.sourceDeny
+  }
   return c
 }
 
@@ -630,6 +634,9 @@ function finalSettings(f: InboundForm): Json {
       break
     case 'mtproto':
       if (!s.web?.enable && empty(s.web?.host) && empty(s.web?.path)) delete s.web
+      // telemt's defaults stay out: counting live connections, a 30 s window.
+      if (!s.ipLimitMode || s.ipLimitMode === 'active_window') delete s.ipLimitMode
+      if (!s.ipLimitMode || !(Number(s.ipLimitWindow) > 0)) delete s.ipLimitWindow
       break
     case 'mixed':
       if (s.auth !== 'password') delete s.accounts
@@ -706,19 +713,32 @@ export function newEch(sni: string) {
 /** VLESS Encryption pairs, one per authentication, labelled as the server names them. */
 export const newVlessEnc = () => api.get<{ auths?: { label: string; decryption: string; encryption: string }[] }>('panel/api/server/getNewVlessEnc')
 
+/** How telemt counts a client's unique IPs against its limit: live connections, addresses seen within the window, or both. */
+export const ipLimitModes = ['active_window', 'time_window', 'combined'] as const
+
+/** An address or a network an MTProto client is refused from, as telemt reads it: 203.0.113.7, 10.0.0.0/8, 2001:db8::/32. */
+function sourceDenyValid(raw: string): boolean {
+  const v = raw.trim()
+  if (/^\d/.test(v) && !v.includes(':')) return new RegExp(String.raw`^${octet}(\.${octet}){3}(/(3[0-2]|[12]?\d))?$`).test(v)
+  return ipv6Prefix(v.includes('/') ? v : `${v}/128`, true)
+}
+
+/** A denied source telemt does not take. */
+export const sourceDenyWrong = (values: unknown) => Array.isArray(values) && values.some((v) => String(v).trim() !== '' && !sourceDenyValid(String(v)))
+
 /** A value of TUN's autoSystemWfpBlockLeak as Xray reads it (proxy/tun/wfp_leak.go); name is empty for TCP and UDP to ports. */
 interface WfpLeak { name: string; low: number; high: number }
 
 const octet = String.raw`(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)`
 const ipv4Prefix = new RegExp(String.raw`^${octet}(\.${octet}){3}/(3[0-2]|[12]?\d)$`)
 
-/** An IPv6 prefix as Go's netip reads it, IPv4-mapped ones refused: Windows checks those as IPv4. */
-function ipv6Prefix(text: string): boolean {
+/** An IPv6 prefix as Go's netip reads it; IPv4-mapped ones are refused unless mapped is set (Windows checks those as IPv4). */
+function ipv6Prefix(text: string, mapped = false): boolean {
   const [addr, bits, more] = text.split('/')
   if (more !== undefined || bits === undefined || !/^(12[0-8]|1[01]\d|[1-9]?\d)$/.test(bits) || !addr || addr.includes('%')) return false
   try {
     const host = new URL(`http://[${addr}]/`).hostname.slice(1, -1)
-    return !/^::ffff:[0-9a-f]{1,4}:[0-9a-f]{1,4}$/.test(host)
+    return mapped || !/^::ffff:[0-9a-f]{1,4}:[0-9a-f]{1,4}$/.test(host)
   } catch {
     return false
   }

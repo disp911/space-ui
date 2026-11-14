@@ -10,7 +10,7 @@ import { cause } from '../settings/form'
 import InboundSockopt from './InboundSockopt.vue'
 import { headerRows } from './rows'
 import {
-  canVisionSeed, isSS2022, network, newFallback, newPeer, newVlessEnc, randomVisionSeed, setSSMethod, ssMethods, ssPassword, visionSeed, type InboundForm,
+  canVisionSeed, ipLimitModes, isSS2022, network, newFallback, newPeer, newVlessEnc, randomVisionSeed, setSSMethod, ssMethods, ssPassword, visionSeed, type InboundForm,
   tunMissing,
   wfpLeakWrong,
 } from './inbound'
@@ -19,12 +19,28 @@ import {
  * The protocol's own settings in window 11, as the old panel's protocol forms
  * had them: VLESS authentication, fallbacks and Vision seed; Trojan fallbacks;
  * Shadowsocks method and key; WireGuard keys and peers; mixed and HTTP
- * accounts; tunnel port mapping; TUN; MTProto's masking domain and WEB proxy.
+ * accounts; tunnel port mapping; TUN; MTProto's masking domain, unique-IP
+ * accounting and WEB proxy.
  */
 const props = defineProps<{ f: InboundForm }>()
 const { t } = useI18n()
 
 const s = computed(() => props.f.settings)
+
+// --- MTProto unique-IP accounting: telemt's default, live connections, is kept out of the settings. ----------------
+
+const ipModeOptions = computed<Option[]>(() => {
+  const labels: Record<(typeof ipLimitModes)[number], string> = { active_window: t('inbounds.ipModeLive'), time_window: t('inbounds.ipModeWindow'), combined: t('inbounds.ipModeBoth') }
+  return ipLimitModes.map((m) => ({ value: m, label: labels[m] }))
+})
+const ipMode = computed({
+  get: () => s.value.ipLimitMode || 'active_window',
+  set: (m: string) => {
+    s.value.ipLimitMode = m
+    if (m !== 'active_window' && !(Number(s.value.ipLimitWindow) > 0)) s.value.ipLimitWindow = 30
+  },
+})
+const ipWindowShown = computed(() => ipMode.value !== 'active_window')
 const p = computed(() => props.f.protocol)
 const list = (values: string[]): Option[] => values.map((v) => ({ value: v, label: v }))
 /** What Xray's TUN blocks from leaking past it on Windows: DNS, its client, a broken TUN, or a port such as 53. */
@@ -376,6 +392,14 @@ const webFrontOk = location.protocol === 'https:' && (location.port === '' || lo
       <XField v-slot="a" :label="t('inbounds.mtprotoDomain')" :help="t('inbounds.mtprotoDomainDesc')">
         <XInput v-bind="a" v-model.trim="s.tlsDomain" mono placeholder="www.example.com" />
       </XField>
+      <XFieldGrid :columns="ipWindowShown ? 'minmax(0, 1fr) 120px' : undefined" :phone-columns="ipWindowShown ? 'minmax(0, 1fr) 120px' : undefined">
+        <XField v-slot="a" :label="t('inbounds.ipLimitMode')" :help="t('inbounds.ipLimitModeDesc')">
+          <XSelect v-bind="a" v-model="ipMode" :options="ipModeOptions" />
+        </XField>
+        <XField v-if="ipWindowShown" v-slot="a" :label="t('inbounds.ipLimitWindow')">
+          <XNumber v-bind="a" v-model="s.ipLimitWindow" block :min="1" :max="604800" />
+        </XField>
+      </XFieldGrid>
       <XSwitch v-model="webOn" boxed :label="t('inbounds.mtprotoWeb')" :help="t('inbounds.mtprotoWebDesc')" />
       <XFieldNote v-if="webOn && !webFrontOk" attached>{{ t('inbounds.mtprotoWebNeedsHttps') }}</XFieldNote>
       <XNest v-if="webOn" bare>

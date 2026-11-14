@@ -386,3 +386,91 @@ func TestRestartKeyReloadsWebAddressesButRestartsForItsListener(t *testing.T) {
 		}
 	}
 }
+
+func TestNormalizeSourceDeny(t *testing.T) {
+	got, err := NormalizeSourceDeny([]string{" 203.0.113.7 ", "10.20.30.40/16", "2001:db8::1", "2001:db8:abcd::/32", "10.20.0.0/16"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"203.0.113.7/32", "10.20.0.0/16", "2001:db8::1/128", "2001:db8::/32"}
+	if strings.Join(got, " ") != strings.Join(want, " ") {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	for _, bad := range []string{"example.com", "10.0.0.0/33", "300.1.1.1", "fe80::1%eth0", "1.2.3.4/", "::/129"} {
+		if _, err := NormalizeSourceDeny([]string{bad}); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+	if _, err := NormalizeSourceDeny(make([]string, MaxSourceDeny+1)); err == nil {
+		t.Error("more than MaxSourceDeny accepted")
+	}
+}
+
+func TestBuildConfigRendersSourceDenyAndUniqueIPMode(t *testing.T) {
+	s := testSettings()
+	s.IPLimitMode, s.IPLimitWindow = "combined", 120
+	users := []User{
+		{Name: "alice", Secret: "00112233445566778899aabbccddeeff", SourceDeny: []string{"203.0.113.7", "10.0.0.0/8"}},
+		{Name: "bob", Secret: "0123456789abcdef0123456789abcdef"},
+	}
+	data, err := BuildConfig(s, users)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got map[string]any
+	if err := toml.Unmarshal(data, &got); err != nil {
+		t.Fatalf("generated config is not valid TOML: %v\n%s", err, data)
+	}
+	if v := lookup(got, "access/user_max_unique_ips_mode"); v != "combined" {
+		t.Errorf("mode = %v", v)
+	}
+	if v := lookup(got, "access/user_max_unique_ips_window_secs"); v != int64(120) {
+		t.Errorf("window = %v", v)
+	}
+	deny, _ := lookup(got, "access/user_source_deny/alice").([]any)
+	if len(deny) != 2 || deny[0] != "203.0.113.7/32" || deny[1] != "10.0.0.0/8" {
+		t.Errorf("alice deny = %v", deny)
+	}
+	if v := lookup(got, "access/user_source_deny/bob"); v != nil {
+		t.Errorf("bob deny = %v", v)
+	}
+
+	// Defaults stay out of the file, telemt keeps its own.
+	data, _ = BuildConfig(testSettings(), users[1:])
+	for _, key := range []string{"user_source_deny", "user_max_unique_ips_mode", "user_max_unique_ips_window_secs"} {
+		if strings.Contains(string(data), key) {
+			t.Errorf("%s written without a value", key)
+		}
+	}
+}
+
+func TestBuildConfigRejectsBadSourceDenyAndUniqueIPMode(t *testing.T) {
+	user := User{Name: "alice", Secret: "00112233445566778899aabbccddeeff"}
+	bad := user
+	bad.SourceDeny = []string{"not-an-ip"}
+	if _, err := BuildConfig(testSettings(), []User{bad}); err == nil {
+		t.Error("bad denied source accepted")
+	}
+	for _, mutate := range []func(*Settings){
+		func(s *Settings) { s.IPLimitMode = "sometimes" },
+		func(s *Settings) { s.IPLimitWindow = -1 },
+		func(s *Settings) { s.IPLimitWindow = MaxIPLimitWindow + 1 },
+	} {
+		s := testSettings()
+		mutate(&s)
+		if _, err := BuildConfig(s, []User{user}); err == nil {
+			t.Errorf("settings %+v accepted", s)
+		}
+	}
+}
+
+func TestSourceDenyChangeRestarts(t *testing.T) {
+	a := []User{{Name: "alice", SourceDeny: []string{"203.0.113.7/32"}}}
+	b := []User{{Name: "alice", SourceDeny: []string{"203.0.113.8/32"}}}
+	if sourceDenyKey(a) == sourceDenyKey(b) || sourceDenyKey(a) == sourceDenyKey(nil) {
+		t.Error("a change of denied sources must change the restart key")
+	}
+	if sourceDenyKey([]User{{Name: "alice", MaxUniqueIPs: 3}}) != sourceDenyKey(nil) {
+		t.Error("other user fields must not restart")
+	}
+}

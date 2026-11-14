@@ -8,7 +8,7 @@ import {
 import { formatDate } from '../../i18n/format'
 import { useInbounds } from '../../stores/inbounds'
 import { cause } from '../settings/form'
-import { canFlow, canStream, clientsOf, fromDb, newInbound, setProtocol, toForm, trafficResets, tunWrong, withClients, type InboundForm } from './inbound'
+import { canFlow, canStream, clientsOf, fromDb, newInbound, setProtocol, sourceDenyWrong, toForm, trafficResets, tunWrong, withClients, type InboundForm } from './inbound'
 import ClientFields from './ClientFields.vue'
 import InboundProtocol from './InboundProtocol.vue'
 import InboundStream from './InboundStream.vue'
@@ -120,7 +120,7 @@ const plainPublic = computed<string[]>(() => {
 
 const portValid = computed(() => !!f.value.port && f.value.port >= 1 && f.value.port <= 65535)
 const valid = computed(
-  () => portValid.value && !(f.value.protocol === 'mtproto' && mtprotoTaken.value) && !sessionIdWrong(f.value.streamSettings?.xhttpSettings) && !customSockoptWrong(f.value.streamSettings?.sockopt) && !(f.value.protocol === 'tun' && tunWrong(f.value.settings)),
+  () => portValid.value && !(f.value.protocol === 'mtproto' && mtprotoTaken.value) && !sessionIdWrong(f.value.streamSettings?.xhttpSettings) && !customSockoptWrong(f.value.streamSettings?.sockopt) && !(f.value.protocol === 'tun' && tunWrong(f.value.settings)) && !(f.value.protocol === 'mtproto' && (f.value.settings.clients ?? []).some((c: { sourceDeny?: unknown }) => sourceDenyWrong(c.sourceDeny))),
 )
 
 async function save() {

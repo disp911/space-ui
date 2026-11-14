@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { XDateTime, XField, XFieldGrid, XInput, XNumber, XSelect, XSwitch, type Option } from '../../kit'
+import { XDateTime, XField, XFieldGrid, XFieldNote, XInput, XNumber, XSelect, XSwitch, XTagInput, type Option } from '../../kit'
 import { useInbounds } from '../../stores/inbounds'
 import { uuid } from '../xray/outbound'
-import { flows, mtprotoSecret, randomLowerNum, randomSeq, ssPassword, vmessSecurities } from './inbound'
+import { flows, mtprotoSecret, randomLowerNum, randomSeq, sourceDenyWrong, ssPassword, vmessSecurities } from './inbound'
 import type { Protocol } from './model'
 import { useClientTerms } from './terms'
 
@@ -12,7 +12,8 @@ import { useClientTerms } from './terms'
  * A client's fields as the old panel's client form had them, laid out as
  * window 11 of the mockup groups them: who it is, its limits, its options,
  * its traffic and when it ends. The client is changed in place. The client
- * window (12) adds its own parts through slots: the IP log under the limits,
+ * window (12) adds its own parts through slots: the IP log under the limits
+ * (an MTProto client's denied addresses follow it),
  * the usage beside the traffic limit and a badge after the end date.
  */
 const props = defineProps<{
@@ -101,6 +102,20 @@ const { totalGb, delayed, setDelayed, days, expiry } = useClientTerms(() => prop
     </XFieldGrid>
 
     <slot name="ips" />
+
+    <template v-if="protocol === 'mtproto'">
+      <XField v-slot="a" :label="t('inbounds.sourceDeny')" :help="t('inbounds.sourceDenyDesc')">
+        <XTagInput
+          v-bind="a"
+          :model-value="client.sourceDeny ?? []"
+          mono
+          :placeholder="t('inbounds.sourceDenyPlaceholder')"
+          :invalid="sourceDenyWrong(client.sourceDeny)"
+          @update:model-value="client.sourceDeny = $event"
+        />
+      </XField>
+      <XFieldNote tone="info" attached>{{ t('inbounds.sourceDenyRestart') }}</XFieldNote>
+    </template>
 
     <XFieldGrid v-if="flow || protocol === 'vless'">
       <XField v-if="flow" v-slot="a" label="Flow">
