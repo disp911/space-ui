@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/xtls/xray-core/infra/conf"
 )
 
 func TestUnwrapXrayTemplateConfig(t *testing.T) {
@@ -233,6 +235,35 @@ func TestCheckOutboundsRefusesWhatXrayRefuses(t *testing.T) {
 		{"others pass", `{"outbounds":[{"protocol":"blackhole","settings":{}}]}`, false},
 	} {
 		err := new(XraySettingService).CheckXrayConfig(c.config)
+		if (err != nil) != c.refused {
+			t.Errorf("%s: refused %v, want %v (%v)", c.name, err != nil, c.refused, err)
+		}
+	}
+}
+
+// A rule without a target is refused here exactly when Xray's own routing
+// build refuses it.
+func TestCheckRoutingRefusesWhatXrayRefuses(t *testing.T) {
+	for _, c := range []struct {
+		name, rules string
+		refused     bool
+	}{
+		{"outbound target", `[{"type":"field","outboundTag":"direct","domain":["example.com"]}]`, false},
+		{"balancer target", `[{"type":"field","balancerTag":"b","domain":["example.com"]}]`, false},
+		{"no target", `[{"type":"field","domain":["domain:ru","example.com"]}]`, true},
+		{"empty target", `[{"type":"field","outboundTag":"","domain":["example.com"]}]`, true},
+		{"second rule without a target", `[{"type":"field","outboundTag":"api","inboundTag":["api"]},{"type":"field","ip":["10.0.0.0/8"]}]`, true},
+		{"no rules", `[]`, false},
+	} {
+		routing := `{"rules":` + c.rules + `}`
+		var xc conf.RouterConfig
+		if err := json.Unmarshal([]byte(routing), &xc); err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if _, err := xc.Build(); (err != nil) != c.refused {
+			t.Fatalf("%s: Xray refused %v, the case says %v (%v)", c.name, err != nil, c.refused, err)
+		}
+		err := new(XraySettingService).CheckXrayConfig(`{"routing":` + routing + `}`)
 		if (err != nil) != c.refused {
 			t.Errorf("%s: refused %v, want %v (%v)", c.name, err != nil, c.refused, err)
 		}

@@ -37,7 +37,36 @@ func (s *XraySettingService) CheckXrayConfig(XrayTemplateConfig string) error {
 	if err != nil {
 		return common.NewError("xray template config invalid:", err)
 	}
-	return checkOutbounds(xrayConfig.OutboundConfigs)
+	if err := checkOutbounds(xrayConfig.OutboundConfigs); err != nil {
+		return err
+	}
+	return checkRouting(xrayConfig.RouterConfig)
+}
+
+// checkRouting refuses a routing rule with nowhere to send its traffic, as
+// Xray does before anything else in a rule: it will not start with a rule
+// that has neither an outboundTag nor a balancerTag, which is what is left of
+// a rule whose outbound or balancer was deleted.
+func checkRouting(raw []byte) error {
+	if len(raw) == 0 {
+		return nil
+	}
+	var routing struct {
+		Rules []json.RawMessage `json:"rules"`
+	}
+	if err := json.Unmarshal(raw, &routing); err != nil {
+		return common.NewError("xray template config invalid:", err)
+	}
+	for i, r := range routing.Rules {
+		var rule conf.RouterRule
+		if err := json.Unmarshal(r, &rule); err != nil {
+			return common.NewErrorf("routing rule %d: %v", i+1, err)
+		}
+		if rule.OutboundTag == "" && rule.BalancerTag == "" {
+			return common.NewErrorf("routing rule %d: neither outboundTag nor balancerTag is specified", i+1)
+		}
+	}
+	return nil
 }
 
 // checkOutbounds builds the VLESS, Trojan and Freedom outbounds as Xray does:
