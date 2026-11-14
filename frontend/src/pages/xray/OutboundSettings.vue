@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { api } from '../../api'
 import {
-  XField, XFieldGrid, XInlineButton, XInput, XInputList, XListHead, XNest, XNestCard, XNumber, XSection, XSelect, XSwitch, XTagInput, type Option,
+  XField, XFieldGrid, XFieldNote, XInlineButton, XInput, XInputList, XListHead, XNest, XNestCard, XNumber, XSection, XSelect, XSwitch, XTagInput, type Option,
 } from '../../kit'
 import { wireguardKeys } from '../../wireguard'
 import { options, type Outbound } from './model'
@@ -81,6 +82,27 @@ const publicKey = computed(() => {
   }
 })
 const newKey = () => (s.value.secretKey = wireguardKeys().privateKey)
+
+/**
+ * The WARP outbound only works with the key its account was registered with:
+ * Cloudflare drops a handshake made with any other one.
+ */
+const warpKey = ref('')
+const isWarp = computed(() => props.o.protocol === 'wireguard' && props.o.tag === 'warp')
+watch(
+  isWarp,
+  async (on) => {
+    if (!on || warpKey.value) return
+    try {
+      const text = await api.post<string>('panel/xray/warp/data')
+      warpKey.value = text ? String(JSON.parse(text)?.private_key ?? '') : ''
+    } catch {
+      warpKey.value = ''
+    }
+  },
+  { immediate: true },
+)
+const warpKeyWrong = computed(() => isWarp.value && !!warpKey.value && s.value.secretKey !== warpKey.value)
 
 // --- Freedom -----------------------------------------------------------------------
 
@@ -254,6 +276,7 @@ const remove = (list: unknown[], i: number) => list.splice(i, 1)
           <XInput v-bind="a" :model-value="publicKey" mono readonly />
         </XField>
       </XFieldGrid>
+      <XFieldNote v-if="warpKeyWrong" attached>{{ t('xray.warpKeyWrong') }}</XFieldNote>
       <XFieldGrid :cols="2">
         <XField v-slot="a" label="MTU">
           <XNumber v-bind="a" block v-model="s.mtu" :min="0" />
