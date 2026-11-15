@@ -24,6 +24,16 @@ const open = ref(false)
 const { style } = useFloating(anchor, list, open, { onDismiss: () => (open.value = false) })
 
 const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.value, width: `${Math.min(window.innerWidth - 16, 360)}px` } : style.value))
+
+// A long list fades out at an edge with more beyond it, as a sideways strip does (edgeFade.ts).
+const more = ref({ top: false, end: false })
+function scrolled(e: Event) {
+  const el = e.target as HTMLElement
+  more.value = { top: el.scrollTop > 1, end: el.scrollTop + el.clientHeight < el.scrollHeight - 1 }
+}
+const measure = (el: unknown) => {
+  if (el instanceof HTMLElement) more.value = { top: el.scrollTop > 1, end: el.scrollTop + el.clientHeight < el.scrollHeight - 1 }
+}
 </script>
 
 <template>
@@ -49,7 +59,7 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
           <span class="x-count__title">{{ label }}</span>
           <span class="x-count__n">{{ items.length }}</span>
         </div>
-        <div class="x-count__items">
+        <div :ref="measure" :class="['x-count__items', { 'x-count__items--top': more.top, 'x-count__items--end': more.end }]" @scroll="scrolled">
           <div v-for="item in items" :key="item.email" class="x-count__item">
             <span class="x-count__email" :title="item.email">{{ item.email }}</span>
             <XTooltip v-if="item.comment" :text="item.comment" :delay="0">
@@ -116,15 +126,16 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
 .x-count--off { --tone: var(--off); --tone-t: var(--off-t); --tone-bg: var(--off-bg); --tone-line: var(--off-line); }
 .x-count--neutral { --tone: var(--bar-unl); --tone-t: var(--fg2); --tone-bg: var(--chip); --tone-line: var(--chip-line); }
 
+/* A popup as the menus are: their radius, padding and rows, so the corners nest. */
 .x-count__list {
   z-index: 1000;
   display: flex;
   flex-direction: column;
   width: 280px;
   max-width: calc(100vw - 16px);
-  padding: 6px;
+  padding: 4px;
   border: 1px solid var(--line);
-  border-radius: var(--nest-r);
+  border-radius: var(--pop-r);
   background: var(--dlg);
   box-shadow: var(--shadow-pop);
 }
@@ -133,7 +144,8 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px 8px;
+  min-height: var(--menu-item-h);
+  padding: 0 10px;
   border-bottom: 1px solid var(--div);
 }
 
@@ -156,24 +168,39 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
   font: 500 var(--fs-12) / 1 var(--font-mono);
 }
 
+/* Six rows, then it scrolls; a row going under the head or the bottom fades out there. */
 .x-count__items {
-  max-height: 232px;
-  padding: 4px 0 2px;
+  max-height: calc(var(--menu-item-h) * 6 + 4px);
+  padding-top: 4px;
   overflow: hidden auto;
   scrollbar-gutter: stable;
+  --fade-top: 0px;
+  --fade-end: 0px;
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-end)), transparent);
 }
 
+.x-count__items--top {
+  --fade-top: 24px;
+}
+
+.x-count__items--end {
+  --fade-end: 24px;
+}
+
+/* Every row is a menu row's height, with or without a comment. */
 .x-count__item {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 28px;
-  padding: 0 8px;
+  height: var(--menu-item-h);
+  padding: 0 4px 0 10px;
   border-radius: var(--pop-item-r);
 }
 
-.x-count__item:hover {
-  background: var(--hov);
+@media (hover: hover) {
+  .x-count__item:hover {
+    background: var(--hov);
+  }
 }
 
 .x-count__email {
@@ -181,8 +208,12 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
   min-width: 0;
   overflow: hidden;
   color: var(--fg2);
-  font: 400 var(--fs-12) / var(--lh-tight) var(--font-mono);
+  /* The menus' text size: 13px, 17 on phones. */
+  font: 400 var(--ctl-fs) / var(--lh-tight) var(--font-mono);
   text-overflow: ellipsis;
+  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
+  padding-block: .15em;
+  margin-block: -.15em;
   white-space: nowrap;
 }
 
@@ -191,8 +222,8 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: var(--inline-btn);
+  height: var(--inline-btn);
   padding: 0;
   border: 0;
   border-radius: var(--btn-r);
@@ -211,19 +242,4 @@ const panelStyle = computed(() => (phone.value && anchor.value ? { ...style.valu
   box-shadow: 0 0 0 2px var(--acc-line);
 }
 
-@media (max-width: 767px) {
-  .x-count__item {
-    min-height: 36px;
-    padding-right: 4px;
-  }
-
-  .x-count__email {
-    font-size: var(--fs-13);
-  }
-
-  .x-count__comment {
-    width: var(--ctl-h);
-    height: var(--ctl-h);
-  }
-}
 </style>

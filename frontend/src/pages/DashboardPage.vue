@@ -394,6 +394,9 @@ const dash = '—'
   font: 500 var(--fs-14) / var(--lh-tight) var(--font-mono);
   white-space: nowrap;
   text-overflow: ellipsis;
+  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
+  padding-block: .15em;
+  margin-block: -.15em;
   transition: filter var(--t-med);
 }
 

@@ -162,6 +162,9 @@ watch(
   color: var(--fg);
   font: 500 var(--fs-13) / var(--lh-tight) var(--font-mono);
   text-overflow: ellipsis;
+  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
+  padding-block: .15em;
+  margin-block: -.15em;
   white-space: nowrap;
 }
 

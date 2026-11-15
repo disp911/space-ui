@@ -37,5 +37,8 @@ defineProps<{ tag: string; balancer?: boolean }>()
   font: 500 var(--fs-12) / var(--lh-tight) var(--font-mono);
   white-space: nowrap;
   text-overflow: ellipsis;
+  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
+  padding-block: .15em;
+  margin-block: -.15em;
 }
 </style>

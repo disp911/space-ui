@@ -136,6 +136,9 @@ function setIPv4(i: number, on: boolean) {
   color: var(--fg);
   font: 600 var(--fs-13) / var(--lh-tight) var(--font-sans);
   text-overflow: ellipsis;
+  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
+  padding-block: .15em;
+  margin-block: -.15em;
   white-space: nowrap;
 }
 

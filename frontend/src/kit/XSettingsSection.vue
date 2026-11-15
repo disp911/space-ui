@@ -111,6 +111,9 @@ const { t } = useI18n()
   letter-spacing: -.2px;
   white-space: nowrap;
   text-overflow: ellipsis;
+  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
+  padding-block: .15em;
+  margin-block: -.15em;
 }
 
 .x-settings__count {

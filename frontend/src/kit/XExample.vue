@@ -38,6 +38,9 @@ defineProps<{ label: string; value: string }>()
   font: 500 var(--fs-13) / var(--lh-tight) var(--font-mono);
   white-space: pre;
   text-overflow: ellipsis;
+  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
+  padding-block: .15em;
+  margin-block: -.15em;
 }
 
 /* A value with no room beside the label goes under it. */

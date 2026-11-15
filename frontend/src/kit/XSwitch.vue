@@ -131,6 +131,9 @@ const button = computed(() => ({
   font: 400 var(--fs-13) / var(--lh-tight) var(--font-sans);
   white-space: nowrap;
   text-overflow: ellipsis;
+  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
+  padding-block: .15em;
+  margin-block: -.15em;
 }
 
 .x-switch-line {

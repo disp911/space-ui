@@ -216,17 +216,21 @@ onBeforeUnmount(() => {
 
 .x-modal__title {
   min-width: 0;
-  margin: 0;
   overflow: hidden;
   color: var(--fg);
   font: 600 var(--fs-16) / var(--lh-tight) var(--font-sans);
   letter-spacing: -.3px;
   white-space: nowrap;
   text-overflow: ellipsis;
+  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
+  padding-block: .15em;
+  margin-block: -.15em;
 }
 
 .x-modal__subtitle {
-  margin: 2px 0 0;
+  /* 2px under the title, with room for what hangs below and above the line (g, Ё), which the ellipsis' clip cut. */
+  margin: calc(2px - .15em) 0 -.15em;
+  padding-block: .15em;
   overflow: hidden;
   color: var(--dim);
   font: 400 var(--fs-12) / var(--lh-tight) var(--font-sans);
