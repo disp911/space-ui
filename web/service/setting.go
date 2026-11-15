@@ -79,6 +79,9 @@ var defaultValueMap = map[string]string{
 	"restartXrayOnClientDisable":  "true",
 	"xrayOutboundTestUrl":         "https://www.google.com/generate_204",
 
+	// Lists for a router's podkop; their secret is made at first use, see GetListsSecret.
+	"listsPath": "/lists/",
+
 	// The website on port 443, see SiteMode.
 	"siteMode":   "",
 	"siteDomain": "",
@@ -189,6 +192,11 @@ func (s *SettingService) GetAllSetting() (*entity.AllSetting, error) {
 		}
 		err := setSetting(key, value)
 		if err != nil {
+			return nil, err
+		}
+	}
+	if !keyMap["listsSecret"] {
+		if allSetting.ListsSecret, err = s.GetListsSecret(); err != nil {
 			return nil, err
 		}
 	}

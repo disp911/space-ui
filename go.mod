@@ -19,12 +19,14 @@ require (
 	github.com/pelletier/go-toml/v2 v2.3.1
 	github.com/pires/go-proxyproto v0.16.0
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/sagernet/sing v0.7.12
 	github.com/shirou/gopsutil/v4 v4.26.4
 	github.com/valyala/fasthttp v1.70.0
 	github.com/xlzd/gotp v0.1.0
 	github.com/xtls/xray-core v1.260327.1-0.20261109052709-676eaf66f8f0
 	go.uber.org/atomic v1.11.0
 	go.uber.org/zap v1.28.0
+	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
 	golang.org/x/crypto v0.58.0
 	golang.org/x/sys v0.49.0
 	golang.org/x/text v0.43.0
@@ -99,7 +101,6 @@ require (
 	go.mongodb.org/mongo-driver/v2 v2.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap/exp v0.3.0 // indirect
-	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
 	golang.org/x/arch v0.26.0 // indirect
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20261020153306-9f2b28d4331a // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect

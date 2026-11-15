@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"io"
@@ -35,6 +36,8 @@ type siteFront struct {
 	panel    http.Handler
 	site     http.Handler
 	hosts    []string
+	// listsPath is where the podkop lists are, see serveRuleList.
+	listsPath string
 }
 
 // ownHost reports whether the request names one of the website's hosts,
@@ -83,10 +86,40 @@ func (f siteFront) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	if rest, ok := strings.CutPrefix(p, f.listsPath); ok && underPath(p, f.listsPath) && serveRuleList(w, r, rest) {
+		return
+	}
 	if !f.ownHost(r) {
 		return
 	}
 	f.site.ServeHTTP(w, r)
+}
+
+// serveRuleList answers with the podkop list at rest, "<secret>/<name>.srs"
+// under the lists' path, and reports whether there was one: a wrong secret or
+// name is left to the website, as any unknown path is.
+func serveRuleList(w http.ResponseWriter, r *http.Request, rest string) bool {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		return false
+	}
+	file, ok := (&service.RuleListService{}).ServedRuleList(rest)
+	if !ok {
+		return false
+	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("ETag", file.ETag)
+	w.Header().Set("Cache-Control", "no-cache")
+	http.ServeContent(w, r, "", time.UnixMilli(file.UpdatedAt), bytes.NewReader(file.Data))
+	return true
+}
+
+// listsPath is where the podkop lists are served, empty if unknown.
+func (s *Server) listsPath() string {
+	p, err := s.settingService.GetListsPath()
+	if err != nil {
+		return ""
+	}
+	return p
 }
 
 // underPath reports whether p lies under prefix, a folder path ending in
@@ -211,7 +244,7 @@ func (s *Server) startReality(panel http.Handler) error {
 		certs.Stop()
 		return err
 	}
-	s.siteFront = siteFront{basePath: basePath, panel: panel, site: pages, hosts: s.siteHosts(domain)}
+	s.siteFront = siteFront{basePath: basePath, panel: panel, site: pages, hosts: s.siteHosts(domain), listsPath: s.listsPath()}
 	s.siteHandler = asCaddy(webProxyFront{panel: s.siteFront, route: service.TelemtWebRoute, xhttp: service.XhttpSiteRoute})
 	s.siteServer = caddyServer(s.siteHandler)
 	go s.siteServer.Serve(tls.NewListener(ln, certs.TLSConfig()))
@@ -310,7 +343,7 @@ func (s *Server) startOwnPort(panel http.Handler) (net.Listener, bool, error) {
 		s.stopSite()
 		return nil, false, err
 	}
-	s.siteFront = siteFront{basePath: basePath, panel: panel, site: pages, hosts: s.siteHosts(name)}
+	s.siteFront = siteFront{basePath: basePath, panel: panel, site: pages, hosts: s.siteHosts(name), listsPath: s.listsPath()}
 	s.siteHandler = asCaddy(webProxyFront{panel: s.siteFront, route: service.TelemtWebRoute, xhttp: service.XhttpSiteRoute})
 	service.SetSiteStatus(&service.SiteState{Scheme: scheme, Host: host, Certs: s.siteCerts, Checker: s.siteCheck})
 	siteRunning.Store(true)

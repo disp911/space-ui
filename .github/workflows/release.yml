@@ -23,6 +23,10 @@ on:
 env:
   # telemt MTProto proxy release bundled into Linux amd64/arm64 builds
   TELEMT_VERSION: "3.5.17"
+  # sing-box release the podkop lists (.srs) are checked with: the oldest
+  # podkop runs on (its SB_REQUIRED_VERSION)
+  SINGBOX_VERSION: "1.12.0"
+  SINGBOX_SHA256: "f59b1253ae0143997cb46915af30d14a33431dcbd7e39edacfcde8d73050faaf"
 
 jobs:
   analyze:
@@ -93,6 +97,16 @@ jobs:
           tar -xzf "$TELEMT_ASSET" telemt
           cd -
           TELEMT_BIN=/tmp/telemt go test -count=1 -v -run TestRealTelemt ./telemt/
+
+      - name: Test the podkop lists against sing-box
+        run: |
+          SINGBOX_ASSET="sing-box-${SINGBOX_VERSION}-linux-amd64"
+          cd /tmp
+          wget -q "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/${SINGBOX_ASSET}.tar.gz"
+          echo "${SINGBOX_SHA256}  ${SINGBOX_ASSET}.tar.gz" | sha256sum -c -
+          tar -xzf "${SINGBOX_ASSET}.tar.gz" "${SINGBOX_ASSET}/sing-box"
+          cd -
+          SINGBOX_BIN="/tmp/${SINGBOX_ASSET}/sing-box" go test -count=1 -v -run TestRealSingBox ./util/srs/
 
   build:
     needs: analyze

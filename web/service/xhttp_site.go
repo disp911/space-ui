@@ -95,14 +95,15 @@ func pathsOverlap(a, b string) bool {
 }
 
 // siteReservedPaths lists the paths the website keeps for itself: the
-// panel's, the subscriptions' and those of the Telegram WEB proxies.
+// panel's, the subscriptions', the podkop lists' and those of the Telegram
+// WEB proxies.
 func siteReservedPaths(exceptID int) []string {
 	settings := SettingService{}
 	var paths []string
 	if p, err := settings.GetBasePath(); err == nil && p != "/" {
 		paths = append(paths, p)
 	}
-	for _, get := range []func() (string, error){settings.GetSubPath, settings.GetSubJsonPath, settings.GetSubClashPath} {
+	for _, get := range []func() (string, error){settings.GetSubPath, settings.GetSubJsonPath, settings.GetSubClashPath, settings.GetListsPath} {
 		if p, err := get(); err == nil && p != "" && p != "/" {
 			paths = append(paths, p)
 		}

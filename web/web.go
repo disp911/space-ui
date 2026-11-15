@@ -185,6 +185,16 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	// Register WebSocket route with basePath (g already has basePath prefix)
 	g.GET("/ws", s.ws.HandleWebSocket)
 
+	// With the panel at the root there is no website in front of it: the
+	// panel serves the podkop lists itself (siteFront does otherwise).
+	if lists, _ := s.settingService.GetListsPath(); basePath == "/" && lists != "" && lists != "/" {
+		engine.GET(lists+":secret/:file", func(c *gin.Context) {
+			if !serveRuleList(c.Writer, c.Request, c.Param("secret")+"/"+c.Param("file")) {
+				c.AbortWithStatus(http.StatusNotFound)
+			}
+		})
+	}
+
 	// Chrome DevTools endpoint for debugging web apps
 	engine.GET("/.well-known/appspecific/com.chrome.devtools.json", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{})

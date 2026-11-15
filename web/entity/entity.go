@@ -5,11 +5,15 @@ import (
 	"crypto/tls"
 	"math"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/disp911/space-ui/v3/util/common"
 )
+
+// listsSecret is what the lists' secret may be (service.ListsSecretPattern).
+var listsSecret = regexp.MustCompile(`^[A-Za-z0-9]{16,64}$`)
 
 // Msg represents a standard API response message with success status, message text, and optional data object.
 type Msg struct {
@@ -71,6 +75,10 @@ type AllSetting struct {
 	SubJsonNoises               string `json:"subJsonNoises" form:"subJsonNoises"`                             // JSON subscription noise configuration
 	SubJsonMux                  string `json:"subJsonMux" form:"subJsonMux"`                                   // JSON subscription mux configuration
 	SubJsonRules                string `json:"subJsonRules" form:"subJsonRules"`
+
+	// Lists for a router's podkop, served at <ListsPath><ListsSecret>/<name>.srs
+	ListsPath   string `json:"listsPath" form:"listsPath"`
+	ListsSecret string `json:"listsSecret" form:"listsSecret"`
 
 	// LDAP settings
 	LdapEnable     bool   `json:"ldapEnable" form:"ldapEnable"`
@@ -164,6 +172,24 @@ func (s *AllSetting) CheckValid() error {
 	}
 	if !strings.HasSuffix(s.SubClashPath, "/") {
 		s.SubClashPath += "/"
+	}
+
+	if !strings.HasPrefix(s.ListsPath, "/") {
+		s.ListsPath = "/" + s.ListsPath
+	}
+	if !strings.HasSuffix(s.ListsPath, "/") {
+		s.ListsPath += "/"
+	}
+	if s.ListsPath == "/" {
+		return common.NewError("the lists' path cannot be the root")
+	}
+	for _, other := range []string{s.WebBasePath, s.SubPath, s.SubJsonPath, s.SubClashPath} {
+		if strings.HasPrefix(s.ListsPath, other) && other != "/" || strings.HasPrefix(other, s.ListsPath) {
+			return common.NewError("the lists' path overlaps another path of the panel:", s.ListsPath, other)
+		}
+	}
+	if !listsSecret.MatchString(s.ListsSecret) {
+		return common.NewError("the lists' secret is 16 to 64 letters and digits")
 	}
 
 	_, err := time.LoadLocation(s.TimeLocation)

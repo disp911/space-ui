@@ -137,6 +137,22 @@ type CustomGeoResource struct {
 	UpdatedAt     int64  `json:"updatedAt" gorm:"autoUpdateTime;column:updated_at"`
 }
 
+// RuleList is a list of domains or of subnets the panel hands out as a
+// sing-box rule-set (.srs), for a router's podkop to fetch as a remote
+// domain list or a remote subnet list.
+type RuleList struct {
+	Id   int    `json:"id" gorm:"primaryKey;autoIncrement"`
+	Name string `json:"name" gorm:"not null;uniqueIndex"`
+	// Kind is "domains" or "subnets"; a list keeps the kind it was made with.
+	Kind string `json:"kind" gorm:"not null"`
+	// Entries are the list's lines as the panel normalized them, one a line.
+	Entries   string `json:"entries" gorm:"not null;default:''"`
+	Count     int    `json:"count" gorm:"not null;default:0"`
+	Srs       []byte `json:"-"`
+	CreatedAt int64  `json:"createdAt" gorm:"autoCreateTime:milli"`
+	UpdatedAt int64  `json:"updatedAt" gorm:"autoUpdateTime:milli"`
+}
+
 type ClientReverse struct {
 	Tag string `json:"tag"`
 }

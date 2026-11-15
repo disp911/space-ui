@@ -48,4 +48,5 @@ func (a *APIController) initRouter(g *gin.RouterGroup, customGeo *service.Custom
 	a.serverController = NewServerController(server)
 
 	NewCustomGeoController(api.Group("/custom-geo"), customGeo)
+	NewRuleListController(api.Group("/lists"))
 }
