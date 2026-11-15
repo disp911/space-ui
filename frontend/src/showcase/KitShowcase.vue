@@ -276,7 +276,7 @@ const spacing = [2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 56]
           <h3 class="kit__h3">Размеры шрифта</h3>
           <div class="kit__fonts">
             <span v-for="f in fontSizes" :key="f" :style="{ fontSize: `var(--fs-${f})` }">{{ f }} Подключения</span>
-            <code class="kit__mono">IBM Plex Mono · 203.0.113.7:443 · 48,2 МБ</code>
+            <code class="kit__mono">Моноширинный · 203.0.113.7:443 · 48,2 МБ</code>
           </div>
         </div>
         <div class="kit__swatch-group">

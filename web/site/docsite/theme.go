@@ -36,7 +36,7 @@ var fontSets = []struct{ body, head string }{
 	{`"Inter", system-ui, "Segoe UI", Roboto, sans-serif`, ""},
 	{`system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`, `Georgia, "Iowan Old Style", "Times New Roman", serif`},
 	{`"Source Sans 3", "Source Sans Pro", system-ui, "Segoe UI", sans-serif`, ""},
-	{`"IBM Plex Sans", system-ui, "Segoe UI", Roboto, sans-serif`, `"IBM Plex Sans", system-ui, sans-serif`},
+	{`"Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif`, `system-ui, -apple-system, "Segoe UI", sans-serif`},
 	{`Charter, "Bitstream Charter", "Sitka Text", Cambria, serif`, `system-ui, -apple-system, "Segoe UI", sans-serif`},
 }
 

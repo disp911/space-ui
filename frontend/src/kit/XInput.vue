@@ -103,6 +103,11 @@ defineExpose({ focus: () => input.value?.focus() })
   text-overflow: ellipsis;
 }
 
+/* Hidden, a password's dots are the text font's: a monospace font draws them large (iOS); shown, it is mono again. */
+.x-input__control[type='password'] {
+  font-family: var(--font-sans);
+}
+
 /* A search field is a capsule, as Apple draws search; the browser's own clear cross gives way to ours. */
 .x-input--search {
   padding-left: 14px;
