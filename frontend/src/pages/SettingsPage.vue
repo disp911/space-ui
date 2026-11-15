@@ -18,6 +18,7 @@ import AccountTab from './settings/AccountTab.vue'
 import LdapTab from './settings/LdapTab.vue'
 import SubTab from './settings/SubTab.vue'
 import FormatsTab from './settings/FormatsTab.vue'
+import ListsTab from './settings/ListsTab.vue'
 
 const { t } = useI18n()
 
@@ -223,7 +224,8 @@ async function restart(address?: { panel: string; page: string }) {
       <AccountTab v-else-if="tab === 'account'" />
       <LdapTab v-else-if="tab === 'ldap'" />
       <SubTab v-else-if="tab === 'sub'" />
-      <FormatsTab v-else />
+      <FormatsTab v-else-if="tab === 'formats'" />
+      <ListsTab v-else />
     </div>
 
     <template #bar>

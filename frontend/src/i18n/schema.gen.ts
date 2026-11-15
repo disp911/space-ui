@@ -205,6 +205,43 @@ export interface MessageSchema {
     "tabLdap": string
     "tabSub": string
     "tabFormats": string
+    "tabLists": string
+    "secLists": string
+    "listsPath": string
+    "listsPathDesc": string
+    "listsSecret": string
+    "listsSecretDesc": string
+    "listsNewSecret": string
+    "listAdd": string
+    "listsLoading": string
+    "listsEmpty": string
+    "listsEmptyHint": string
+    "listName": string
+    "listKind": string
+    "listCount": string
+    "listUrl": string
+    "listEdit": string
+    "listDelete": string
+    "listDomains": string
+    "listSubnets": string
+    "listCopy": string
+    "listDeleteTitle": string
+    "listDeleteText": string
+    "listNew": string
+    "listEditTitle": string
+    "listFileName": string
+    "listFileNameHint": string
+    "listNameWrong": string
+    "listNameTaken": string
+    "listEntries": string
+    "listEntriesDomains": string
+    "listEntriesSubnets": string
+    "listFromFile": string
+    "listBadDomain": string
+    "listBadSubnet": string
+    "listTooMany": string
+    "listSave": string
+    "listCreate": string
     "save": string
     "saving": string
     "saved": string
@@ -271,6 +308,8 @@ export interface MessageSchema {
     "errRange": string
     "errMin": string
     "errPathBoth": string
+    "errListsPath": string
+    "errListsSecret": string
     "errPathStart": string
     "secAdmin": string
     "currentUsername": string

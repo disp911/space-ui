@@ -25,6 +25,8 @@ const props = withDefaults(
     actionIcon?: IconName
     /** The action is running: a spinner in place of its icon, clicks wait. */
     actionLoading?: boolean
+    /** In a window that fills a phone's screen (XModal full) the control takes the room left, e.g. a long text. */
+    fill?: boolean
   }>(),
   { layout: 'stack', actionIcon: 'refresh' },
 )
@@ -35,7 +37,7 @@ const describedBy = computed(() => (props.error || props.hint ? `${id}-note` : u
 </script>
 
 <template>
-  <div :class="['x-field', `x-field--${layout}`, { 'is-invalid': !!error }]">
+  <div :class="['x-field', `x-field--${layout}`, { 'is-invalid': !!error, 'x-field--fill': fill }]">
     <div v-if="label || $slots.label || (layout === 'row' && (hint || error))" class="x-field__head">
       <label v-if="label || $slots.label" class="x-field__label" :for="id">
         <slot name="label">{{ label }}</slot>
@@ -69,6 +71,20 @@ const describedBy = computed(() => (props.error || props.hint ? `${id}-note` : u
 .x-field {
   display: flex;
   min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .x-field--fill {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .x-field--fill .x-field__control {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
 }
 
 .x-field--stack {

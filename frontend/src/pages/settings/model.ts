@@ -55,6 +55,9 @@ export interface AllSetting {
   subJsonMux: string
   subJsonRules: string
 
+  listsPath: string
+  listsSecret: string
+
   ldapEnable: boolean
   ldapHost: string
   ldapPort: number
@@ -79,7 +82,7 @@ export interface AllSetting {
 
 export type SettingKey = keyof AllSetting
 
-export type TabKey = 'panel' | 'site' | 'ui' | 'account' | 'ldap' | 'sub' | 'formats'
+export type TabKey = 'panel' | 'site' | 'ui' | 'account' | 'ldap' | 'sub' | 'formats' | 'lists'
 
 /** The tabs in order, with the settings each edits: its dot and the status line count changes and errors among them. */
 export const tabs: { key: TabKey; label: Text; keys: SettingKey[] }[] = [
@@ -117,6 +120,7 @@ export const tabs: { key: TabKey; label: Text; keys: SettingKey[] }[] = [
     label: 'settings.tabFormats',
     keys: ['subJsonPath', 'subJsonURI', 'subClashPath', 'subClashURI', 'subJsonFragment', 'subJsonNoises', 'subJsonMux', 'subJsonRules'],
   },
+  { key: 'lists', label: 'settings.tabLists', keys: ['listsPath', 'listsSecret'] },
 ]
 
 /** The URI path a subscription is served at: the reverse proxy's when one is set. */
@@ -167,7 +171,11 @@ export const checks: Partial<Record<SettingKey, Check>> = {
   subUpdates: { min: 1 },
   subJsonPath: { path: 'both' },
   subClashPath: { path: 'both' },
+  listsPath: { path: 'both' },
 }
+
+/** What the lists' secret may be, as the server checks it. */
+export const listsSecretPattern = /^[A-Za-z0-9]{16,64}$/
 
 /** The concurrency values of the JSON subscription's mux. */
 export const muxCheck: Check = { min: -1, max: 1024 }
@@ -181,6 +189,13 @@ export function settingErrors(s: AllSetting) {
     const fail = checkValue(check, s[key])
     if (fail) out[key] = fail
   }
+  if (!out.listsPath) {
+    // The lists' folder is the website's own: not the root, and apart from the panel's and the subscriptions' paths.
+    const lists = s.listsPath
+    const others = [s.webBasePath, s.subPath, s.subJsonPath, s.subClashPath]
+    if (lists === '/' || others.some((o) => (o !== '/' && lists.startsWith(o)) || o.startsWith(lists))) out.listsPath = ['settings.errListsPath']
+  }
+  if (!listsSecretPattern.test(s.listsSecret)) out.listsSecret = ['settings.errListsSecret']
   if (s.subJsonMux) {
     try {
       const mux = JSON.parse(s.subJsonMux) as { concurrency?: unknown; xudpConcurrency?: unknown }
