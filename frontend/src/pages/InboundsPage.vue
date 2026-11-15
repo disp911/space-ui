@@ -133,6 +133,8 @@ const phoneColumns = computed<ExpandColumn[]>(() => [
   // As wide as the menu button, so it does not run into the remark.
   { key: 'menu', label: t('inbounds.colMenu'), size: 'var(--btn-sq)', muted: 'none', quiet: true },
   { key: 'remark', label: t('inbounds.colRemark'), muted: 'none' },
+  // The protocol and the port beside the remark, which gives way to them; transport and security stay in the summary.
+  { key: 'proto', label: t('inbounds.colProtocol'), size: 'max-content', align: 'end', quiet: true },
   { key: 'info', label: t('inbounds.colInfo'), size: 'max-content', align: 'end', muted: 'none', quiet: true },
 ])
 
@@ -500,6 +502,12 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
             <span :class="['inbounds__remark', 'inbounds__remark--phone', { 'is-off': !row.enable }]"><XMark :text="row.remark" :query="clientQuery" /></span>
           </XRowToggle>
         </template>
+        <template #phone-proto="{ row }">
+          <span class="inbounds__proto">
+            <XChip mono>{{ protocolChips(row).protocol }}</XChip>
+            <span class="inbounds__port">:{{ row.port }}</span>
+          </span>
+        </template>
         <template #phone-info="{ row }">
           <XPopover :label="t('inbounds.colInfo')">
             <template #default="{ props: trigger }">
@@ -610,7 +618,27 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
 }
 
 .inbounds__remark--phone {
+  /* One line beside the protocol and port, cut with an ellipsis. */
+  display: block;
   font-size: var(--fs-14);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  /* Room for what hangs below the line (g, y), which the ellipsis' clip cut; the box keeps its size. */
+  padding-block: .15em;
+  margin-block: -.15em;
+}
+
+.inbounds__proto {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.inbounds__port {
+  color: var(--mut);
+  /* The chip's own size. */
+  font: 400 var(--fs-11) / var(--lh-tight) var(--font-mono);
 }
 
 .inbounds__remark--phone.is-off {
