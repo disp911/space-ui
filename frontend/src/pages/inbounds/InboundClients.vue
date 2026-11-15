@@ -56,7 +56,7 @@ const columns = computed<InnerColumn[]>(() => [
 const phoneColumns = computed<InnerColumn[]>(() => [
   { key: 'menu', label: t('inbounds.colMenu'), size: '40px', quiet: true },
   { key: 'client', label: t('inbounds.colClient') },
-  { key: 'info', label: t('inbounds.colInfo'), size: 'var(--btn-sq)', align: 'end', quiet: true },
+  { key: 'info', label: t('inbounds.colInfo'), size: 'max-content', align: 'end', quiet: true },
 ])
 
 const keyOf = (c: Client) => clientKey(props.inbound.protocol, c)
@@ -255,7 +255,8 @@ async function confirmed(request: Promise<unknown>) {
     <template #phone-info="{ row }">
       <XPopover :label="t('inbounds.colInfo')">
         <template #default="{ props: trigger }">
-          <XButton v-bind="trigger" icon="info" :mark="row.enable ? undefined : 'pause'" :label="t('inbounds.colInfo')" />
+          <!-- A badge with the info mark rather than a round button, as the inbounds have; paused and grey while the client is off. -->
+          <XChip v-bind="trigger" interactive :icon="row.enable ? 'info' : 'pause'" :tone="row.enable ? 'neutral' : 'off'" :aria-label="t('inbounds.colInfo')" />
         </template>
         <template #content>
           <div class="clients__info">

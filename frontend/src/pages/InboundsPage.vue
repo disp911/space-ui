@@ -132,7 +132,7 @@ const columns = computed<ExpandColumn[]>(() => [
 const phoneColumns = computed<ExpandColumn[]>(() => [
   { key: 'menu', label: t('inbounds.colMenu'), size: '44px', muted: 'none', quiet: true },
   { key: 'remark', label: t('inbounds.colRemark'), muted: 'none' },
-  { key: 'info', label: t('inbounds.colInfo'), size: 'var(--btn-sq)', align: 'end', muted: 'none', quiet: true },
+  { key: 'info', label: t('inbounds.colInfo'), size: 'max-content', align: 'end', muted: 'none', quiet: true },
 ])
 
 const toneOf = (s: State) => (s === 'unl' ? 'neutral' : s)
@@ -502,7 +502,8 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
         <template #phone-info="{ row }">
           <XPopover :label="t('inbounds.colInfo')">
             <template #default="{ props: trigger }">
-              <XButton v-bind="trigger" icon="info" :mark="row.enable ? undefined : 'pause'" :label="t('inbounds.colInfo')" />
+              <!-- A badge with the info mark rather than a round button; paused and grey while the inbound is off. -->
+              <XChip v-bind="trigger" interactive :icon="row.enable ? 'info' : 'pause'" :tone="row.enable ? 'neutral' : 'off'" :aria-label="t('inbounds.colInfo')" />
             </template>
             <template #content>
               <XKeyValue
