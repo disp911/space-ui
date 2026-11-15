@@ -54,7 +54,8 @@ const columns = computed<InnerColumn[]>(() => [
   { key: 'expiry', label: t('inbounds.colExpiry'), size: '172px' },
 ])
 const phoneColumns = computed<InnerColumn[]>(() => [
-  { key: 'menu', label: t('inbounds.colMenu'), size: '40px', quiet: true },
+  // As wide as the menu button, so it does not run into the status dot.
+  { key: 'menu', label: t('inbounds.colMenu'), size: 'var(--btn-sq)', quiet: true },
   { key: 'client', label: t('inbounds.colClient') },
   { key: 'info', label: t('inbounds.colInfo'), size: 'max-content', align: 'end', quiet: true },
 ])
@@ -323,6 +324,8 @@ async function confirmed(request: Promise<unknown>) {
 }
 
 .clients__who--phone {
+  /* One line on phones: the dot in its middle. */
+  align-items: center;
   padding: 8px 0;
 }
 
@@ -338,7 +341,35 @@ async function confirmed(request: Promise<unknown>) {
 }
 
 .clients__who--phone .clients__dot {
-  margin-top: 5px;
+  margin-top: 0;
+}
+
+/* Phones: the comment after the email on the same line, cut first when the line runs out. */
+.clients__who--phone .clients__name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.clients__who--phone .clients__email {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: normal;
+  /* Room for what hangs below the line (g, y), which the ellipsis' clip cut; the box keeps its size. */
+  padding-block: .15em;
+  margin-block: -.15em;
+}
+
+.clients__who--phone .clients__comment {
+  flex: 1 1 0;
+  min-width: 3em;
+  margin-top: 0;
+  padding-block: .15em;
+  margin-block: -.15em;
 }
 
 .clients__name {

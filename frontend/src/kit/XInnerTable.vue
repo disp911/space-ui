@@ -92,13 +92,14 @@ const template = computed(() => columns.value.map((c) => c.size ?? 'minmax(0, 1f
 }
 
 .x-inner--phone .x-inner__head {
-  gap: 4px;
+  /* Room between the menu button and a status dot with its pulse ring. */
+  gap: 8px;
   padding: 8px 8px 8px 10px;
 }
 
 .x-inner--phone .x-inner__row {
   box-sizing: content-box;
-  gap: 4px;
+  gap: 8px;
   min-height: 54px;
   padding: 2px 8px 2px 4px;
 }

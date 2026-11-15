@@ -174,10 +174,6 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
   transition: background-color var(--t-fast);
 }
 
-.x-expand__row.is-open {
-  background: var(--hov);
-}
-
 .x-expand__toggle-cell {
   display: flex;
   justify-content: center;
@@ -256,7 +252,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
   filter: none;
 }
 
-/* As far from the open row, which is tinted, as from the next one. */
+/* As far from the open row as from the next one; the open row is not tinted, its chevron shows it open. */
 .x-expand__inner {
   margin: 12px 14px;
   /* A hovered last row keeps to the rounded corners; popups are teleported, so nothing else is cut. */

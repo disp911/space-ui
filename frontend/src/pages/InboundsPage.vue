@@ -130,7 +130,8 @@ const columns = computed<ExpandColumn[]>(() => [
   { key: 'expiry', label: t('inbounds.colExpiry'), size: '128px' },
 ])
 const phoneColumns = computed<ExpandColumn[]>(() => [
-  { key: 'menu', label: t('inbounds.colMenu'), size: '44px', muted: 'none', quiet: true },
+  // As wide as the menu button, so it does not run into the remark.
+  { key: 'menu', label: t('inbounds.colMenu'), size: 'var(--btn-sq)', muted: 'none', quiet: true },
   { key: 'remark', label: t('inbounds.colRemark'), muted: 'none' },
   { key: 'info', label: t('inbounds.colInfo'), size: 'max-content', align: 'end', muted: 'none', quiet: true },
 ])
