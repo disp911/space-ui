@@ -11,6 +11,8 @@ const props = withDefaults(
     /** Small status dot before the text (online). */
     dot?: boolean
     mono?: boolean
+    /** The system monospace, as code is: an IP log's addresses. */
+    code?: boolean
     /** Renders a button: opens a popover or a tooltip. */
     interactive?: boolean
     /** Only the frame and the text, e.g. a transport beside a filled protocol. */
@@ -26,7 +28,7 @@ const props = withDefaults(
   <component
     :is="props.interactive ? 'button' : 'span'"
     :type="props.interactive ? 'button' : undefined"
-    :class="['x-chip', `x-chip--${tone}`, { 'x-chip--mono': mono, 'x-chip--interactive': interactive, 'x-chip--outline': outline, 'x-chip--truncate': truncate }]"
+    :class="['x-chip', `x-chip--${tone}`, { 'x-chip--mono': mono, 'x-chip--code': code, 'x-chip--interactive': interactive, 'x-chip--outline': outline, 'x-chip--truncate': truncate }]"
   >
     <span v-if="dot" class="x-chip__dot" />
     <XIcon v-if="icon" :name="icon" :size="12" :stroke="1.6" />
@@ -58,6 +60,10 @@ const props = withDefaults(
 
 .x-chip--mono {
   font-family: var(--font-mono);
+}
+
+.x-chip--code {
+  font-family: var(--font-code);
 }
 
 .x-chip--truncate {

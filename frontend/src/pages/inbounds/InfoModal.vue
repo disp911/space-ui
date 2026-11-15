@@ -235,7 +235,7 @@ const accounts = computed<Json[]>(() => (Array.isArray(s.value.accounts) && (pro
         <XFactRow v-if="ipLog" :label="t('inbounds.ipLog')">
           <XSkeletonText v-if="ipsLoading" :width="104" style="height: var(--chip-h)" />
           <template v-else>
-            <XChip v-for="ip in ips" :key="ip" mono>{{ ip }}</XChip>
+            <XChip v-for="ip in ips" :key="ip" code>{{ ip }}</XChip>
             <XChip v-if="!ips.length" tone="warn">{{ t('inbounds.none') }}</XChip>
             <XButton v-if="!mtproto && ips.length" size="sm" variant="danger" :loading="clearingIps" @click="clearIps">{{ t('inbounds.ipLogClear') }}</XButton>
           </template>

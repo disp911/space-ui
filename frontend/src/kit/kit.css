@@ -20,6 +20,10 @@
   font-family: var(--font-mono);
 }
 
+.x-field-box--code {
+  font-family: var(--font-code);
+}
+
 .x-field-box:hover,
 .x-field-box.is-hover {
   border-color: var(--field-hover);

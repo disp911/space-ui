@@ -8,9 +8,16 @@
   /* Type */
   /* The device's own fonts, as the old panel had them: San Francisco, Segoe UI, Roboto. */
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-  /* Code in the editor: the system's own monospace, as the old panel had it. */
-  --font-code: Consolas, Menlo, 'DejaVu Sans Mono', monospace;
+  /*
+   * "mono" values (ports, paths, keys, tags, numbers) are in the text font, as
+   * the old panel had them; its digits keep one width (tabular-nums).
+   */
+  --font-mono: var(--font-sans);
+  /*
+   * Monospace only where the old panel had it: the editors, links and configs
+   * to copy, IP logs, the 2FA secret, outbound addresses, .dat names, code.
+   */
+  --font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'DejaVu Sans Mono', monospace;
   --fs-10: 10px;
   --fs-11: 11px;
   --fs-12: 12px;

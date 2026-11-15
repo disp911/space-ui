@@ -43,7 +43,7 @@ withDefaults(defineProps<{ label: string; text: string; tone?: Tone }>(), { tone
   border-radius: var(--nest-r);
   background: var(--tint);
   color: var(--fg2);
-  font: 400 var(--fs-11) / var(--lh-code) var(--font-mono);
+  font: 400 var(--fs-11) / var(--lh-code) var(--font-code);
   white-space: pre-wrap;
   word-break: break-all;
 }

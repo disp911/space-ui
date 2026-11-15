@@ -174,7 +174,7 @@ async function save() {
             :action-loading="clearingIps"
             @action="clearIps"
           >
-            <XTextarea v-bind="a" :model-value="ips" :rows="ipLines" :loading="ipsLoading" mono readonly />
+            <XTextarea v-bind="a" :model-value="ips" :rows="ipLines" :loading="ipsLoading" code readonly />
           </XField>
         </template>
         <template v-if="editing && stat" #usage>
@@ -214,7 +214,7 @@ async function save() {
 }
 
 .client-window__ip {
-  font: 400 var(--fs-12) / var(--lh-tight) var(--font-mono);
+  font: 400 var(--fs-12) / var(--lh-tight) var(--font-code);
 }
 
 .client-window__none {

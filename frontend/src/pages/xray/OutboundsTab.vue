@@ -245,7 +245,7 @@ function select(key: string, o: Outbound, i: number) {
 
 .outbounds__address {
   color: var(--fg2);
-  font: 400 var(--fs-12) / var(--lh-tight) var(--font-mono);
+  font: 400 var(--fs-12) / var(--lh-tight) var(--font-code);
   word-break: break-all;
 }
 

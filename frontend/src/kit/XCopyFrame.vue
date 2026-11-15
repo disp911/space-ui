@@ -53,7 +53,7 @@ async function copy() {
   border-radius: var(--nest-r);
   background: var(--tint);
   color: var(--fg2);
-  font: 400 var(--fs-12) / var(--lh-code) var(--font-mono);
+  font: 400 var(--fs-12) / var(--lh-code) var(--font-code);
   text-align: left;
   white-space: pre-wrap;
   word-break: break-all;

@@ -44,7 +44,7 @@ code,
 kbd,
 pre,
 samp {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
 }
 
 ::selection {

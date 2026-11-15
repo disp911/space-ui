@@ -145,7 +145,7 @@ async function confirm() {
 
 .tfa__secret {
   color: var(--fg2);
-  font: 500 var(--fs-13) / var(--lh-tight) var(--font-mono);
+  font: 500 var(--fs-13) / var(--lh-tight) var(--font-code);
   letter-spacing: .05em;
   text-align: center;
   word-break: break-all;

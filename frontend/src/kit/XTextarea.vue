@@ -10,6 +10,8 @@ const props = withDefaults(
     placeholder?: string
     rows?: number
     mono?: boolean
+    /** The system monospace, as code is: an IP log, a config. */
+    code?: boolean
     disabled?: boolean
     readonly?: boolean
     invalid?: boolean
@@ -47,7 +49,7 @@ function onKeydown(e: KeyboardEvent) {
 <template>
   <div
     v-bind="wrapper"
-    :class="['x-field-box', 'x-textarea', { 'x-textarea--grow': grow, 'x-field-box--mono': mono, 'is-disabled': disabled, 'is-invalid': invalid, 'is-modified': modified }]"
+    :class="['x-field-box', 'x-textarea', { 'x-textarea--grow': grow, 'x-field-box--mono': mono, 'x-field-box--code': code, 'is-disabled': disabled, 'is-invalid': invalid, 'is-modified': modified }]"
     :aria-busy="loading || undefined"
   >
     <div v-if="loading" class="x-textarea__skeleton x-skeleton" aria-hidden="true">
@@ -63,7 +65,7 @@ function onKeydown(e: KeyboardEvent) {
       :disabled="disabled"
       :readonly="readonly"
       :aria-invalid="invalid || undefined"
-      :spellcheck="mono ? false : undefined"
+      :spellcheck="mono || code ? false : undefined"
       @keydown="onKeydown"
       @pointermove="scrollbarCursor"
       @pointerleave="scrollbarCursor"

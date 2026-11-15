@@ -201,7 +201,7 @@ async function remove() {
   border-radius: var(--chip-r);
   background: var(--hov);
   color: var(--fg2);
-  font: 400 var(--fs-12) / var(--lh-tight) var(--font-mono);
+  font: 400 var(--fs-12) / var(--lh-tight) var(--font-code);
   white-space: nowrap;
 }
 
