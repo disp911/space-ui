@@ -255,8 +255,15 @@ const reason = computed(() => (issue.value ? reasons.value[issue.value.kind] : '
   background: var(--acc-ring);
 }
 
-.x-code-editor__host :deep(.cm-matchingBracket) {
-  background: var(--acc-soft);
+/* The pair of brackets around the caret: bold and as bright as the text, with no fill (CodeMirror's own rule paints one when focused). */
+.x-code-editor__host :deep(.cm-editor .cm-matchingBracket),
+.x-code-editor__host :deep(.cm-editor.cm-focused .cm-matchingBracket) {
+  background: none;
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.x-code-editor__host :deep(.cm-matchingBracket *) {
   color: inherit;
 }
 
