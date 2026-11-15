@@ -958,7 +958,6 @@ setup_selfsteal() {
         LOGE "The website could not be put behind REALITY."
         return 1
     fi
-    SITE_CLIENT=$(echo "$out" | grep -E '^(client link|subscription):')
     LOGI "The website, the panel and the subscriptions will answer on 443 behind REALITY."
     return 0
 }
@@ -1006,7 +1005,6 @@ setup_own_port() {
         LOGE "The panel could not be put on port ${port}."
         return 1
     fi
-    SITE_CLIENT=""
     LOGI "The website, the panel and the subscriptions will answer on port ${port}."
     return 0
 }
@@ -1090,7 +1088,6 @@ site_menu() {
             if site_setup; then
                 restart 0
                 site_status wait
-                [[ -n "$SITE_CLIENT" ]] && echo "$SITE_CLIENT"
             fi
             site_menu
             ;;
