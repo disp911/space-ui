@@ -45,11 +45,11 @@ watch(() => route.fullPath, () => (drawerOpen.value = false))
 
     <Transition name="drawer">
       <div v-if="drawerOpen" class="drawer" @keydown.esc="closeDrawer">
-        <div class="drawer__scrim" @click="closeDrawer" />
+        <!-- A tap beside the menu, Escape or a page chosen closes it. -->
+        <div class="drawer__scrim" aria-hidden="true" @click="closeDrawer" />
         <div ref="drawer" class="drawer__panel" role="dialog" aria-modal="true" :aria-label="t('nav.main')">
           <div class="drawer__head">
             <AppLogo />
-            <XButton icon="close" :label="t('nav.closeMenu')" @click="closeDrawer" />
           </div>
           <AppNav @navigate="closeDrawer" />
         </div>
@@ -180,29 +180,48 @@ watch(() => route.fullPath, () => (drawerOpen.value = false))
   .drawer__head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    min-height: var(--ctl-h);
     padding-left: 4px;
   }
 
+  /*
+   * The menu slides in from the left while the scrim darkens and blurs the
+   * page, as a window's sheet rises: the scrim is a layer of its own that only
+   * fades, so the blur comes and goes smoothly, and both run on the compositor.
+   */
   .drawer-enter-active,
   .drawer-leave-active {
-    transition: opacity var(--t-med);
+    /* Keeps the drawer in the page while its panel and scrim move. */
+    transition: opacity var(--t-sheet);
+  }
+
+  .drawer-enter-active .drawer__scrim,
+  .drawer-leave-active .drawer__scrim {
+    transition: opacity var(--t-sheet) var(--ease-sheet);
+    will-change: opacity;
   }
 
   .drawer-enter-active .drawer__panel,
   .drawer-leave-active .drawer__panel {
-    transition: transform var(--t-med) var(--ease);
+    transition: transform var(--t-sheet) var(--ease-sheet);
+    will-change: transform;
   }
 
-  .drawer-enter-from,
-  .drawer-leave-to {
+  .drawer-enter-from .drawer__scrim,
+  .drawer-leave-to .drawer__scrim {
     opacity: 0;
   }
 
   .drawer-enter-from .drawer__panel,
   .drawer-leave-to .drawer__panel {
-    transform: translateX(-100%);
+    transform: translate3d(-100%, 0, 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer-enter-from .drawer__panel,
+    .drawer-leave-to .drawer__panel {
+      transform: none;
+    }
   }
 
   /* Down to the bottom of the screen, where a page's action bar sits. */

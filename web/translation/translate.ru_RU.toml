@@ -109,7 +109,6 @@
 "settings" = "Настройки"
 "logout" = "Выход"
 "openMenu" = "Открыть меню"
-"closeMenu" = "Закрыть меню"
 
 [auth]
 "title" = "Вход"

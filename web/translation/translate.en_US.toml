@@ -109,7 +109,6 @@
 "settings" = "Settings"
 "logout" = "Log out"
 "openMenu" = "Open menu"
-"closeMenu" = "Close menu"
 
 [auth]
 "title" = "Log in"

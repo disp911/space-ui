@@ -20,7 +20,6 @@ export interface MessageSchema {
     "settings": string
     "logout": string
     "openMenu": string
-    "closeMenu": string
   }
   "auth": {
     "title": string
