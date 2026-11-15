@@ -214,7 +214,8 @@ const reason = computed(() => (issue.value ? reasons.value[issue.value.kind] : '
   overflow: hidden;
   border: 1px solid var(--field-line);
   border-radius: var(--nest-r);
-  background: var(--field);
+  /* Looks as the config window's text: the page's ground, a line after the numbers. */
+  background: var(--bg);
   transition: border-color var(--t-fast);
 }
 
@@ -239,7 +240,7 @@ const reason = computed(() => (issue.value ? reasons.value[issue.value.kind] : '
 
 .x-code-editor__host :deep(.cm-content) {
   padding: 8px 16px 8px 10px;
-  color: var(--fg);
+  color: var(--fg2);
   caret-color: var(--fg);
 }
 
@@ -250,7 +251,8 @@ const reason = computed(() => (issue.value ? reasons.value[issue.value.kind] : '
 /* As specific as CodeMirror's own rule, which paints a focused selection pale lilac under light text. */
 .x-code-editor__host :deep(.cm-editor > .cm-scroller > .cm-selectionLayer .cm-selectionBackground),
 .x-code-editor__host :deep(.cm-editor.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground) {
-  background: var(--acc-soft);
+  /* The same as every other selection in the panel. */
+  background: var(--acc-ring);
 }
 
 .x-code-editor__host :deep(.cm-matchingBracket) {
@@ -260,7 +262,8 @@ const reason = computed(() => (issue.value ? reasons.value[issue.value.kind] : '
 
 .x-code-editor__host :deep(.cm-gutters) {
   border: 0;
-  background: var(--gut);
+  border-right: 1px solid var(--div);
+  background: transparent;
   color: var(--faint);
 }
 
