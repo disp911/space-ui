@@ -183,10 +183,11 @@
 
   /* Status tones: solid, text, tint background, tint line */
   /* Success is a muted sage green, quieter than the accent. */
-  --ok: #4E9A78;
-  --ok-t: #86C2A4;
-  --ok-bg: rgba(78, 154, 120, .14);
-  --ok-line: rgba(78, 154, 120, .4);
+  /* Discord's brand green: everything online, running or sent. */
+  --ok: #57F287;
+  --ok-t: #8AF5AA;
+  --ok-bg: rgba(87, 242, 135, .12);
+  --ok-line: rgba(87, 242, 135, .4);
   --warn: #E8A13A;
   --warn-t: #F0B75C;
   /* Body text of warnings, quieter than the title */
@@ -222,6 +223,10 @@
   --upload-t: var(--unl-t);
   --upload-bg: var(--unl-bg);
   --upload-line: var(--unl-line);
+
+  /* The dashboard's network figures: sent in the one green, received in Steam's download blue. */
+  --net-up: var(--ok);
+  --net-down: #1891E9;
 
   /* Usage bars, search highlight */
   --bar-track: rgba(255, 255, 255, .08);
@@ -291,10 +296,11 @@
   --acc-hover: #2A8CFF;
   --acc-press: #0062CC;
 
-  --ok: #3A7158;
-  --ok-t: #335F4B;
-  --ok-bg: rgba(58, 113, 88, .09);
-  --ok-line: rgba(58, 113, 88, .3);
+  /* Discord's brand green, darker so it reads on white. */
+  --ok: #1C8C45;
+  --ok-t: #167A3B;
+  --ok-bg: rgba(28, 140, 69, .09);
+  --ok-line: rgba(28, 140, 69, .3);
   --warn: #B4761A;
   --warn-t: #8A5A10;
   --warn-x: #7A6337;
@@ -309,6 +315,8 @@
   --unl-t: #1A6A99;
   --unl-bg: rgba(30, 122, 176, .08);
   --unl-line: rgba(30, 122, 176, .3);
+  /* Steam's blue, darker so it reads on white. */
+  --net-down: #1273C4;
   --on: #2F6BD8;
   --on-t: #2459B8;
   --on-bg: rgba(47, 107, 216, .08);

@@ -33,8 +33,8 @@ defineProps<{ label: string; value: string; small?: boolean; tone?: 'up' | 'down
 }
 
 /* The server's traffic: sent in the success green, received in the kit's blue. */
-.stat--up .stat__value { color: var(--ok-t); }
-.stat--down .stat__value { color: var(--on-t); }
+.stat--up .stat__value { color: var(--net-up); }
+.stat--down .stat__value { color: var(--net-down); }
 
 .stat__value {
   overflow: hidden;

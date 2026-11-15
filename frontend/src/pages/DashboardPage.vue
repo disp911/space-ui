@@ -416,11 +416,11 @@ const dash = '—'
 }
 
 .up {
-  color: var(--ok);
+  color: var(--net-up);
 }
 
 .down {
-  color: var(--on-t);
+  color: var(--net-down);
 }
 
 /* Network figures: two pairs under the two totals. */
