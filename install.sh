@@ -129,8 +129,7 @@ config_after_install() {
         echo -e "${yellow}The panel shows a website of its own at the root and opens at a secret path.${plain}"
         echo -e "${yellow}It obtains and renews its certificate itself.${plain}"
         echo ""
-        SITE_CLIENT_FILE=$(mktemp)
-        if ! /usr/bin/space-ui site-setup "${SITE_CLIENT_FILE}"; then
+        if ! /usr/bin/space-ui site-setup; then
             echo -e "${yellow}The website is not set up; the panel opens on its own port over plain HTTP. Set it up later: space-ui site${plain}"
         fi
     fi
@@ -139,7 +138,7 @@ config_after_install() {
 }
 
 # show_access prints how to reach the panel once it runs: its address, and on
-# a new installation the login and REALITY's first client.
+# a new installation the login.
 show_access() {
     echo ""
     echo -e "${green}═══════════════════════════════════════════${plain}"
@@ -150,11 +149,6 @@ show_access() {
         echo -e "${green}Username:    ${NEW_USERNAME}${plain}"
         echo -e "${green}Password:    ${NEW_PASSWORD}${plain}"
     fi
-    if [[ -s "${SITE_CLIENT_FILE}" ]]; then
-        echo -e "${green}REALITY on 443, first client:${plain}"
-        cat "${SITE_CLIENT_FILE}"
-    fi
-    rm -f "${SITE_CLIENT_FILE}"
     echo -e "${green}═══════════════════════════════════════════${plain}"
     if [[ -n "${NEW_USERNAME}" ]]; then
         echo -e "${yellow}⚠ IMPORTANT: Save these credentials securely!${plain}"

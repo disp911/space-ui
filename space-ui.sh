@@ -1721,11 +1721,9 @@ if [[ $# > 0 ]]; then
             check_install 0 && site_menu
             ;;
         "site-setup")
-            # The installer's step: the settings only, the panel starts after;
-            # the REALITY client's links go to the file named, if any.
+            # The installer's step: the settings only, the panel starts after.
             [[ -x ${space_ui_folder}/space-ui ]] || exit 1
             site_setup || exit 1
-            [[ -n "$2" && -n "$SITE_CLIENT" ]] && echo "$SITE_CLIENT" > "$2"
             exit 0
             ;;
         "site-status")
