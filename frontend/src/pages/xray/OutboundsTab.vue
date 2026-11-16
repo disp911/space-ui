@@ -159,7 +159,7 @@ function select(key: string, o: Outbound, i: number) {
     >
       <template #cell-tag="{ row }">
         <div class="outbounds__tag">
-          <span class="outbounds__name" :title="row.tag">{{ row.tag }}</span>
+          <span class="outbounds__name x-ellipsis" :title="row.tag">{{ row.tag }}</span>
           <span class="outbounds__chips">
             <XChip mono>{{ outboundChips(row).protocol }}</XChip>
             <XChip v-if="outboundChips(row).network" mono outline>{{ outboundChips(row).network }}</XChip>
@@ -223,14 +223,8 @@ function select(key: string, o: Outbound, i: number) {
 }
 
 .outbounds__name {
-  overflow: hidden;
   color: var(--fg);
   font: 500 var(--fs-13) / var(--lh-tight) var(--font-mono);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 
 .outbounds__chips {

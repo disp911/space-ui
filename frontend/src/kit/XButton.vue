@@ -71,7 +71,7 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
     <XSpinner v-if="loading" :size="iconSize" />
     <XIcon v-else-if="success" name="check" :size="iconSize" :stroke="2" class="x-btn__icon x-btn__check" />
     <slot v-else name="icon"><XIcon v-if="icon" :name="icon" :size="iconSize" class="x-btn__icon" /></slot>
-    <span v-if="$slots.default" class="x-btn__text"><slot /></span>
+    <span v-if="$slots.default" class="x-btn__text x-ellipsis"><slot /></span>
     <XIcon v-if="caret" name="caret" :size="12" :stroke="1.6" class="x-btn__caret" />
     <span v-if="dot" class="x-btn__dot" aria-hidden="true" />
     <span v-if="mark && iconOnly" class="x-btn__mark" aria-hidden="true"><XIcon :name="mark" :size="12" :stroke="2.4" /></span>
@@ -137,13 +137,7 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
 
 /* Cut with an ellipsis when too long; the line is taller than the letters, so their tails (у, р, д) are not cut too. */
 .x-btn__text {
-  min-width: 0;
-  overflow: hidden;
   line-height: var(--lh-tight);
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 
 .x-btn--mono {

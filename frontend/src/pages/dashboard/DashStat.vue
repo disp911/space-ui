@@ -8,7 +8,7 @@ defineProps<{ label: string; value: string; small?: boolean; tone?: 'up' | 'down
 <template>
   <div :class="['stat', { 'stat--small': small }, tone && `stat--${tone}`]">
     <div class="x-caps stat__label">{{ label }}</div>
-    <div class="stat__value">
+    <div class="stat__value x-ellipsis">
       <XSkeletonText v-if="loading" :width="small ? 48 : 64" />
       <slot v-else>{{ value }}</slot>
     </div>
@@ -37,13 +37,7 @@ defineProps<{ label: string; value: string; small?: boolean; tone?: 'up' | 'down
 .stat--down .stat__value { color: var(--net-down); }
 
 .stat__value {
-  overflow: hidden;
   color: var(--fg);
   font: 500 var(--fs-16) / var(--lh-tight) var(--font-mono);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 </style>

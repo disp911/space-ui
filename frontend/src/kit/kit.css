@@ -256,6 +256,21 @@
   }
 }
 
+/*
+ * One line cut with an ellipsis. The clip that draws the ellipsis also cuts what
+ * hangs past a line tighter than the type (g and y below, Й above), so the box
+ * gets that room inside and gives it back outside: its size stays. Every
+ * single-line text with an ellipsis takes this class; a block or a flex item.
+ */
+.x-ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding-block: var(--ellipsis-room);
+  margin-block: calc(-1 * var(--ellipsis-room));
+}
+
 /* A value chip with a remove cross inside a field: tag input, multiple choice. */
 .x-tag-chip {
   display: inline-flex;
@@ -276,9 +291,11 @@
   font-family: var(--font-mono);
 }
 
+/* A line of its own height inside the chip's tight one, so the ellipsis' clip leaves the tails (g, y) whole. */
 .x-tag-chip__text {
   min-width: 0;
   overflow: hidden;
+  line-height: var(--lh-text);
   text-overflow: ellipsis;
 }
 

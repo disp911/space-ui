@@ -394,7 +394,8 @@ function onBlur() {
   min-width: 0;
   overflow: hidden;
   color: var(--dim);
-  font: 400 var(--fs-10) / 1 var(--font-mono);
+  /* A full line, not the row's tight one, so the ellipsis' clip leaves the tails (g, y) whole; the row is 30px high whatever it holds. */
+  font: 400 var(--fs-10) / var(--lh-text) var(--font-mono);
   text-align: right;
   white-space: nowrap;
   text-overflow: ellipsis;

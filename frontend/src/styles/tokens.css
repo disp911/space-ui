@@ -30,6 +30,8 @@
   --lh-tight: 1.2;
   --lh-text: 1.45;
   --lh-code: 1.65;
+  /* What hangs past a tight line (g, y, Й), kept clear of an ellipsis' clip: see .x-ellipsis. */
+  --ellipsis-room: .15em;
 
   /* Radius */
   --r-4: 4px;

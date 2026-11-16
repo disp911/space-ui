@@ -50,7 +50,7 @@ const button = computed(() => ({
 
 <template>
   <div v-if="boxed" :class="['x-switch-box', { 'is-disabled': disabled }]">
-    <span class="x-switch-box__label" aria-hidden="true">{{ label }}</span>
+    <span class="x-switch-box__label x-ellipsis" aria-hidden="true">{{ label }}</span>
     <XTooltip v-if="help" :text="help">
       <span class="x-switch-box__help" tabindex="0" :aria-label="help">?</span>
     </XTooltip>
@@ -125,15 +125,8 @@ const button = computed(() => ({
   align-self: stretch;
   display: flex;
   align-items: center;
-  min-width: 0;
-  overflow: hidden;
   color: var(--fg2);
   font: 400 var(--fs-13) / var(--lh-tight) var(--font-sans);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 
 .x-switch-line {

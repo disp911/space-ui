@@ -118,11 +118,11 @@ onBeforeUnmount(() => {
           <header v-if="!headless" :class="['x-modal__head', { 'x-modal__head--sub': $slots.subtitle }]">
             <div class="x-modal__heading">
               <div class="x-modal__title-row">
-                <h2 :id="`${id}-title`" class="x-modal__title">{{ title }}</h2>
+                <h2 :id="`${id}-title`" class="x-modal__title x-ellipsis">{{ title }}</h2>
                 <!-- Beside the title, e.g. a gear with the window's options. -->
                 <slot name="title-end" />
               </div>
-              <p v-if="$slots.subtitle" class="x-modal__subtitle"><slot name="subtitle" /></p>
+              <p v-if="$slots.subtitle" class="x-modal__subtitle x-ellipsis"><slot name="subtitle" /></p>
             </div>
             <slot name="head" />
             <XButton icon="close" :label="t('kit.close')" :disabled="!dismissible" class="x-modal__close" @click="close" />
@@ -215,27 +215,16 @@ onBeforeUnmount(() => {
 }
 
 .x-modal__title {
-  min-width: 0;
-  overflow: hidden;
   color: var(--fg);
   font: 600 var(--fs-16) / var(--lh-tight) var(--font-sans);
   letter-spacing: -.3px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 
 .x-modal__subtitle {
-  /* 2px under the title, with room for what hangs below and above the line (g, Ё), which the ellipsis' clip cut. */
-  margin: calc(2px - .15em) 0 -.15em;
-  padding-block: .15em;
-  overflow: hidden;
+  /* 2px under the title; x-ellipsis already gives the line its room above and below. */
+  margin-top: calc(2px - var(--ellipsis-room));
   color: var(--dim);
   font: 400 var(--fs-12) / var(--lh-tight) var(--font-sans);
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .x-modal__body {

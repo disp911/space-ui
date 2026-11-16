@@ -72,8 +72,10 @@ const props = withDefaults(
   max-width: min(300px, 100%);
 }
 
+/* A line of its own height inside the chip's tight one, so the ellipsis' clip leaves the tails (g, y) whole. */
 .x-chip__text {
   overflow: hidden;
+  line-height: var(--lh-text);
   text-overflow: ellipsis;
 }
 

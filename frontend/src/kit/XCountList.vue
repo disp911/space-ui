@@ -61,7 +61,7 @@ const measure = (el: unknown) => {
         </div>
         <div :ref="measure" :class="['x-count__items', { 'x-count__items--top': more.top, 'x-count__items--end': more.end }]" @scroll="scrolled">
           <div v-for="item in items" :key="item.email" class="x-count__item">
-            <span class="x-count__email" :title="item.email">{{ item.email }}</span>
+            <span class="x-count__email x-ellipsis" :title="item.email">{{ item.email }}</span>
             <XTooltip v-if="item.comment" :text="item.comment" :delay="0">
               <button type="button" class="x-count__comment" :aria-label="t('kit.comment', { text: item.comment })">
                 <XIcon name="comment" :size="12" />
@@ -205,16 +205,9 @@ const measure = (el: unknown) => {
 
 .x-count__email {
   flex: 1;
-  min-width: 0;
-  overflow: hidden;
   color: var(--fg2);
   /* The menus' text size: 13px, 17 on phones. */
   font: 400 var(--ctl-fs) / var(--lh-tight) var(--font-mono);
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
-  white-space: nowrap;
 }
 
 .x-count__comment {

@@ -39,11 +39,11 @@ const tone = (v: number) => (v >= 90 ? 'err' : v >= 80 ? 'warn' : 'ok')
         <div class="res__head">
           <span class="x-caps x-caps--lg res__label">{{ row.label }}</span>
           <template v-if="!status">
-            <span class="res__detail"><XSkeletonText :width="120" /></span>
+            <span class="res__detail x-ellipsis"><XSkeletonText :width="120" /></span>
             <span class="res__value"><XSkeletonText :width="40" /></span>
           </template>
           <template v-else>
-            <span class="res__detail">{{ row.detail }}</span>
+            <span class="res__detail x-ellipsis">{{ row.detail }}</span>
             <span class="res__value">{{ formatNumber(row.value, row.value < 10 ? 2 : 1) }}<small>%</small></span>
           </template>
         </div>
@@ -87,14 +87,8 @@ const tone = (v: number) => (v >= 90 ? 'err' : v >= 80 ? 'warn' : 'ok')
 }
 
 .res__detail {
-  overflow: hidden;
   color: var(--dim);
   font: 400 var(--fs-11) / var(--lh-tight) var(--font-mono);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 
 .res__value {

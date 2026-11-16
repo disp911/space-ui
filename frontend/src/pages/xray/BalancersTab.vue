@@ -118,7 +118,7 @@ watch(
         @select="select"
       >
         <template #cell-tag="{ row }">
-          <span class="balancers__tag" :title="row.tag">{{ row.tag }}</span>
+          <span class="balancers__tag x-ellipsis" :title="row.tag">{{ row.tag }}</span>
         </template>
         <template #cell-strategy="{ row }">
           <XChip tone="ok">{{ strategyLabel(row) }}</XChip>
@@ -157,15 +157,8 @@ watch(
 /* On phones the tag fills the card's head and the strategy keeps to its right. */
 .balancers__tag {
   flex: 1;
-  min-width: 0;
-  overflow: hidden;
   color: var(--fg);
   font: 500 var(--fs-13) / var(--lh-tight) var(--font-mono);
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
-  white-space: nowrap;
 }
 
 .balancers__chips {

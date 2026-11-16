@@ -28,12 +28,12 @@ defineProps<{
   <div v-else :class="['x-record', tone && `x-record--${tone}`]">
     <div class="x-record__top">
       <span class="x-record__time">{{ time }}</span>
-      <span v-if="name" class="x-record__name">{{ name }}</span>
-      <span class="x-record__detail">{{ detail }}</span>
+      <span v-if="name" class="x-record__name x-ellipsis">{{ name }}</span>
+      <span class="x-record__detail x-ellipsis">{{ detail }}</span>
     </div>
     <div class="x-record__bottom">
       <XStatusDot size="sm" :color="tone ? `var(--${tone === 'err' ? 'err' : 'upload'})` : 'var(--faint)'" />
-      <span class="x-record__title">{{ title }}</span>
+      <span class="x-record__title x-ellipsis">{{ title }}</span>
       <XBadge v-if="badge" kind="outline" mono :tone="tone">{{ badge }}</XBadge>
     </div>
   </div>
@@ -73,14 +73,7 @@ defineProps<{
 
 .x-record__title {
   flex: 1;
-  min-width: 0;
-  overflow: hidden;
   font: 500 var(--fs-13) / var(--lh-tight) var(--font-mono);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 
 .x-record__time {
@@ -94,26 +87,13 @@ defineProps<{
   flex: none;
   margin-left: auto;
   max-width: 120px;
-  overflow: hidden;
   color: var(--fg2);
   font: 500 var(--fs-11) / var(--lh-tight) var(--font-sans);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 
 .x-record__detail {
   flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
   color: var(--dim);
   font: 400 var(--fs-11) / var(--lh-tight) var(--font-mono);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 </style>

@@ -51,7 +51,7 @@ onBeforeUnmount(() => clearTimeout(timer))
     @click="tap"
   >
     <span v-if="label" class="x-value-chip__label">{{ label }}</span>
-    <span :class="['x-value-chip__value', { 'x-value-chip__value--mono': mono }]">{{ values[0] }}</span>
+    <span :class="['x-value-chip__value', 'x-ellipsis', { 'x-value-chip__value--mono': mono }]">{{ values[0] }}</span>
     <span v-if="values.length > 1" class="x-value-chip__more">+{{ values.length - 1 }}</span>
   </button>
   <Teleport to="body">
@@ -115,14 +115,7 @@ onBeforeUnmount(() => clearTimeout(timer))
 
 /* Cut with an ellipsis when too long; the line is taller than the letters, so their tails are not cut too. */
 .x-value-chip__value {
-  min-width: 0;
-  overflow: hidden;
   line-height: var(--lh-tight);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 
 .x-value-chip__value--mono {

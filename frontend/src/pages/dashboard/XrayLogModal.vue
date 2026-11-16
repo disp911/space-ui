@@ -291,7 +291,7 @@ async function download() {
 
     <template v-if="!phone" #footer>
       <div class="xlog-foot">
-        <span class="xlog-range xlog-wide">{{ range }}</span>
+        <span class="xlog-range xlog-wide x-ellipsis">{{ range }}</span>
         <XPager :model-value="page" :pages="pages" @update:model-value="goTo" />
       </div>
     </template>
@@ -380,15 +380,8 @@ async function download() {
 
 .xlog-range {
   flex: 1;
-  min-width: 0;
-  overflow: hidden;
   color: var(--mut);
   font: 400 var(--fs-12) / var(--lh-tight) var(--font-sans);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 
 /* The table and its tools on wide screens; cards and a types menu on phones. */

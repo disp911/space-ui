@@ -29,7 +29,7 @@ const { t } = useI18n()
   <section :class="['x-settings', { 'is-open': open }]">
     <button type="button" class="x-settings__head" :aria-expanded="open" @click="open = !open">
       <XIcon name="chevron" :size="14" :stroke="1.6" class="x-settings__chevron" />
-      <span class="x-settings__title">{{ title }}</span>
+      <span class="x-settings__title x-ellipsis">{{ title }}</span>
       <span v-if="count" class="x-settings__count">{{ count }}</span>
       <span v-if="note || modified || errors" class="x-settings__badges">
         <XChip v-if="note" class="x-settings__note">{{ note }}</XChip>
@@ -105,15 +105,8 @@ const { t } = useI18n()
 
 .x-settings__title {
   flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
   font: 600 var(--fs-14) / var(--lh-tight) var(--font-sans);
   letter-spacing: -.2px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 
 .x-settings__count {

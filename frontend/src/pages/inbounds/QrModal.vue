@@ -79,7 +79,7 @@ function setIPv4(i: number, on: boolean) {
           <div class="qr-options">
             <template v-for="(l, i) in links" :key="i">
               <div v-if="switchable(l)" class="qr-options__item">
-                <span class="qr-options__name">{{ l.label }}</span>
+                <span class="qr-options__name x-ellipsis">{{ l.label }}</span>
                 <span class="qr-options__line">
                   <XSwitch :id="`${uid}-${i}`" :model-value="!!useIPv4[i]" :label="t('inbounds.useIPv4ForHost')" @update:model-value="setIPv4(i, $event)" />
                   <label :for="`${uid}-${i}`" class="qr-options__text">{{ t('inbounds.useIPv4ForHost') }}</label>
@@ -132,14 +132,8 @@ function setIPv4(i: number, on: boolean) {
 }
 
 .qr-options__name {
-  overflow: hidden;
   color: var(--fg);
   font: 600 var(--fs-13) / var(--lh-tight) var(--font-sans);
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
-  white-space: nowrap;
 }
 
 .qr-options__line {

@@ -178,8 +178,8 @@ async function save() {
         <XSection v-else-if="editing" v-model:open="clientOpen" :title="`${t('inbounds.clientCount')} : ${clients.length}`" card>
           <XPlainTable :columns="clientColumns" :rows="clients" :row-key="(c, i) => `${i}-${c.email}`" :height="280" :phone-height="320">
             <template #cell-email="{ row }">{{ row.email }}</template>
-            <template #cell-key="{ row }"><span class="inbound__key">{{ keyOf(row) }}</span></template>
-            <template #cell-security="{ row }"><span class="inbound__key">{{ row.security }}</span></template>
+            <template #cell-key="{ row }"><span class="inbound__key x-ellipsis">{{ keyOf(row) }}</span></template>
+            <template #cell-security="{ row }"><span class="inbound__key x-ellipsis">{{ row.security }}</span></template>
           </XPlainTable>
         </XSection>
       </template>
@@ -216,14 +216,8 @@ async function save() {
 .inbound__key {
   display: block;
   max-width: 420px;
-  overflow: hidden;
   color: var(--mut);
   font: 400 var(--fs-11) / var(--lh-tight) var(--font-mono);
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
-  white-space: nowrap;
 }
 
 @media (max-width: 767px) {

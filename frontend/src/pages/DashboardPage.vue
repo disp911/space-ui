@@ -205,7 +205,7 @@ const dash = '—'
           <div class="tiles tiles--ip">
             <div v-for="tile in ipTiles" :key="tile.kind" class="tile tile--ip">
               <div class="x-caps tile__label">{{ tile.name }}</div>
-              <div :class="['tile__ip', { 'is-hidden': !ipShown[tile.kind] }]">
+              <div :class="['tile__ip', 'x-ellipsis', { 'is-hidden': !ipShown[tile.kind] }]">
                 <XSkeletonText v-if="loading" :width="104" />
                 <template v-else>{{ ip(status?.publicIP[tile.kind]) }}</template>
               </div>
@@ -389,14 +389,8 @@ const dash = '—'
 }
 
 .tile__ip {
-  overflow: hidden;
   color: var(--fg);
   font: 500 var(--fs-14) / var(--lh-tight) var(--font-mono);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
   transition: filter var(--t-med);
 }
 

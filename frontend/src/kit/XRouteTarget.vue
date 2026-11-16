@@ -8,7 +8,7 @@ defineProps<{ tag: string; balancer?: boolean }>()
 <template>
   <span :class="['x-route-target', { 'x-route-target--balancer': balancer }]">
     <XIcon :name="balancer ? 'balancer' : 'arrowRight'" :size="14" :stroke="1.5" class="x-route-target__icon" />
-    <span class="x-route-target__tag">{{ tag }}</span>
+    <span class="x-route-target__tag x-ellipsis">{{ tag }}</span>
   </span>
 </template>
 
@@ -31,14 +31,7 @@ defineProps<{ tag: string; balancer?: boolean }>()
 }
 
 .x-route-target__tag {
-  min-width: 0;
-  overflow: hidden;
   color: var(--fg);
   font: 500 var(--fs-12) / var(--lh-tight) var(--font-mono);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y) or above it (Ё), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
 }
 </style>
