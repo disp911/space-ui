@@ -307,7 +307,7 @@
 "listName" = "Name"
 "listKind" = "Kind"
 "listCount" = "Entries"
-"listUrl" = "Address for podkop"
+"listUrl" = "Address"
 "listEdit" = "Edit"
 "listDelete" = "Delete"
 "listDomains" = "Domains"

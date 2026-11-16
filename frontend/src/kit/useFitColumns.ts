@@ -13,14 +13,34 @@ interface Sized {
  * read and put back in one go, before the browser paints. Measured again when
  * the rows or the columns change or the pause ends; kept while `paused`, e.g.
  * while the table shows its phone columns.
+ *
+ * As in an HTML table, a 'fit' column is never narrower than what it holds and
+ * shares the room left over in proportion to its width: an average one grows
+ * as a 1fr column does, so '2fr' elsewhere takes a double share. Without
+ * `grow` every 'fit' column keeps to its width, e.g. where the fr columns
+ * should take all the room.
  */
-export function useFitColumns(root: Ref<HTMLElement | null>, columns: Ref<Sized[]>, rows: () => unknown, paused: Ref<boolean>) {
+export function useFitColumns(
+  root: Ref<HTMLElement | null>,
+  columns: Ref<Sized[]>,
+  rows: () => unknown,
+  paused: Ref<boolean>,
+  grow = true,
+) {
   const fit = ref<Record<string, number>>({})
   const fitTotal = computed(() => Object.values(fit.value).reduce((sum, w) => sum + w, 0))
+  const average = computed(() => {
+    const widths = Object.values(fit.value)
+    return widths.length ? fitTotal.value / widths.length : 1
+  })
 
   /** The grid track of a column. */
-  const track = (c: Sized) =>
-    c.size === 'fit' ? (fit.value[c.key] ? `${fit.value[c.key]}px` : 'max-content') : (c.size ?? 'minmax(0, 1fr)')
+  function track(c: Sized) {
+    if (c.size !== 'fit') return c.size ?? 'minmax(0, 1fr)'
+    const w = fit.value[c.key]
+    if (!w) return 'max-content'
+    return grow ? `minmax(${w}px, ${(w / average.value).toFixed(3)}fr)` : `${w}px`
+  }
 
   /** Marks a 'fit' column's cells, for `data-col`. */
   const mark = (c: Sized) => (c.size === 'fit' ? c.key : undefined)

@@ -2,8 +2,14 @@
 export interface TableColumn {
   key: string
   label: string
-  /** Fixed width in px; a column without one takes the rest. */
+  /** Width in px; a column without one takes the rest. */
   width?: number
+  /**
+   * The least width in px. A column with a width gives up room down to it when
+   * the table is narrow, so the column without one keeps its own least width,
+   * e.g. the most telling value; without it a column with a width keeps it.
+   */
+  min?: number
   /** Secondary values, e.g. time: dimmed. */
   dim?: boolean
   /** Key values, e.g. a client: heavier. */
@@ -28,7 +34,10 @@ const props = defineProps<{
   height?: number
 }>()
 
-const cellStyle = (c: TableColumn) => (c.width ? { width: `${c.width}px`, flex: 'none' } : { flex: '1', minWidth: '0' })
+const cellStyle = (c: TableColumn) =>
+  c.width
+    ? { flex: `0 ${c.min === undefined ? 0 : 1} ${c.width}px`, minWidth: `${c.min ?? c.width}px` }
+    : { flex: '1 1 0', minWidth: `${c.min ?? 0}px` }
 const value = (row: T, key: string) => (row as Record<string, unknown>)[key] as string
 
 // Bar widths vary like real values.
@@ -38,7 +47,7 @@ const skeleton = [72, 58, 80, 64, 50, 76, 60, 68, 54, 74, 62, 70, 56, 66]
 <template>
   <div class="x-table" role="table">
     <div class="x-table__head x-caps" role="row">
-      <span v-for="c in columns" :key="c.key" class="x-table__cell" role="columnheader" :style="cellStyle(c)">{{ c.label }}</span>
+      <span v-for="c in columns" :key="c.key" class="x-table__cell x-ellipsis" role="columnheader" :style="cellStyle(c)">{{ c.label }}</span>
     </div>
     <div class="x-table__body" :style="{ height: height ? `${height}px` : undefined }" tabindex="0" :aria-busy="loading || undefined">
       <div v-if="loading" class="x-skeleton" aria-hidden="true">
@@ -59,7 +68,7 @@ const skeleton = [72, 58, 80, 64, 50, 76, 60, 68, 54, 74, 62, 70, 56, 66]
           <span
             v-for="c in columns"
             :key="c.key"
-            :class="['x-table__cell', { 'x-table__cell--dim': c.dim, 'x-table__cell--strong': c.strong }]"
+            :class="['x-table__cell', 'x-ellipsis', { 'x-table__cell--dim': c.dim, 'x-table__cell--strong': c.strong }]"
             role="cell"
             :style="cellStyle(c)"
           >
@@ -127,11 +136,6 @@ const skeleton = [72, 58, 80, 64, 50, 76, 60, 68, 54, 74, 62, 70, 56, 66]
 .x-table__row--upload {
   background-color: color-mix(in srgb, var(--upload) 6%, transparent);
   color: var(--upload-t);
-}
-
-.x-table__cell {
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .x-table__cell--dim {

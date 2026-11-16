@@ -49,7 +49,8 @@ const columns = computed<InnerColumn[]>(() => [
   { key: 'enable', label: t('inbounds.colEnable'), size: 'var(--switch-w)', quiet: true },
   // As wide as the widest status chip, «Офлайн» or the heading.
   { key: 'online', label: t('inbounds.colOnline'), size: 'fit' },
-  { key: 'client', label: t('inbounds.colClient') },
+  // The room left is shared among the 'fit' columns, the client taking a double share.
+  { key: 'client', label: t('inbounds.colClient'), size: 'minmax(0, 2fr)' },
   // Each as wide as its widest cell or heading: usage pills keep their kit width.
   { key: 'traffic', label: t('inbounds.colTraffic'), size: 'fit' },
   { key: 'allTime', label: t('inbounds.colAllTime'), size: 'fit' },

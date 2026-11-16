@@ -122,10 +122,10 @@ const columns = computed<ExpandColumn[]>(() => [
   { key: 'menu', label: t('inbounds.colMenu'), size: '28px', muted: 'none', quiet: true },
   { key: 'enable', label: t('inbounds.colEnable'), size: 'var(--switch-w)', muted: 'none', quiet: true },
   // The protocol and the port before the remark, as on phones. Every column with values is as wide as
-  // the widest of them or its heading, never cut; the room left goes to the remark.
+  // the widest of them or its heading, never cut; the room left is shared, the remark taking a double share.
   { key: 'protocol', label: t('inbounds.colProtocol'), size: 'fit' },
   { key: 'port', label: t('inbounds.colPort'), size: 'fit' },
-  { key: 'remark', label: t('inbounds.colRemark'), size: 'minmax(104px, 1fr)', muted: 'soft' },
+  { key: 'remark', label: t('inbounds.colRemark'), size: 'minmax(104px, 2fr)', muted: 'soft' },
   { key: 'clients', label: t('inbounds.clients'), size: 'fit' },
   { key: 'traffic', label: t('inbounds.colTraffic'), size: 'fit' },
   { key: 'allTime', label: t('inbounds.colAllTime'), size: 'fit' },

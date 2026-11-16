@@ -307,7 +307,7 @@
 "listName" = "Имя"
 "listKind" = "Тип"
 "listCount" = "Записей"
-"listUrl" = "Адрес для podkop"
+"listUrl" = "Адрес"
 "listEdit" = "Изменить"
 "listDelete" = "Удалить"
 "listDomains" = "Домены"

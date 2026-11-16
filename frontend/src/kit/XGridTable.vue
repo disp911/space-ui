@@ -9,7 +9,7 @@ import { useFitColumns } from './useFitColumns'
 export interface GridColumn {
   key: string
   label: string
-  /** Grid track, e.g. '.85fr' or '120px'; 1fr when left out; 'fit' for the width of its widest cell, heading included. */
+  /** Grid track, e.g. '.85fr' or '120px'; 1fr when left out; 'fit' for the width of its widest cell, heading included, no wider. */
   size?: string
   /**
    * On phones: in the card's head beside the number, or under it with its
@@ -56,7 +56,8 @@ const digits = computed(() => String(Math.max(props.rows.length, 1)).length)
 // The lead, holding the handle, the number and the menu, is as wide as they are, as a 'fit' column.
 const LEAD = { key: '#lead', size: 'fit' }
 const sized = computed(() => [...(lead.value ? [LEAD] : []), ...props.columns])
-const { track, mark } = useFitColumns(root, sized, () => props.rows, phone)
+// Its 'fit' columns keep to their width: the fr ones, holding the records' text, take the room left.
+const { track, mark } = useFitColumns(root, sized, () => props.rows, phone, false)
 const template = computed(() => sized.value.map((c) => (c.size === 'fit' ? track(c) : `minmax(0, ${c.size ?? '1fr'})`)).join(' '))
 const headColumns = computed(() => props.columns.filter((c) => c.phone === 'head'))
 const bodyColumns = computed(() => props.columns.filter((c) => c.phone !== 'head'))

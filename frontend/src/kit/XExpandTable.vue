@@ -11,8 +11,9 @@ export interface ExpandColumn {
   label: string
   /**
    * Grid track, e.g. '56px' or 'minmax(0, 1.6fr)'; minmax(0, 1fr) when left out.
-   * 'fit' makes it as wide as its widest cell in the list, heading included, so
-   * what it holds, e.g. a row of chips, is never cut or wrapped.
+   * 'fit' makes it at least as wide as its widest cell in the list, heading
+   * included, so what it holds, e.g. a row of chips, is never cut or wrapped;
+   * it takes a share of the room left in proportion to that (see useFitColumns).
    */
   size?: string
   /** How a muted row shows the cell: dimmed (the default), a little dimmed, or as it is, e.g. a menu or a switch. */

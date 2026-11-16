@@ -6,7 +6,11 @@ import { useFitColumns } from './useFitColumns'
 export interface InnerColumn {
   key: string
   label: string
-  /** Grid track, e.g. '72px'; minmax(0, 1fr) when left out; 'fit' for the width of its widest cell, heading included. */
+  /**
+   * Grid track, e.g. '72px'; minmax(0, 1fr) when left out; 'fit' for at least
+   * the width of its widest cell, heading included, with a share of the room left
+   * in proportion to it (see useFitColumns).
+   */
   size?: string
   /** Label and content at the end of the cell, e.g. a button at the row's right. */
   align?: 'end'

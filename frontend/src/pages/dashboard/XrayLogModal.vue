@@ -149,12 +149,16 @@ const kindsLabel = computed(() => {
 // --- Rows -------------------------------------------------------------------
 
 const columns = computed<TableColumn[]>(() => [
-  { key: 'time', label: t('dashboard.xlogTime'), width: 110, dim: true },
-  { key: 'from', label: t('dashboard.xlogFrom'), width: 160 },
-  { key: 'to', label: t('dashboard.xlogTo') },
-  { key: 'inbound', label: t('dashboard.xlogInbound'), width: 150 },
-  { key: 'outbound', label: t('dashboard.xlogOutbound'), width: 132 },
-  { key: 'email', label: t('dashboard.xlogEmail'), width: 150, strong: true },
+  // «Куда» is what a row is read for and takes all the room the others leave: they are as narrow as
+  // their headings and short values allow; «Откуда» holds an IPv4 address with its port with room to
+  // spare (an IPv6 one ends in an ellipsis) and on a narrow window gives up room down to just that,
+  // while «Куда» keeps 240px.
+  { key: 'time', label: t('dashboard.xlogTime'), width: 90, dim: true },
+  { key: 'from', label: t('dashboard.xlogFrom'), width: 156, min: 116 },
+  { key: 'to', label: t('dashboard.xlogTo'), min: 240 },
+  { key: 'inbound', label: t('dashboard.xlogInbound'), width: 92 },
+  { key: 'outbound', label: t('dashboard.xlogOutbound'), width: 80 },
+  { key: 'email', label: t('dashboard.xlogEmail'), width: 80, strong: true },
 ])
 
 const rows = computed(() =>
