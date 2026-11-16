@@ -224,6 +224,10 @@ update_space-ui() {
         chmod 640 ${space_ui_folder}/bin/config.json > /dev/null 2>&1
     fi
 
+    # Migrate and set up while the panel is stopped: started first, it raced the migration for the
+    # database, failed with «database is locked» and came up only on a later restart.
+    config_after_update
+
     if [[ $release == "alpine" ]]; then
         echo -e "${green}Downloading and installing startup unit space-ui.rc...${plain}"
         if ! cp -f space-ui.rc /etc/init.d/space-ui 2> /dev/null && ! fetch /etc/init.d/space-ui https://raw.githubusercontent.com/disp911/space-ui/${tag_version}/packaging/space-ui.rc; then
@@ -300,8 +304,6 @@ update_space-ui() {
         systemctl enable space-ui > /dev/null 2>&1
         systemctl start space-ui > /dev/null 2>&1
     fi
-
-    config_after_update
 
     echo -e "${green}space-ui ${tag_version}${plain} updating finished, it is running now..."
     /usr/bin/space-ui help
