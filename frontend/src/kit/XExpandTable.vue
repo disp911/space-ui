@@ -1,9 +1,10 @@
 <script setup lang="ts" generic="T">
-import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import XCollapse from './XCollapse.vue'
 import XIcon from './XIcon.vue'
 import { compactKey, usePhone } from './media'
+import { useFitColumns } from './useFitColumns'
 
 export interface ExpandColumn {
   key: string
@@ -57,9 +58,6 @@ const screenPhone = usePhone()
 const root = ref<HTMLElement | null>(null)
 const narrow = ref(false)
 const width = ref(0)
-/** The measured widths of the 'fit' columns, kept while the phone columns show. */
-const fit = ref<Record<string, number>>({})
-const fitTotal = computed(() => Object.values(fit.value).reduce((sum, w) => sum + w, 0))
 let observer: ResizeObserver | null = null
 onMounted(() => {
   if (!props.compactBelow || !root.value) return
@@ -69,7 +67,6 @@ onMounted(() => {
   observer.observe(root.value)
 })
 onBeforeUnmount(() => observer?.disconnect())
-watch([width, fitTotal], () => (narrow.value = !!props.compactBelow && width.value < props.compactBelow + fitTotal.value))
 
 /** Phone columns on a phone, or wherever the desktop ones do not fit. */
 const phone = computed(() => screenPhone.value || narrow.value)
@@ -77,28 +74,10 @@ provide(compactKey, phone)
 watch(phone, (v) => emit('compact', v), { immediate: true })
 
 const columns = computed(() => (phone.value ? props.phoneColumns : props.columns))
-const track = (c: ExpandColumn) =>
-  c.size === 'fit' ? (fit.value[c.key] ? `${fit.value[c.key]}px` : 'max-content') : (c.size ?? 'minmax(0, 1fr)')
+// The 'fit' widths are kept while the phone columns show, so the table knows when the desktop ones fit again.
+const { fitTotal, track, mark } = useFitColumns(root, columns, () => props.rows, phone)
+watch([width, fitTotal], () => (narrow.value = !!props.compactBelow && width.value < props.compactBelow + fitTotal.value))
 const template = computed(() => [...(phone.value ? [] : ['24px']), ...columns.value.map(track)].join(' '))
-
-/*
- * Each 'fit' cell is let out to its own width for a moment and read; all are
- * set, read and put back in one go, before the browser paints.
- */
-function measureFit() {
-  if (phone.value || !root.value || !columns.value.some((c) => c.size === 'fit')) return
-  const next: Record<string, number> = {}
-  for (const c of columns.value) {
-    if (c.size !== 'fit') continue
-    const cells = [...root.value.querySelectorAll<HTMLElement>(`[data-col="${c.key}"]`)]
-    cells.forEach((el) => (el.style.width = 'max-content'))
-    next[c.key] = Math.ceil(Math.max(0, ...cells.map((el) => el.getBoundingClientRect().width)))
-    cells.forEach((el) => (el.style.width = ''))
-  }
-  fit.value = next
-}
-onMounted(() => nextTick(measureFit))
-watch([() => props.rows, columns], () => nextTick(measureFit), { flush: 'post' })
 
 const isOpen = (key: string | number) => open.value.includes(key)
 function toggle(key: string | number) {
@@ -118,7 +97,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
         :key="c.key"
         :class="{ 'is-end': c.align === 'end', 'is-center': c.align === 'center' }"
         role="columnheader"
-        :data-col="c.size === 'fit' ? c.key : undefined"
+        :data-col="mark(c)"
       ><span :class="{ 'sr-only': c.quiet }">{{ c.label }}</span></span>
     </div>
 
@@ -141,7 +120,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
           :key="c.key"
           :class="['x-expand__cell', { 'is-muted': muted?.(row) && c.muted !== 'none', 'is-soft': c.muted === 'soft', 'is-end': c.align === 'end', 'is-center': c.align === 'center' }]"
           role="cell"
-          :data-col="c.size === 'fit' ? c.key : undefined"
+          :data-col="mark(c)"
         >
           <slot
             :name="`${phone ? 'phone' : 'cell'}-${c.key}`"
@@ -167,7 +146,8 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
 
 <style scoped>
 .x-expand {
-  /* A desktop row. */
+  /* A desktop heading and row. */
+  --head-h: 33px;
   --row-h: 46px;
   min-width: 0;
   border: 1px solid var(--line);
@@ -322,6 +302,8 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
   gap: 0;
   /* A heading stands over its rows' first glyph: the row's 4px and the row toggle's 6px before its chevron. */
   padding: 9px 14px 9px 10px;
+  /* On a narrow desktop window, as tall as the desktop heading; phones' larger type makes it taller anyway. */
+  min-height: var(--head-h);
 }
 
 /*

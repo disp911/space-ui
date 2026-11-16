@@ -53,8 +53,8 @@ const url = (l: RuleList) => listUrl(base.value, f.saved.listsPath, f.saved.list
 
 const columns = computed<GridColumn[]>(() => [
   { key: 'name', label: t('settings.listName'), phone: 'head' },
-  { key: 'kind', label: t('settings.listKind'), size: '.7fr' },
-  { key: 'count', label: t('settings.listCount'), size: '.6fr' },
+  { key: 'kind', label: t('settings.listKind'), size: 'fit' },
+  { key: 'count', label: t('settings.listCount'), size: 'fit' },
   { key: 'url', label: t('settings.listUrl'), size: '2fr' },
 ])
 

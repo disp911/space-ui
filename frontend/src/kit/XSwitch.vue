@@ -163,6 +163,8 @@ const button = computed(() => ({
   border-radius: var(--r-pill);
   background: var(--track);
   outline: none;
+  /* Not on the text's baseline, which leaves the room of the letter tails under it: alone in a table cell it would sit above the middle. */
+  vertical-align: top;
   transition: background-color var(--t-med), box-shadow var(--t-fast), filter var(--t-fast);
 }
 

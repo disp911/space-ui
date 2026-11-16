@@ -26,9 +26,10 @@ const outbounds = computed<Outbound[]>(() => f.draft.config.outbounds ?? [])
 const columns = computed<GridColumn[]>(() => [
   { key: 'tag', label: t('xray.outTag'), size: '1.07fr', phone: 'head' },
   { key: 'address', label: t('xray.outAddress') },
-  { key: 'traffic', label: t('xray.outTraffic'), size: '120px', phone: 'half' },
-  { key: 'result', label: t('xray.outResult'), size: '176px', phone: 'half' },
-  { key: 'test', label: t('xray.outTest'), size: '44px', phone: 'head' },
+  { key: 'traffic', label: t('xray.outTraffic'), size: 'fit', phone: 'half' },
+  // As wide as its heading, which is wider than any delay and status, so a test's result does not move the columns.
+  { key: 'result', label: t('xray.outResult'), size: 'fit', phone: 'half' },
+  { key: 'test', label: t('xray.outTest'), size: 'var(--btn-sq)', phone: 'head' },
 ])
 
 // --- Traffic --------------------------------------------------------------------

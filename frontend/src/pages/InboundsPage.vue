@@ -118,19 +118,18 @@ const sizes = computed(() => pageSizes(store.defaults?.pageSize || 25, shown.val
 // --- Rows --------------------------------------------------------------------------
 
 const columns = computed<ExpandColumn[]>(() => [
-  { key: 'id', label: 'ID', size: '24px', align: 'center' },
+  { key: 'id', label: 'ID', size: 'fit', align: 'center' },
   { key: 'menu', label: t('inbounds.colMenu'), size: '28px', muted: 'none', quiet: true },
-  { key: 'enable', label: t('inbounds.colEnable'), size: '52px', muted: 'none', quiet: true },
-  // The protocol and the port before the remark, as on phones. The protocol chips get the room of the
-  // widest in the list, never cut; fixed columns are as wide as their values («470,7 ГБ / 500 ГБ»);
-  // the room left goes mostly to the remark.
+  { key: 'enable', label: t('inbounds.colEnable'), size: 'var(--switch-w)', muted: 'none', quiet: true },
+  // The protocol and the port before the remark, as on phones. Every column with values is as wide as
+  // the widest of them or its heading, never cut; the room left goes to the remark.
   { key: 'protocol', label: t('inbounds.colProtocol'), size: 'fit' },
-  { key: 'port', label: t('inbounds.colPort'), size: '56px' },
-  { key: 'remark', label: t('inbounds.colRemark'), size: 'minmax(104px, 2fr)', muted: 'soft' },
-  { key: 'clients', label: t('inbounds.clients'), size: 'minmax(142px, 1fr)' },
-  { key: 'traffic', label: t('inbounds.colTraffic'), size: '130px' },
-  { key: 'allTime', label: t('inbounds.colAllTime'), size: '86px' },
-  { key: 'expiry', label: t('inbounds.colExpiry'), size: '120px' },
+  { key: 'port', label: t('inbounds.colPort'), size: 'fit' },
+  { key: 'remark', label: t('inbounds.colRemark'), size: 'minmax(104px, 1fr)', muted: 'soft' },
+  { key: 'clients', label: t('inbounds.clients'), size: 'fit' },
+  { key: 'traffic', label: t('inbounds.colTraffic'), size: 'fit' },
+  { key: 'allTime', label: t('inbounds.colAllTime'), size: 'fit' },
+  { key: 'expiry', label: t('inbounds.colExpiry'), size: 'fit' },
 ])
 const phoneColumns = computed<ExpandColumn[]>(() => [
   // As wide as the menu's inline button, so it neither runs into the remark nor leaves room around its dots.
@@ -424,6 +423,7 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
         </div>
       </XCard>
 
+      <!-- compact-below: the chevron, menu and switch, the remark's least width, the gaps and the padding; the table adds its 'fit' columns. -->
       <XExpandTable
         v-model:open="open"
         :columns="columns"
@@ -433,7 +433,7 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
         :expandable="(ib) => hasClients(ib)"
         :muted="(ib) => !ib.enable"
         :toggle-label="t('inbounds.clients')"
-        :compact-below="900"
+        :compact-below="328"
         @compact="compact = $event"
       >
         <template #tools>

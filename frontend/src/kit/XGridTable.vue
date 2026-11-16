@@ -4,11 +4,12 @@ import { useI18n } from 'vue-i18n'
 import XIcon from './XIcon.vue'
 import XMenu, { type MenuItem } from './XMenu.vue'
 import { usePhone } from './media'
+import { useFitColumns } from './useFitColumns'
 
 export interface GridColumn {
   key: string
   label: string
-  /** Grid track, e.g. '.85fr' or '120px'; 1fr when left out. */
+  /** Grid track, e.g. '.85fr' or '120px'; 1fr when left out; 'fit' for the width of its widest cell, heading included. */
   size?: string
   /**
    * On phones: in the card's head beside the number, or under it with its
@@ -47,12 +48,16 @@ const emit = defineEmits<{ move: [from: number, to: number]; select: [key: strin
 const { t } = useI18n()
 const phone = usePhone()
 const hintId = useId()
+const root = ref<HTMLElement | null>(null)
 
 const lead = computed(() => props.sortable || props.numbered || !!props.menu)
-// The lead holds the handle, the number and the menu; without a handle it is narrower.
 // The number column is as wide as the longest number, so «#» and the digits share one centre.
 const digits = computed(() => String(Math.max(props.rows.length, 1)).length)
-const template = computed(() => [lead.value ? (props.sortable ? '108px' : '76px') : '', ...props.columns.map((c) => `minmax(0, ${c.size ?? '1fr'})`)].filter(Boolean).join(' '))
+// The lead, holding the handle, the number and the menu, is as wide as they are, as a 'fit' column.
+const LEAD = { key: '#lead', size: 'fit' }
+const sized = computed(() => [...(lead.value ? [LEAD] : []), ...props.columns])
+const { track, mark } = useFitColumns(root, sized, () => props.rows, phone)
+const template = computed(() => sized.value.map((c) => (c.size === 'fit' ? track(c) : `minmax(0, ${c.size ?? '1fr'})`)).join(' '))
 const headColumns = computed(() => props.columns.filter((c) => c.phone === 'head'))
 const bodyColumns = computed(() => props.columns.filter((c) => c.phone !== 'head'))
 const isBlank = (row: T, key: string) => props.blank?.(row, key) ?? false
@@ -188,15 +193,15 @@ function rowStyle(k: number) {
 </script>
 
 <template>
-  <div :class="['x-grid', { 'x-grid--phone': phone, 'x-grid--center': center, 'x-grid--nested': nested, 'is-dragging': lifted >= 0 }]" role="table">
+  <div ref="root" :class="['x-grid', { 'x-grid--phone': phone, 'x-grid--center': center, 'x-grid--nested': nested, 'is-dragging': lifted >= 0 }]" role="table">
     <span :id="hintId" hidden>{{ t('kit.moveHint') }}</span>
 
     <div v-if="!phone" class="x-grid__head x-caps" role="row">
-      <span v-if="lead" class="x-grid__lead-head" role="columnheader">
+      <span v-if="lead" class="x-grid__lead-head" role="columnheader" :data-col="mark(LEAD)">
         <span v-if="sortable" class="x-grid__grip-room" />
         <span v-if="numbered" class="x-grid__number x-grid__number--head">#</span>
       </span>
-      <span v-for="c in columns" :key="c.key" role="columnheader">{{ c.label }}</span>
+      <span v-for="c in columns" :key="c.key" role="columnheader" :data-col="mark(c)">{{ c.label }}</span>
     </div>
 
     <div
@@ -207,7 +212,12 @@ function rowStyle(k: number) {
       :style="rowStyle(i)"
       role="row"
     >
-      <div v-if="lead || (phone && headColumns.length)" :class="phone ? 'x-grid__card-head' : 'x-grid__lead'" :role="phone ? undefined : 'cell'">
+      <div
+        v-if="lead || (phone && headColumns.length)"
+        :class="phone ? 'x-grid__card-head' : 'x-grid__lead'"
+        :role="phone ? undefined : 'cell'"
+        :data-col="phone ? undefined : mark(LEAD)"
+      >
         <button
           v-if="sortable"
           type="button"
@@ -240,7 +250,7 @@ function rowStyle(k: number) {
       </div>
 
       <template v-if="!phone">
-        <div v-for="c in columns" :key="c.key" class="x-grid__cell" role="cell">
+        <div v-for="c in columns" :key="c.key" class="x-grid__cell" role="cell" :data-col="mark(c)">
           <span v-if="isBlank(row, c.key)" class="x-grid__blank">—</span>
           <slot v-else :name="`cell-${c.key}`" :row="row" :index="i" />
         </div>

@@ -1,11 +1,12 @@
 <script setup lang="ts" generic="T">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useCompact } from './media'
+import { useFitColumns } from './useFitColumns'
 
 export interface InnerColumn {
   key: string
   label: string
-  /** Grid track, e.g. '72px'; minmax(0, 1fr) when left out. */
+  /** Grid track, e.g. '72px'; minmax(0, 1fr) when left out; 'fit' for the width of its widest cell, heading included. */
   size?: string
   /** Label and content at the end of the cell, e.g. a button at the row's right. */
   align?: 'end'
@@ -26,18 +27,20 @@ const props = defineProps<{
   rowKey: (row: T, index: number) => string | number
 }>()
 const phone = useCompact()
+const root = ref<HTMLElement | null>(null)
 
 const columns = computed(() => (phone.value ? props.phoneColumns : props.columns))
-const template = computed(() => columns.value.map((c) => c.size ?? 'minmax(0, 1fr)').join(' '))
+const { track, mark } = useFitColumns(root, columns, () => props.rows, ref(false))
+const template = computed(() => columns.value.map(track).join(' '))
 </script>
 
 <template>
-  <div :class="['x-inner', { 'x-inner--phone': phone }]" role="table">
+  <div ref="root" :class="['x-inner', { 'x-inner--phone': phone }]" role="table">
     <div class="x-inner__head x-caps" role="row">
-      <span v-for="c in columns" :key="c.key" :class="{ 'is-end': c.align === 'end' }" role="columnheader"><span :class="{ 'sr-only': c.quiet }">{{ c.label }}</span></span>
+      <span v-for="c in columns" :key="c.key" :class="{ 'is-end': c.align === 'end' }" role="columnheader" :data-col="mark(c)"><span :class="{ 'sr-only': c.quiet }">{{ c.label }}</span></span>
     </div>
     <div v-for="(row, i) in rows" :key="rowKey(row, i)" class="x-inner__row" role="row">
-      <div v-for="c in columns" :key="c.key" :class="['x-inner__cell', { 'is-end': c.align === 'end' }]" role="cell">
+      <div v-for="c in columns" :key="c.key" :class="['x-inner__cell', { 'is-end': c.align === 'end' }]" role="cell" :data-col="mark(c)">
         <slot :name="`${phone ? 'phone' : 'cell'}-${c.key}`" :row="row" :index="i" />
       </div>
     </div>
@@ -47,7 +50,8 @@ const template = computed(() => columns.value.map((c) => c.size ?? 'minmax(0, 1f
 
 <style scoped>
 .x-inner {
-  /* A desktop row: a usage pill or a chip with the padding around it. */
+  /* A desktop heading, and a row: a usage pill or a chip with the padding around it. */
+  --head-h: 30px;
   --row-h: 43px;
   min-width: 0;
 }
@@ -101,6 +105,8 @@ const template = computed(() => columns.value.map((c) => c.size ?? 'minmax(0, 1f
   gap: 8px;
   /* The rows' own side padding, so a heading stands over its column's first glyph. */
   padding: 8px 8px 8px 4px;
+  /* On a narrow desktop window, as tall as the desktop heading; phones' larger type makes it taller anyway. */
+  min-height: var(--head-h);
 }
 
 .x-inner--phone .x-inner__row {

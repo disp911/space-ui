@@ -46,12 +46,14 @@ const sizes = computed(() => pageSizes(store.defaults?.pageSize || 25, shown.val
 
 const columns = computed<InnerColumn[]>(() => [
   { key: 'menu', label: t('inbounds.colMenu'), size: '148px', quiet: true },
-  { key: 'enable', label: t('inbounds.colEnable'), size: '58px', quiet: true },
-  { key: 'online', label: t('inbounds.colOnline'), size: '72px' },
+  { key: 'enable', label: t('inbounds.colEnable'), size: 'var(--switch-w)', quiet: true },
+  // As wide as the widest status chip, «Офлайн» or the heading.
+  { key: 'online', label: t('inbounds.colOnline'), size: 'fit' },
   { key: 'client', label: t('inbounds.colClient') },
-  { key: 'traffic', label: t('inbounds.colTraffic'), size: '210px' },
-  { key: 'allTime', label: t('inbounds.colAllTime'), size: '84px' },
-  { key: 'expiry', label: t('inbounds.colExpiry'), size: '172px' },
+  // Each as wide as its widest cell or heading: usage pills keep their kit width.
+  { key: 'traffic', label: t('inbounds.colTraffic'), size: 'fit' },
+  { key: 'allTime', label: t('inbounds.colAllTime'), size: 'fit' },
+  { key: 'expiry', label: t('inbounds.colExpiry'), size: 'fit' },
 ])
 const phoneColumns = computed<InnerColumn[]>(() => [
   // As wide as the menu's inline button, so it neither runs into the status dot nor leaves room around its dots.
@@ -192,7 +194,7 @@ async function confirmed(request: Promise<unknown>) {
       </div>
     </template>
     <template #cell-traffic="{ row }">
-      <XTooltip :delay="0" block>
+      <XTooltip :delay="0">
         <XUsagePill
           :used="formatBytes(view(row).used)"
           :limit="view(row).total ? formatBytes(view(row).total) : '∞'"
@@ -200,7 +202,6 @@ async function confirmed(request: Promise<unknown>) {
           :tone="toneOf(view(row).traffic)"
           :exhausted="row.enable && view(row).traffic === 'err'"
           :disabled="!row.enable"
-          block
           interactive
         />
         <template #content>
@@ -219,7 +220,7 @@ async function confirmed(request: Promise<unknown>) {
       <XTooltip v-else-if="view(row).at < 0" :text="t('inbounds.delayedStart')" :delay="0">
         <XChip :tone="row.enable ? 'ok' : 'off'" interactive>{{ daysAfter(delayedDays(view(row).at)!) }}</XChip>
       </XTooltip>
-      <XTooltip v-else-if="view(row).renew" :text="formatDate(view(row).at)" :delay="0" block>
+      <XTooltip v-else-if="view(row).renew" :text="formatDate(view(row).at)" :delay="0">
         <XUsagePill
           :used="formatRelative(view(row).at)"
           :limit="t('inbounds.periodDays', { n: view(row).renew })"
@@ -227,7 +228,6 @@ async function confirmed(request: Promise<unknown>) {
           :tone="toneOf(view(row).expiry)"
           :disabled="!row.enable"
           textual
-          block
           interactive
         />
       </XTooltip>

@@ -17,7 +17,7 @@ const balancers = computed<Balancer[]>(() => f.draft.config.routing?.balancers ?
 
 const columns = computed<GridColumn[]>(() => [
   { key: 'tag', label: t('xray.outTag'), phone: 'head' },
-  { key: 'strategy', label: t('xray.balStrategy'), size: '150px', phone: 'head' },
+  { key: 'strategy', label: t('xray.balStrategy'), size: 'fit', phone: 'head' },
   { key: 'selector', label: t('xray.balSelectors'), size: '2.4fr' },
 ])
 

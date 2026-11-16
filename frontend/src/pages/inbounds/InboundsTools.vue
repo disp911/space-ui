@@ -102,9 +102,14 @@ function setMode(m: 'search' | 'filter') {
   gap: 12px 8px;
 }
 
+/*
+ * The mode switch and a search field with room to read what is typed: where the
+ * line has less, the search moves to the next line with the refresh beside it,
+ * rather than squeezing to nothing.
+ */
 .tools__find {
   display: flex;
-  flex: 1 1 0;
+  flex: 1 1 280px;
   align-items: center;
   gap: 8px;
   min-width: 0;
