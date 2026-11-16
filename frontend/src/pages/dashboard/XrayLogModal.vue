@@ -154,11 +154,11 @@ const columns = computed<TableColumn[]>(() => [
   // spare (an IPv6 one ends in an ellipsis) and on a narrow window gives up room down to just that,
   // while «Куда» keeps 240px.
   { key: 'time', label: t('dashboard.xlogTime'), width: 90, dim: true },
-  { key: 'from', label: t('dashboard.xlogFrom'), width: 156, min: 116 },
+  { key: 'email', label: t('dashboard.xlogEmail'), width: 80, strong: true },
   { key: 'to', label: t('dashboard.xlogTo'), min: 240 },
   { key: 'inbound', label: t('dashboard.xlogInbound'), width: 92 },
   { key: 'outbound', label: t('dashboard.xlogOutbound'), width: 80 },
-  { key: 'email', label: t('dashboard.xlogEmail'), width: 80, strong: true },
+  { key: 'from', label: t('dashboard.xlogFrom'), width: 156, min: 116 },
 ])
 
 const rows = computed(() =>

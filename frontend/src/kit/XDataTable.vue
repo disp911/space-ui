@@ -1,4 +1,6 @@
 <script setup lang="ts" generic="T">
+import { computed } from 'vue'
+
 export interface TableColumn {
   key: string
   label: string
@@ -8,6 +10,8 @@ export interface TableColumn {
    * The least width in px. A column with a width gives up room down to it when
    * the table is narrow, so the column without one keeps its own least width,
    * e.g. the most telling value; without it a column with a width keeps it.
+   * Narrower still, every column shrinks by the same share of these widths and
+   * cuts its values with an ellipsis: the table never scrolls sideways.
    */
   min?: number
   /** Secondary values, e.g. time: dimmed. */
@@ -34,10 +38,21 @@ const props = defineProps<{
   height?: number
 }>()
 
+/** The gap between cells, as .x-table__row has it. */
+const GAP = 14
+const least = (c: TableColumn) => c.min ?? c.width ?? 0
+/** What all the columns need at their least, without the gaps. */
+const leastTotal = computed(() => props.columns.reduce((sum, c) => sum + least(c), 0) || 1)
+/*
+ * A column's least width, or its share of the row when the row has less than
+ * they all need, so the row never runs past its box.
+ */
+function minWidth(c: TableColumn) {
+  const gaps = GAP * (props.columns.length - 1)
+  return `min(${least(c)}px, (100% - ${gaps}px) * ${(least(c) / leastTotal.value).toFixed(4)})`
+}
 const cellStyle = (c: TableColumn) =>
-  c.width
-    ? { flex: `0 ${c.min === undefined ? 0 : 1} ${c.width}px`, minWidth: `${c.min ?? c.width}px` }
-    : { flex: '1 1 0', minWidth: `${c.min ?? 0}px` }
+  c.width ? { flex: `0 1 ${c.width}px`, minWidth: minWidth(c) } : { flex: '1 1 0', minWidth: minWidth(c) }
 const value = (row: T, key: string) => (row as Record<string, unknown>)[key] as string
 
 // Bar widths vary like real values.
@@ -111,7 +126,7 @@ const skeleton = [72, 58, 80, 64, 50, 76, 60, 68, 54, 74, 62, 70, 56, 66]
 }
 
 .x-table__body {
-  overflow: auto;
+  overflow: hidden auto;
   scrollbar-gutter: stable;
   outline: none;
 }
