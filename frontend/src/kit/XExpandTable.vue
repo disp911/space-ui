@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T">
-import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import XCollapse from './XCollapse.vue'
 import XIcon from './XIcon.vue'
@@ -8,7 +8,11 @@ import { compactKey, usePhone } from './media'
 export interface ExpandColumn {
   key: string
   label: string
-  /** Grid track, e.g. '56px' or 'minmax(0, 1.6fr)'; minmax(0, 1fr) when left out. */
+  /**
+   * Grid track, e.g. '56px' or 'minmax(0, 1.6fr)'; minmax(0, 1fr) when left out.
+   * 'fit' makes it as wide as its widest cell in the list, heading included, so
+   * what it holds, e.g. a row of chips, is never cut or wrapped.
+   */
   size?: string
   /** How a muted row shows the cell: dimmed (the default), a little dimmed, or as it is, e.g. a menu or a switch. */
   muted?: 'soft' | 'none'
@@ -40,7 +44,10 @@ const props = defineProps<{
   muted?: (row: T) => boolean
   /** The accessible name of a row's chevron, e.g. «Clients». */
   toggleLabel?: string
-  /** The narrowest width, in pixels, the desktop columns fit in; below it the phone columns show. */
+  /**
+   * The narrowest width, in pixels, the desktop columns other than the 'fit' ones
+   * fit in; their measured widths are added to it. Below it the phone columns show.
+   */
   compactBelow?: number
 }>()
 const open = defineModel<(string | number)[]>('open', { default: () => [] })
@@ -49,15 +56,20 @@ const { t } = useI18n()
 const screenPhone = usePhone()
 const root = ref<HTMLElement | null>(null)
 const narrow = ref(false)
+const width = ref(0)
+/** The measured widths of the 'fit' columns, kept while the phone columns show. */
+const fit = ref<Record<string, number>>({})
+const fitTotal = computed(() => Object.values(fit.value).reduce((sum, w) => sum + w, 0))
 let observer: ResizeObserver | null = null
 onMounted(() => {
   if (!props.compactBelow || !root.value) return
   // Measured at once too, so the first paint already has the right columns.
-  narrow.value = root.value.getBoundingClientRect().width < props.compactBelow
-  observer = new ResizeObserver(([entry]) => (narrow.value = !!entry && entry.contentRect.width < props.compactBelow!))
+  width.value = root.value.getBoundingClientRect().width
+  observer = new ResizeObserver(([entry]) => entry && (width.value = entry.contentRect.width))
   observer.observe(root.value)
 })
 onBeforeUnmount(() => observer?.disconnect())
+watch([width, fitTotal], () => (narrow.value = !!props.compactBelow && width.value < props.compactBelow + fitTotal.value))
 
 /** Phone columns on a phone, or wherever the desktop ones do not fit. */
 const phone = computed(() => screenPhone.value || narrow.value)
@@ -65,9 +77,28 @@ provide(compactKey, phone)
 watch(phone, (v) => emit('compact', v), { immediate: true })
 
 const columns = computed(() => (phone.value ? props.phoneColumns : props.columns))
-const template = computed(() =>
-  [...(phone.value ? [] : ['24px']), ...columns.value.map((c) => c.size ?? 'minmax(0, 1fr)')].join(' '),
-)
+const track = (c: ExpandColumn) =>
+  c.size === 'fit' ? (fit.value[c.key] ? `${fit.value[c.key]}px` : 'max-content') : (c.size ?? 'minmax(0, 1fr)')
+const template = computed(() => [...(phone.value ? [] : ['24px']), ...columns.value.map(track)].join(' '))
+
+/*
+ * Each 'fit' cell is let out to its own width for a moment and read; all are
+ * set, read and put back in one go, before the browser paints.
+ */
+function measureFit() {
+  if (phone.value || !root.value || !columns.value.some((c) => c.size === 'fit')) return
+  const next: Record<string, number> = {}
+  for (const c of columns.value) {
+    if (c.size !== 'fit') continue
+    const cells = [...root.value.querySelectorAll<HTMLElement>(`[data-col="${c.key}"]`)]
+    cells.forEach((el) => (el.style.width = 'max-content'))
+    next[c.key] = Math.ceil(Math.max(0, ...cells.map((el) => el.getBoundingClientRect().width)))
+    cells.forEach((el) => (el.style.width = ''))
+  }
+  fit.value = next
+}
+onMounted(() => nextTick(measureFit))
+watch([() => props.rows, columns], () => nextTick(measureFit), { flush: 'post' })
 
 const isOpen = (key: string | number) => open.value.includes(key)
 function toggle(key: string | number) {
@@ -87,6 +118,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
         :key="c.key"
         :class="{ 'is-end': c.align === 'end', 'is-center': c.align === 'center' }"
         role="columnheader"
+        :data-col="c.size === 'fit' ? c.key : undefined"
       ><span :class="{ 'sr-only': c.quiet }">{{ c.label }}</span></span>
     </div>
 
@@ -109,6 +141,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
           :key="c.key"
           :class="['x-expand__cell', { 'is-muted': muted?.(row) && c.muted !== 'none', 'is-soft': c.muted === 'soft', 'is-end': c.align === 'end', 'is-center': c.align === 'center' }]"
           role="cell"
+          :data-col="c.size === 'fit' ? c.key : undefined"
         >
           <slot
             :name="`${phone ? 'phone' : 'cell'}-${c.key}`"
@@ -134,6 +167,8 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
 
 <style scoped>
 .x-expand {
+  /* A desktop row. */
+  --row-h: 46px;
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--card-r);
@@ -169,7 +204,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
 }
 
 .x-expand__row {
-  min-height: 46px;
+  min-height: var(--row-h);
   padding: 9px 14px;
   transition: background-color var(--t-fast);
 }
@@ -239,6 +274,8 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
 
 .x-expand__cell {
   min-width: 0;
+  /* A row is one line high: what does not fit is cut, never wrapped. */
+  white-space: nowrap;
   transition: opacity var(--t-med);
 }
 
@@ -281,8 +318,10 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
 }
 
 .x-expand--phone .x-expand__head {
-  gap: 6px;
-  padding: 9px 14px 9px 12px;
+  /* No gap between the columns: the row toggle's own padding spaces its chevron from the menu. */
+  gap: 0;
+  /* A heading stands over its rows' first glyph: the row's 4px and the row toggle's 6px before its chevron. */
+  padding: 9px 14px 9px 10px;
 }
 
 /*
@@ -291,9 +330,10 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
  * dots do, so the row looks even.
  */
 .x-expand--phone .x-expand__row {
-  gap: 6px;
-  min-height: 56px;
-  padding: 2px 14px 2px 4px;
+  gap: 0;
+  /* The standard phone row, as tall as its 48px buttons; on a narrow desktop window, as tall as a desktop row. */
+  min-height: max(var(--menu-item-h), var(--row-h));
+  padding: 0 14px 0 4px;
 }
 
 .x-expand--phone .x-expand__inner {

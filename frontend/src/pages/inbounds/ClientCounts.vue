@@ -26,17 +26,21 @@ const states = computed(() => {
 </script>
 
 <template>
-  <div class="counts">
+  <div :class="['counts', { 'counts--labelled': labelled }]">
     <XChip tone="ok" icon="user" mono :title="t('inbounds.clients')">{{ counts.clients }}</XChip>
     <XCountList v-for="s in states" :key="s.key" :tone="s.tone" :label="s.label" :items="s.items" :dot="s.dot" :labelled="labelled" />
   </div>
 </template>
 
 <style scoped>
+/* One line in a table row, which never grows taller; the labelled summary may wrap. */
 .counts {
   display: flex;
-  flex-wrap: wrap;
   gap: 4px;
   min-width: 0;
+}
+
+.counts--labelled {
+  flex-wrap: wrap;
 }
 </style>

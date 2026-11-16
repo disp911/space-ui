@@ -709,6 +709,7 @@ export interface MessageSchema {
     "colMenu": string
     "colEnable": string
     "colRemark": string
+    "colInbound": string
     "colPort": string
     "colProtocol": string
     "colTraffic": string

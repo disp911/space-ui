@@ -18,7 +18,7 @@ export interface MenuItem {
   divided?: boolean
   /** Makes the item a choice: a check marks the chosen one. */
   checked?: boolean
-  /** Makes the item a switch, on by checked, e.g. «Enable» in a phone row's menu; choosing it keeps the menu open. */
+  /** Makes the item a switch, on by checked, e.g. «Enable» in a phone row's menu; choosing it keeps the menu open. The switch alone shows it on: the item is not tinted as a chosen one. */
   switch?: boolean
   /** The switch's change is being applied: a spinner in its knob. */
   busy?: boolean
@@ -156,7 +156,7 @@ function choose(item: MenuItem) {
             tabindex="-1"
             :aria-checked="item.checked"
             :aria-disabled="item.disabled || undefined"
-            :class="['x-popup-item', { 'is-danger': item.danger, 'is-selected': item.checked }]"
+            :class="['x-popup-item', { 'is-danger': item.danger, 'is-selected': item.checked && !item.switch }]"
             @click="choose(item)"
           >
             <span v-if="item.switch" :class="['x-menu__switch', { 'is-on': item.checked, 'is-busy': item.busy }]" aria-hidden="true">

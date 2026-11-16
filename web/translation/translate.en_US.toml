@@ -798,6 +798,7 @@
 "colMenu" = "Menu"
 "colEnable" = "Enabled"
 "colRemark" = "Remark"
+"colInbound" = "Inbound"
 "colPort" = "Port"
 "colProtocol" = "Protocol"
 "colTraffic" = "Traffic"

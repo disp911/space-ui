@@ -26,7 +26,8 @@ defineEmits<{ toggle: [] }>()
   align-items: center;
   gap: 8px;
   width: 100%;
-  min-height: 48px;
+  /* The whole row is the target: as tall as the table's row, 48px on phones. */
+  min-height: max(var(--menu-item-h), var(--row-h, 0px));
   padding: 6px 8px 6px 6px;
   border: 0;
   border-radius: var(--ctl-r);

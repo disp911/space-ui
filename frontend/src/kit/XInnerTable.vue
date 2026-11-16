@@ -47,6 +47,8 @@ const template = computed(() => columns.value.map((c) => c.size ?? 'minmax(0, 1f
 
 <style scoped>
 .x-inner {
+  /* A desktop row: a usage pill or a chip with the padding around it. */
+  --row-h: 43px;
   min-width: 0;
 }
 
@@ -68,6 +70,7 @@ const template = computed(() => columns.value.map((c) => c.size ?? 'minmax(0, 1f
 }
 
 .x-inner__row {
+  min-height: var(--row-h);
   padding: 7px 12px;
   border-top: 1px solid var(--div);
   transition: background-color var(--t-fast);
@@ -79,6 +82,8 @@ const template = computed(() => columns.value.map((c) => c.size ?? 'minmax(0, 1f
 
 .x-inner__cell {
   min-width: 0;
+  /* A row is one line high: what does not fit is cut, never wrapped. */
+  white-space: nowrap;
 }
 
 .x-inner__cell.is-end {
@@ -94,14 +99,15 @@ const template = computed(() => columns.value.map((c) => c.size ?? 'minmax(0, 1f
 .x-inner--phone .x-inner__head {
   /* Room between the menu button and a status dot with its pulse ring. */
   gap: 8px;
-  padding: 8px 8px 8px 10px;
+  /* The rows' own side padding, so a heading stands over its column's first glyph. */
+  padding: 8px 8px 8px 4px;
 }
 
 .x-inner--phone .x-inner__row {
-  box-sizing: content-box;
   gap: 8px;
-  min-height: 54px;
-  padding: 2px 8px 2px 4px;
+  /* The standard phone row, as tall as its 48px buttons; on a narrow desktop window, as tall as a desktop row. */
+  min-height: max(var(--menu-item-h), var(--row-h));
+  padding: 0 8px 0 4px;
 }
 
 .x-inner--phone .x-inner__row:hover {

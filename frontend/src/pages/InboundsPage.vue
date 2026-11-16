@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue
 import { useI18n } from 'vue-i18n'
 import { api } from '../api'
 import {
-  toast, XButton, XCard, XChip, XConfirm, XEmpty, XExpandTable, XInlineButton, XKeyValue, XMark, XMenu, XNotice, XPager, XPopover, XRowToggle, XSpinner, XSummaryStat, XSwitch,
+  toast, XCard, XChip, XConfirm, XEmpty, XExpandTable, XInlineButton, XKeyValue, XMark, XMenu, XNotice, XPager, XPopover, XRowToggle, XSpinner, XSummaryStat, XSwitch,
   XTooltip,
   type ExpandColumn, type MenuItem,
 } from '../kit'
@@ -121,20 +121,22 @@ const columns = computed<ExpandColumn[]>(() => [
   { key: 'id', label: 'ID', size: '24px', align: 'center' },
   { key: 'menu', label: t('inbounds.colMenu'), size: '28px', muted: 'none', quiet: true },
   { key: 'enable', label: t('inbounds.colEnable'), size: '52px', muted: 'none', quiet: true },
-  { key: 'remark', label: t('inbounds.colRemark'), size: 'minmax(0, 1.6fr)', muted: 'soft' },
+  // The protocol and the port before the remark, as on phones. The protocol chips get the room of the
+  // widest in the list, never cut; fixed columns are as wide as their values («470,7 ГБ / 500 ГБ»);
+  // the room left goes mostly to the remark.
+  { key: 'protocol', label: t('inbounds.colProtocol'), size: 'fit' },
   { key: 'port', label: t('inbounds.colPort'), size: '56px' },
-  { key: 'protocol', label: t('inbounds.colProtocol'), size: 'minmax(0, 1.15fr)' },
-  { key: 'clients', label: t('inbounds.clients'), size: 'minmax(0, 1.3fr)' },
-  { key: 'traffic', label: t('inbounds.colTraffic'), size: '150px' },
+  { key: 'remark', label: t('inbounds.colRemark'), size: 'minmax(104px, 2fr)', muted: 'soft' },
+  { key: 'clients', label: t('inbounds.clients'), size: 'minmax(142px, 1fr)' },
+  { key: 'traffic', label: t('inbounds.colTraffic'), size: '130px' },
   { key: 'allTime', label: t('inbounds.colAllTime'), size: '86px' },
-  { key: 'expiry', label: t('inbounds.colExpiry'), size: '128px' },
+  { key: 'expiry', label: t('inbounds.colExpiry'), size: '120px' },
 ])
 const phoneColumns = computed<ExpandColumn[]>(() => [
-  // As wide as the menu button, so it does not run into the remark.
-  { key: 'menu', label: t('inbounds.colMenu'), size: 'var(--btn-sq)', muted: 'none', quiet: true },
-  { key: 'remark', label: t('inbounds.colRemark'), muted: 'none' },
-  // The protocol and the port beside the remark, which gives way to them; transport and security stay in the summary.
-  { key: 'proto', label: t('inbounds.colProtocol'), size: 'max-content', align: 'end', quiet: true },
+  // As wide as the menu's inline button, so it neither runs into the remark nor leaves room around its dots.
+  { key: 'menu', label: t('inbounds.colMenu'), size: 'var(--inline-btn)', muted: 'none', quiet: true },
+  // The protocol, the port and the remark of an inbound, all under one heading.
+  { key: 'remark', label: t('inbounds.colInbound'), muted: 'none' },
   { key: 'info', label: t('inbounds.colInfo'), size: 'max-content', align: 'end', muted: 'none', quiet: true },
 ])
 
@@ -431,7 +433,7 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
         :expandable="(ib) => hasClients(ib)"
         :muted="(ib) => !ib.enable"
         :toggle-label="t('inbounds.clients')"
-        :compact-below="1000"
+        :compact-below="900"
         @compact="compact = $event"
       >
         <template #tools>
@@ -456,7 +458,7 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
           />
         </template>
         <template #cell-remark="{ row }">
-          <div class="inbounds__remark" :title="row.remark"><XMark :text="row.remark" :query="clientQuery" /></div>
+          <div class="inbounds__remark x-ellipsis" :title="row.remark"><XMark :text="row.remark" :query="clientQuery" /></div>
         </template>
         <template #cell-port="{ row }">
           <span class="inbounds__port"><XMark :text="row.port" :query="clientQuery" /></span>
@@ -494,19 +496,20 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
 
         <template #phone-menu="{ row }">
           <XMenu v-slot="{ props: trigger }" :items="menu(row, true)" placement="bottom-start" @select="act($event, row)">
-            <XButton v-bind="trigger" variant="ghost" icon="dots" :label="t('inbounds.colMenu')" />
+            <XInlineButton v-bind="trigger" icon="dots" :icon-size="16" :label="t('inbounds.colMenu')" />
           </XMenu>
         </template>
         <template #phone-remark="{ row, open: isOpen, expandable, toggle }">
           <XRowToggle :open="isOpen" :expandable="expandable" @toggle="toggle">
-            <span :class="['inbounds__remark', 'inbounds__remark--phone', { 'is-off': !row.enable }]"><XMark :text="row.remark" :query="clientQuery" /></span>
+            <!-- After the chevron, the protocol and the port, then the remark, which gives way to them; transport and security stay in the summary. -->
+            <span class="inbounds__line">
+              <span :class="['inbounds__proto', { 'is-off': !row.enable }]">
+                <XChip mono>{{ protocolChips(row).protocol }}</XChip>
+                <span class="inbounds__port">:{{ row.port }}</span>
+              </span>
+              <span :class="['inbounds__remark', 'x-ellipsis', 'inbounds__remark--phone', { 'is-off': !row.enable }]"><XMark :text="row.remark" :query="clientQuery" /></span>
+            </span>
           </XRowToggle>
-        </template>
-        <template #phone-proto="{ row }">
-          <span class="inbounds__proto">
-            <XChip mono>{{ protocolChips(row).protocol }}</XChip>
-            <span class="inbounds__port">:{{ row.port }}</span>
-          </span>
         </template>
         <template #phone-info="{ row }">
           <XPopover :label="t('inbounds.colInfo')">
@@ -607,32 +610,39 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
   gap: 18px;
 }
 
+/* One line, cut with an ellipsis: a long remark never makes its row taller. */
 .inbounds__remark {
-  display: -webkit-box;
-  overflow: hidden;
   color: var(--fg);
   font: 500 var(--fs-13) / 1.4 var(--font-sans);
-  word-break: break-word;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .inbounds__remark--phone {
-  /* One line beside the protocol and port, cut with an ellipsis. */
-  display: block;
   font-size: var(--fs-14);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* Room for what hangs below the line (g, y), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
+}
+
+.inbounds__line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .inbounds__proto {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 4px;
   white-space: nowrap;
+}
+
+/* Dimmed as an off inbound's other cells are (XExpandTable's muted cells). */
+.inbounds__proto.is-off {
+  opacity: .42;
+  filter: grayscale(.7);
+}
+
+.inbounds__line .inbounds__remark--phone {
+  min-width: 0;
 }
 
 .inbounds__port {
@@ -651,9 +661,9 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
   font: 400 var(--fs-13) / var(--lh-tight) var(--font-mono);
 }
 
+/* On one line; the column is as wide as the widest row of chips. */
 .inbounds__chips {
   display: flex;
-  flex-wrap: wrap;
   gap: 4px;
 }
 

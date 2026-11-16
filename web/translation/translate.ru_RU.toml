@@ -798,6 +798,7 @@
 "colMenu" = "Меню"
 "colEnable" = "Включить"
 "colRemark" = "Примечание"
+"colInbound" = "Подключение"
 "colPort" = "Порт"
 "colProtocol" = "Протокол"
 "colTraffic" = "Трафик"

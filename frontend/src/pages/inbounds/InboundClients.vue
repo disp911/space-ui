@@ -3,7 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../../api'
 import {
-  toast, XButton, XChip, XInlineButton, XInnerTable, XMark, XMenu, XPager, XPopConfirm, XPopover, XStatusDot, XSwitch, XTooltip, XUsagePill,
+  toast, XChip, XInlineButton, XInnerTable, XMark, XMenu, XPager, XPopConfirm, XPopover, XStatusDot, XSwitch, XTooltip, XUsagePill,
   type InnerColumn, type MenuItem,
 } from '../../kit'
 import { formatBytes, formatDate, formatRelative } from '../../i18n/format'
@@ -54,8 +54,8 @@ const columns = computed<InnerColumn[]>(() => [
   { key: 'expiry', label: t('inbounds.colExpiry'), size: '172px' },
 ])
 const phoneColumns = computed<InnerColumn[]>(() => [
-  // As wide as the menu button, so it does not run into the status dot.
-  { key: 'menu', label: t('inbounds.colMenu'), size: 'var(--btn-sq)', quiet: true },
+  // As wide as the menu's inline button, so it neither runs into the status dot nor leaves room around its dots.
+  { key: 'menu', label: t('inbounds.colMenu'), size: 'var(--inline-btn)', quiet: true },
   { key: 'client', label: t('inbounds.colClient') },
   { key: 'info', label: t('inbounds.colInfo'), size: 'max-content', align: 'end', quiet: true },
 ])
@@ -183,11 +183,11 @@ async function confirmed(request: Promise<unknown>) {
       <div class="clients__who">
         <span class="clients__dot"><XStatusDot :tone="dotTone(row, view(row))" :pulse="view(row).online" :label="dotTip(row, view(row))" tip /></span>
         <div class="clients__name">
-          <div :class="['clients__email', { 'is-off': !row.enable }]" :title="row.email"><XMark :text="row.email" :query="query" /></div>
-          <XTooltip v-if="row.comment && row.comment.length > commentLimit" :text="row.comment" :delay="0" block>
-            <div class="clients__comment">{{ cut(row.comment) }}</div>
-          </XTooltip>
-          <div v-else-if="row.comment" class="clients__comment"><XMark :text="row.comment" :query="query" /></div>
+          <div :class="['clients__email', 'x-ellipsis', { 'is-off': !row.enable }]" :title="row.email"><XMark :text="row.email" :query="query" /></div>
+          <div v-if="row.comment && row.comment.length > commentLimit" class="clients__comment x-ellipsis">
+            <XTooltip :text="row.comment" :delay="0" block><span class="x-ellipsis">{{ cut(row.comment) }}</span></XTooltip>
+          </div>
+          <div v-else-if="row.comment" class="clients__comment x-ellipsis"><XMark :text="row.comment" :query="query" /></div>
         </div>
       </div>
     </template>
@@ -238,15 +238,15 @@ async function confirmed(request: Promise<unknown>) {
 
     <template #phone-menu="{ row }">
       <XMenu v-slot="{ props: trigger }" :items="menu(row)" placement="bottom-start" @select="act($event, row)">
-        <XButton v-bind="trigger" variant="ghost" icon="dots" :label="t('inbounds.colMenu')" />
+        <XInlineButton v-bind="trigger" icon="dots" :icon-size="16" :label="t('inbounds.colMenu')" />
       </XMenu>
     </template>
     <template #phone-client="{ row }">
       <div class="clients__who clients__who--phone">
         <span class="clients__dot"><XStatusDot :tone="dotTone(row, view(row))" :pulse="view(row).online" /></span>
         <div class="clients__name">
-          <div :class="['clients__email', { 'is-off': !row.enable }]"><XMark :text="row.email" :query="query" /></div>
-          <div v-if="row.comment" class="clients__comment">
+          <div :class="['clients__email', 'x-ellipsis', { 'is-off': !row.enable }]"><XMark :text="row.email" :query="query" /></div>
+          <div v-if="row.comment" class="clients__comment x-ellipsis">
             <template v-if="row.comment.length > commentLimit">{{ cut(row.comment) }}</template>
             <XMark v-else :text="row.comment" :query="query" />
           </div>
@@ -254,54 +254,58 @@ async function confirmed(request: Promise<unknown>) {
       </div>
     </template>
     <template #phone-info="{ row }">
-      <XPopover :label="t('inbounds.colInfo')">
-        <template #default="{ props: trigger }">
-          <!-- A badge with the info mark rather than a round button, as the inbounds have; paused and grey while the client is off. -->
-          <XChip v-bind="trigger" interactive :icon="row.enable ? 'info' : 'pause'" :tone="row.enable ? 'neutral' : 'off'" :aria-label="t('inbounds.colInfo')" />
-        </template>
-        <template #content>
-          <div class="clients__info">
-            <div class="clients__label">{{ t('inbounds.colTraffic') }}</div>
-            <XUsagePill
-              :used="formatBytes(view(row).used)"
-              :limit="view(row).total ? formatBytes(view(row).total) : '∞'"
-              :ratio="view(row).total ? view(row).used / view(row).total : null"
-              :tone="toneOf(view(row).traffic)"
-              :exhausted="row.enable && view(row).traffic === 'err'"
-              :disabled="!row.enable"
-              block
-              large
-            />
-            <div class="clients__line">
-              <span>↑{{ formatBytes(stat(row)?.up ?? 0) }} ↓{{ formatBytes(stat(row)?.down ?? 0) }}</span>
-              <span v-if="view(row).total && view(row).used < view(row).total" class="clients__end">
-                {{ t('inbounds.remain') }} {{ formatBytes(view(row).total - view(row).used) }}
-              </span>
-            </div>
-            <div class="clients__split" />
-            <div class="clients__label">{{ t('inbounds.colExpiry') }}</div>
-            <XChip v-if="!view(row).at" icon="infinity" :aria-label="t('inbounds.noExpiry')" />
-            <template v-else-if="view(row).renew">
+      <div class="clients__tail">
+        <!-- The traffic used, in the colour of its state; the bar does not fit a phone row, the summary has it. -->
+        <XChip :tone="row.enable ? toneOf(view(row).traffic) : 'off'" mono>{{ formatBytes(view(row).used) }}</XChip>
+        <XPopover :label="t('inbounds.colInfo')">
+          <template #default="{ props: trigger }">
+            <!-- A badge with the info mark rather than a round button, as the inbounds have; paused and grey while the client is off. -->
+            <XChip v-bind="trigger" interactive :icon="row.enable ? 'info' : 'pause'" :tone="row.enable ? 'neutral' : 'off'" :aria-label="t('inbounds.colInfo')" />
+          </template>
+          <template #content>
+            <div class="clients__info">
+              <div class="clients__label">{{ t('inbounds.colTraffic') }}</div>
               <XUsagePill
-                :used="formatRelative(view(row).at)"
-                :limit="t('inbounds.periodDays', { n: view(row).renew })"
-                :ratio="renewShare(view(row).at, view(row).renew)"
-                :tone="toneOf(view(row).expiry)"
+                :used="formatBytes(view(row).used)"
+                :limit="view(row).total ? formatBytes(view(row).total) : '∞'"
+                :ratio="view(row).total ? view(row).used / view(row).total : null"
+                :tone="toneOf(view(row).traffic)"
+                :exhausted="row.enable && view(row).traffic === 'err'"
                 :disabled="!row.enable"
-                textual
                 block
                 large
               />
-              <div class="clients__line">{{ formatDate(view(row).at) }}</div>
-            </template>
-            <div v-else class="clients__when">
-              <XChip v-if="view(row).at < 0" :tone="row.enable ? 'ok' : 'off'">{{ daysAfter(delayedDays(view(row).at)!) }}</XChip>
-              <XChip v-else :tone="row.enable ? toneOf(view(row).expiry) : 'off'">{{ formatRelative(view(row).at) }}</XChip>
-              <span class="clients__date">{{ view(row).at < 0 ? t('inbounds.delayedStart') : formatDate(view(row).at) }}</span>
+              <div class="clients__line">
+                <span>↑{{ formatBytes(stat(row)?.up ?? 0) }} ↓{{ formatBytes(stat(row)?.down ?? 0) }}</span>
+                <span v-if="view(row).total && view(row).used < view(row).total" class="clients__end">
+                  {{ t('inbounds.remain') }} {{ formatBytes(view(row).total - view(row).used) }}
+                </span>
+              </div>
+              <div class="clients__split" />
+              <div class="clients__label">{{ t('inbounds.colExpiry') }}</div>
+              <XChip v-if="!view(row).at" icon="infinity" :aria-label="t('inbounds.noExpiry')" />
+              <template v-else-if="view(row).renew">
+                <XUsagePill
+                  :used="formatRelative(view(row).at)"
+                  :limit="t('inbounds.periodDays', { n: view(row).renew })"
+                  :ratio="renewShare(view(row).at, view(row).renew)"
+                  :tone="toneOf(view(row).expiry)"
+                  :disabled="!row.enable"
+                  textual
+                  block
+                  large
+                />
+                <div class="clients__line">{{ formatDate(view(row).at) }}</div>
+              </template>
+              <div v-else class="clients__when">
+                <XChip v-if="view(row).at < 0" :tone="row.enable ? 'ok' : 'off'">{{ daysAfter(delayedDays(view(row).at)!) }}</XChip>
+                <XChip v-else :tone="row.enable ? toneOf(view(row).expiry) : 'off'">{{ formatRelative(view(row).at) }}</XChip>
+                <span class="clients__date">{{ view(row).at < 0 ? t('inbounds.delayedStart') : formatDate(view(row).at) }}</span>
+              </div>
             </div>
-          </div>
-        </template>
-      </XPopover>
+          </template>
+        </XPopover>
+      </div>
     </template>
 
     <template v-if="shown.length > (store.defaults?.pageSize || 25)" #foot>
@@ -316,23 +320,17 @@ async function confirmed(request: Promise<unknown>) {
   gap: 2px;
 }
 
+/* One line: the dot in its middle, the comment after the email, cut first when the line runs out. */
 .clients__who {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   min-width: 0;
-}
-
-.clients__who--phone {
-  /* One line on phones: the dot in its middle. */
-  align-items: center;
-  padding: 8px 0;
 }
 
 .clients__dot {
   display: flex;
   flex: none;
-  margin-top: 1px;
 }
 
 /* The dot's hover spot is wider than the dot: the dot itself stands under the column label. */
@@ -340,51 +338,18 @@ async function confirmed(request: Promise<unknown>) {
   margin-left: -4px;
 }
 
-.clients__who--phone .clients__dot {
-  margin-top: 0;
-}
-
-/* Phones: the comment after the email on the same line, cut first when the line runs out. */
-.clients__who--phone .clients__name {
+.clients__name {
   display: flex;
+  flex: 1;
   align-items: baseline;
   gap: 8px;
-}
-
-.clients__who--phone .clients__email {
-  display: block;
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  word-break: normal;
-  /* Room for what hangs below the line (g, y), which the ellipsis' clip cut; the box keeps its size. */
-  padding-block: .15em;
-  margin-block: -.15em;
-}
-
-.clients__who--phone .clients__comment {
-  flex: 1 1 0;
-  min-width: 3em;
-  margin-top: 0;
-  padding-block: .15em;
-  margin-block: -.15em;
-}
-
-.clients__name {
-  flex: 1;
   min-width: 0;
 }
 
 .clients__email {
-  display: -webkit-box;
-  overflow: hidden;
+  flex: 0 1 auto;
   color: var(--fg);
   font: 500 var(--fs-13) / 1.4 var(--font-mono);
-  word-break: break-all;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .clients__email.is-off {
@@ -392,13 +357,16 @@ async function confirmed(request: Promise<unknown>) {
 }
 
 .clients__comment {
-  min-width: 0;
-  margin-top: 2px;
-  overflow: hidden;
+  flex: 1 1 0;
+  min-width: 3em;
   color: var(--dim);
   font: 400 var(--fs-12) / 1.4 var(--font-sans);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.clients__tail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .clients__updown {
