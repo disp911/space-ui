@@ -2,6 +2,7 @@ package job
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/disp911/space-ui/v3/logger"
 	"github.com/disp911/space-ui/v3/web/service"
@@ -17,6 +18,11 @@ type XrayTrafficJob struct {
 	xrayService     service.XrayService
 	inboundService  service.InboundService
 	outboundService service.OutboundService
+	// Traffic a failed write could not record, added to the next one: Xray
+	// forgets what it reported. Inbounds and outbounds are written apart, so
+	// each keeps its own.
+	inboundBacklog  service.TrafficBacklog
+	outboundBacklog service.TrafficBacklog
 }
 
 // NewXrayTrafficJob creates a new traffic collection job instance.
@@ -35,13 +41,21 @@ func (j *XrayTrafficJob) Run() {
 	if err != nil {
 		return
 	}
-	needRestart0, clientsDisabled, err := j.inboundService.AddTraffic(traffics, clientTraffics)
+	inTraffics, inClients := j.inboundBacklog.Take(traffics, clientTraffics)
+	needRestart0, clientsDisabled, err := j.inboundService.AddTraffic(inTraffics, inClients)
 	if err != nil {
 		logger.Warning("add inbound traffic failed:", err)
+		if errors.Is(err, service.ErrTrafficNotRecorded) {
+			j.inboundBacklog.Keep(inTraffics, inClients)
+		}
 	}
-	err, needRestart1 := j.outboundService.AddTraffic(traffics, clientTraffics)
+	outTraffics, _ := j.outboundBacklog.Take(traffics, nil)
+	err, needRestart1 := j.outboundService.AddTraffic(outTraffics, clientTraffics)
 	if err != nil {
 		logger.Warning("add outbound traffic failed:", err)
+		if errors.Is(err, service.ErrTrafficNotRecorded) {
+			j.outboundBacklog.Keep(outTraffics, nil)
+		}
 	}
 	if clientsDisabled {
 		restartOnDisable, settingErr := j.settingService.GetRestartXrayOnClientDisable()

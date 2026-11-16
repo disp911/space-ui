@@ -409,6 +409,10 @@ func reportTelemtError(inboundID int, msg string) {
 	}
 }
 
+// telemtBacklog holds telemt traffic a failed write could not record; telemt
+// reports only what passed since it was last asked.
+var telemtBacklog TrafficBacklog
+
 // CollectTraffic records the traffic of all telemt processes since the last
 // call, then re-syncs if a client ran out of quota or time.
 func (s *TelemtService) CollectTraffic() {
@@ -433,12 +437,16 @@ func (s *TelemtService) CollectTraffic() {
 	telemtState.online = online
 	telemtState.Unlock()
 
+	inboundTraffics, clientTraffics = telemtBacklog.Take(inboundTraffics, clientTraffics)
 	if len(clientTraffics) == 0 && len(inboundTraffics) == 0 {
 		return
 	}
 	_, clientsDisabled, err := s.inboundService.AddTelemtTraffic(inboundTraffics, clientTraffics)
 	if err != nil {
 		logger.Warning("telemt: add traffic:", err)
+		if errors.Is(err, ErrTrafficNotRecorded) {
+			telemtBacklog.Keep(inboundTraffics, clientTraffics)
+		}
 	}
 	if clientsDisabled {
 		s.Sync()

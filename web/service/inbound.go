@@ -1396,56 +1396,50 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	return needRestart, tx.Save(oldInbound).Error
 }
 
+// AddTraffic records the traffic Xray reported and applies the clients'
+// limits. It returns whether Xray needs a restart and whether any client was
+// disabled. An error wrapping ErrTrafficNotRecorded means nothing was written
+// and the caller should keep the traffic for the next call.
 func (s *InboundService) AddTraffic(inboundTraffics []*xray.Traffic, clientTraffics []*xray.ClientTraffic) (bool, bool, error) {
-	var err error
-	db := database.GetDB()
-	tx := db.Begin()
-
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		} else {
-			tx.Commit()
-		}
-	}()
-	err = s.addInboundTraffic(tx, inboundTraffics)
-	if err != nil {
-		return false, false, err
-	}
-	onlineClients, err := s.addClientTraffic(tx, clientTraffics)
-	if err != nil {
-		return false, false, err
-	}
+	onlineClients, needRestart, clientsDisabled, err := s.recordTraffic(inboundTraffics, clientTraffics)
 	if p != nil && onlineClients != nil {
 		p.SetOnlineClients(onlineClients)
 	}
-
-	return s.applyClientLimits(tx)
+	return needRestart, clientsDisabled, err
 }
 
 // AddTelemtTraffic records traffic reported by the telemt proxies serving
 // mtproto inbounds and applies the same renewal and depletion rules as Xray
 // traffic. It returns whether Xray needs a restart and whether any client was
-// disabled.
+// disabled; an error wrapping ErrTrafficNotRecorded means nothing was written.
 func (s *InboundService) AddTelemtTraffic(inboundTraffics []*xray.Traffic, clientTraffics []*xray.ClientTraffic) (bool, bool, error) {
-	var err error
-	db := database.GetDB()
-	tx := db.Begin()
+	_, needRestart, clientsDisabled, err := s.recordTraffic(inboundTraffics, clientTraffics)
+	return needRestart, clientsDisabled, err
+}
 
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		} else {
-			tx.Commit()
-		}
-	}()
-	if err = s.addInboundTraffic(tx, inboundTraffics); err != nil {
-		return false, false, err
+// recordTraffic writes inbound and client traffic in one transaction and
+// applies the client limits in it. A failed write or commit leaves nothing
+// written and is returned wrapping ErrTrafficNotRecorded; a failed limits
+// step leaves the traffic recorded and is returned as it is.
+func (s *InboundService) recordTraffic(inboundTraffics []*xray.Traffic, clientTraffics []*xray.ClientTraffic) (onlineClients []string, needRestart, clientsDisabled bool, err error) {
+	tx := database.GetDB().Begin()
+	if tx.Error != nil {
+		return nil, false, false, notRecorded(tx.Error)
 	}
-	if _, err = s.addClientTraffic(tx, clientTraffics); err != nil {
-		return false, false, err
+	if err := s.addInboundTraffic(tx, inboundTraffics); err != nil {
+		tx.Rollback()
+		return nil, false, false, notRecorded(err)
 	}
-	return s.applyClientLimits(tx)
+	onlineClients, err = s.addClientTraffic(tx, clientTraffics)
+	if err != nil {
+		tx.Rollback()
+		return nil, false, false, notRecorded(err)
+	}
+	needRestart, clientsDisabled, limitsErr := s.applyClientLimits(tx)
+	if err := tx.Commit().Error; err != nil {
+		return nil, false, false, notRecorded(err)
+	}
+	return onlineClients, needRestart, clientsDisabled, limitsErr
 }
 
 // applyClientLimits runs enforceClientLimits inside a savepoint. A failed
@@ -1571,9 +1565,8 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		}
 	}
 
-	err = tx.Save(dbClientTraffics).Error
-	if err != nil {
-		logger.Warning("AddClientTraffic update data ", err)
+	if err = tx.Save(dbClientTraffics).Error; err != nil {
+		return nil, err
 	}
 
 	return onlineClients, nil

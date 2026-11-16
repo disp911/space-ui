@@ -1106,26 +1106,24 @@ func (s *ServerService) GetConfigJson() (any, error) {
 	return jsonData, nil
 }
 
+// GetDb returns a full copy of the database for download: written aside
+// first, as the database file alone may miss writes still in its WAL.
 func (s *ServerService) GetDb() ([]byte, error) {
-	// Update by manually trigger a checkpoint operation
-	err := database.Checkpoint()
+	tmp, err := os.CreateTemp(filepath.Dir(config.GetDBPath()), "space-ui-export-*.db")
 	if err != nil {
 		return nil, err
 	}
-	// Open the file for reading
-	file, err := os.Open(config.GetDBPath())
-	if err != nil {
+	path := tmp.Name()
+	tmp.Close()
+	// VACUUM INTO writes only to a file that does not exist.
+	if err := os.Remove(path); err != nil {
 		return nil, err
 	}
-	defer file.Close()
-
-	// Read the file contents
-	fileContents, err := io.ReadAll(file)
-	if err != nil {
+	defer os.Remove(path)
+	if err := database.ExportTo(path); err != nil {
 		return nil, err
 	}
-
-	return fileContents, nil
+	return os.ReadFile(path)
 }
 
 // PrepareDBImport checks the uploaded database and keeps it beside the
@@ -1206,30 +1204,27 @@ func (s *ServerService) ApplyDBImport(tempPath string) error {
 	fallbackPath := fmt.Sprintf("%s.backup", config.GetDBPath())
 
 	// Remove the existing fallback file (if any)
-	if _, err := os.Stat(fallbackPath); err == nil {
-		if errRemove := os.Remove(fallbackPath); errRemove != nil {
-			return common.NewErrorf("Error removing existing fallback db file: %v", errRemove)
-		}
+	if err := removeDB(fallbackPath); err != nil {
+		return common.NewErrorf("Error removing existing fallback db file: %v", err)
 	}
 
-	// Move the current database to the fallback location
-	if err := os.Rename(config.GetDBPath(), fallbackPath); err != nil {
+	// Move the current database to the fallback location, with its WAL files:
+	// left behind, they would be read into the imported database.
+	if err := moveDB(config.GetDBPath(), fallbackPath); err != nil {
 		return common.NewErrorf("Error backing up current db file: %v", err)
 	}
 
 	// Defer fallback cleanup ONLY if everything goes well
 	defer func() {
-		if _, err := os.Stat(fallbackPath); err == nil {
-			if rerr := os.Remove(fallbackPath); rerr != nil {
-				logger.Warningf("Warning: failed to remove fallback file: %v", rerr)
-			}
+		if rerr := removeDB(fallbackPath); rerr != nil {
+			logger.Warningf("Warning: failed to remove fallback file: %v", rerr)
 		}
 	}()
 
 	// Move temp to DB path
-	if err := os.Rename(tempPath, config.GetDBPath()); err != nil {
+	if err := moveDB(tempPath, config.GetDBPath()); err != nil {
 		// Restore from fallback
-		if errRename := os.Rename(fallbackPath, config.GetDBPath()); errRename != nil {
+		if errRename := moveDB(fallbackPath, config.GetDBPath()); errRename != nil {
 			return common.NewErrorf("Error moving db file and restoring fallback: %v", errRename)
 		}
 		return common.NewErrorf("Error moving db file: %v", err)
@@ -1237,7 +1232,11 @@ func (s *ServerService) ApplyDBImport(tempPath string) error {
 
 	// Open & migrate new DB
 	if err := database.InitDB(config.GetDBPath()); err != nil {
-		if errRename := os.Rename(fallbackPath, config.GetDBPath()); errRename != nil {
+		database.CloseDB()
+		if errRemove := removeDB(config.GetDBPath()); errRemove != nil {
+			logger.Warningf("Warning: failed to remove the db that failed to migrate: %v", errRemove)
+		}
+		if errRename := moveDB(fallbackPath, config.GetDBPath()); errRename != nil {
 			return common.NewErrorf("Error migrating db and restoring fallback: %v", errRename)
 		}
 		return common.NewErrorf("Error migrating db: %v", err)
@@ -1250,6 +1249,29 @@ func (s *ServerService) ApplyDBImport(tempPath string) error {
 		return common.NewErrorf("Imported DB but failed to start Xray: %v", err)
 	}
 
+	return nil
+}
+
+// moveDB renames a database together with the WAL files beside it, if any.
+func moveDB(from, to string) error {
+	if err := os.Rename(from, to); err != nil {
+		return err
+	}
+	for _, ext := range database.Sidecars {
+		if err := os.Rename(from+ext, to+ext); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+// removeDB removes a database and the WAL files beside it, those that exist.
+func removeDB(path string) error {
+	for _, ext := range append([]string{""}, database.Sidecars...) {
+		if err := os.Remove(path + ext); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
 	return nil
 }
 

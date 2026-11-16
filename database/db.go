@@ -140,7 +140,7 @@ func InitDB(dbPath string) error {
 	c := &gorm.Config{
 		Logger: gormLogger,
 	}
-	db, err = gorm.Open(sqlite.Open(dbPath), c)
+	db, err = gorm.Open(sqlite.Open(dsn(dbPath)), c)
 	if err != nil {
 		return err
 	}
@@ -158,6 +158,30 @@ func InitDB(dbPath string) error {
 		return err
 	}
 	return runSeeders(isUsersEmpty)
+}
+
+// dsn opens the panel's database so a busy moment does not fail its work:
+//   - WAL lets reads go on while a write is under way, and a write wait only
+//     for another write, where the rollback journal locked readers out too;
+//   - a write waits up to 30 seconds for the database rather than 5, enough
+//     for the disk to come back from a stall, e.g. a weekly fstrim on a VPS;
+//   - a transaction takes the write lock when it begins, so it waits for it
+//     there instead of failing when a read turns into a write.
+//
+// WAL keeps recent writes in the -wal file beside the database until they
+// are checkpointed into it: the database file alone is not a full copy (see
+// ExportTo), and it has to move together with that file.
+func dsn(dbPath string) string {
+	return dbPath + "?_journal_mode=WAL&_busy_timeout=30000&_txlock=immediate"
+}
+
+// Sidecars are the files SQLite keeps beside a database in WAL mode.
+var Sidecars = []string{"-wal", "-shm"}
+
+// ExportTo writes a full, consistent copy of the database to path, which must
+// not exist yet: the WAL's recent writes included, without stopping the panel.
+func ExportTo(path string) error {
+	return db.Exec("VACUUM INTO ?", path).Error
 }
 
 // CloseDB closes the database connection if it exists.
@@ -190,16 +214,6 @@ func IsSQLiteDB(file io.ReaderAt) (bool, error) {
 		return false, err
 	}
 	return bytes.Equal(buf, signature), nil
-}
-
-// Checkpoint performs a WAL checkpoint on the SQLite database to ensure data consistency.
-func Checkpoint() error {
-	// Update WAL
-	err := db.Exec("PRAGMA wal_checkpoint;").Error
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // ValidateSQLiteDB opens the provided sqlite DB path with a throw-away connection

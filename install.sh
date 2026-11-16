@@ -228,16 +228,16 @@ install_space-ui() {
     mkdir -p /var/log/space-ui
     config_after_install
 
-    # Etckeeper compatibility
+    # Etckeeper compatibility: the database and its WAL files (-wal, -shm), which change every few seconds
     if [ -d "/etc/.git" ]; then
         if [ -f "/etc/.gitignore" ]; then
-            if ! grep -q "space-ui/space-ui.db" "/etc/.gitignore"; then
+            if ! grep -qxF "space-ui/space-ui.db*" "/etc/.gitignore"; then
                 echo "" >> "/etc/.gitignore"
-                echo "space-ui/space-ui.db" >> "/etc/.gitignore"
+                echo "space-ui/space-ui.db*" >> "/etc/.gitignore"
                 echo -e "${green}Added space-ui.db to /etc/.gitignore for etckeeper${plain}"
             fi
         else
-            echo "space-ui/space-ui.db" > "/etc/.gitignore"
+            echo "space-ui/space-ui.db*" > "/etc/.gitignore"
             echo -e "${green}Created /etc/.gitignore and added space-ui.db for etckeeper${plain}"
         fi
     fi

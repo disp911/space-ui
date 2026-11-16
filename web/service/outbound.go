@@ -29,24 +29,21 @@ type OutboundService struct{}
 // testSemaphore limits concurrent outbound tests to prevent resource exhaustion.
 var testSemaphore sync.Mutex
 
+// AddTraffic records the outbounds' traffic Xray reported. An error wrapping
+// ErrTrafficNotRecorded means nothing was written and the caller should keep
+// the traffic for the next call.
 func (s *OutboundService) AddTraffic(traffics []*xray.Traffic, clientTraffics []*xray.ClientTraffic) (error, bool) {
-	var err error
-	db := database.GetDB()
-	tx := db.Begin()
-
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		} else {
-			tx.Commit()
-		}
-	}()
-
-	err = s.addOutboundTraffic(tx, traffics)
-	if err != nil {
-		return err, false
+	tx := database.GetDB().Begin()
+	if tx.Error != nil {
+		return notRecorded(tx.Error), false
 	}
-
+	if err := s.addOutboundTraffic(tx, traffics); err != nil {
+		tx.Rollback()
+		return notRecorded(err), false
+	}
+	if err := tx.Commit().Error; err != nil {
+		return notRecorded(err), false
+	}
 	return nil, false
 }
 
