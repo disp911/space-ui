@@ -238,6 +238,25 @@ export interface MessageSchema {
     "listBadDomain": string
     "listBadSubnet": string
     "listTooMany": string
+    "listSections": string
+    "listSectionsOn": string
+    "listSectionName": string
+    "listSectionUnnamed": string
+    "listSectionDefault": string
+    "listSectionOn": string
+    "listSectionMenu": string
+    "listSectionUp": string
+    "listSectionDown": string
+    "listSectionDelete": string
+    "listSectionNameEmpty": string
+    "listSectionNameLong": string
+    "listSectionNameTaken": string
+    "listSectionsTooMany": string
+    "listSectionEntries": string
+    "listJsonShape": string
+    "listJsonSection": string
+    "listJsonBadDomain": string
+    "listJsonBadSubnet": string
     "listSave": string
     "listCreate": string
     "save": string

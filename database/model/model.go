@@ -145,12 +145,24 @@ type RuleList struct {
 	Name string `json:"name" gorm:"not null;uniqueIndex"`
 	// Kind is "domains" or "subnets"; a list keeps the kind it was made with.
 	Kind string `json:"kind" gorm:"not null"`
-	// Entries are the list's lines as the panel normalized them, one a line.
-	Entries   string `json:"entries" gorm:"not null;default:''"`
+	// Sections are the list's parts, e.g. one a service, in their order.
+	Sections []RuleListSection `json:"sections" gorm:"type:text;serializer:json;not null;default:'[]'"`
+	// Count is how many entries the rule-set holds: those of the enabled
+	// sections, each once.
 	Count     int    `json:"count" gorm:"not null;default:0"`
 	Srs       []byte `json:"-"`
 	CreatedAt int64  `json:"createdAt" gorm:"autoCreateTime:milli"`
 	UpdatedAt int64  `json:"updatedAt" gorm:"autoUpdateTime:milli"`
+}
+
+// RuleListSection is a named part of a list, e.g. a service's domains, that
+// can be switched off without losing its entries.
+type RuleListSection struct {
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled"`
+	// Entries are the section's lines as the panel normalized them, one a line.
+	Entries string `json:"entries"`
+	Count   int    `json:"count"`
 }
 
 type ClientReverse struct {

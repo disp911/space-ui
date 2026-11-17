@@ -4,12 +4,41 @@
 
 export type ListKind = 'domains' | 'subnets'
 
+/** A named part of a list, e.g. a service's domains, that can be switched off and keeps its entries. */
+export interface RuleListSection {
+  name: string
+  enabled: boolean
+  /** One entry a line, as the server normalized them. */
+  entries: string
+  count: number
+}
+
+/** A section as the window's JSON shows it: its entries one a string. */
+export interface RawSection {
+  name: string
+  enabled: boolean
+  entries: string[]
+}
+
+/** Sections read from parsed JSON; null when it is not a list of them. enabled is true unless false. */
+export function readRawSections(v: unknown): RawSection[] | null {
+  if (!Array.isArray(v)) return null
+  const out: RawSection[] = []
+  for (const s of v) {
+    if (!s || typeof s !== 'object' || Array.isArray(s)) return null
+    const { name, enabled = true, entries = [] } = s as Record<string, unknown>
+    if (typeof name !== 'string' || typeof enabled !== 'boolean' || !Array.isArray(entries) || !entries.every((e) => typeof e === 'string')) return null
+    out.push({ name, enabled, entries: entries as string[] })
+  }
+  return out
+}
+
 export interface RuleList {
   id: number
   name: string
   kind: ListKind
-  /** One entry a line, as the server normalized them. */
-  entries: string
+  sections: RuleListSection[] | null
+  /** Entries in the rule-set: those of the enabled sections, each once. */
   count: number
   createdAt: number
   updatedAt: number
@@ -24,7 +53,11 @@ export interface ListsReply {
 /** A list's name is its file's: routers name the rule-set after it. */
 export const listNamePattern = /^[a-z0-9][a-z0-9_-]{0,62}$/
 
+/** A list's entries, its sections' together. */
 export const maxEntries = 200000
+export const maxSections = 100
+/** A section's name, in characters. */
+export const maxSectionName = 64
 
 /** Where a router fetches the list: <base><path><secret>/<name>.srs. */
 export function listUrl(base: string, path: string, secret: string, name: string) {

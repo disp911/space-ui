@@ -47,7 +47,21 @@ func initModels() error {
 			return err
 		}
 	}
-	return nil
+	return dropListEntries()
+}
+
+// dropListEntries removes the column a list kept its one text in before
+// lists had sections. Its entries are not carried over: such a list starts
+// with no sections and, until saved again, is served empty.
+func dropListEntries() error {
+	m := db.Migrator()
+	if !m.HasColumn(&model.RuleList{}, "entries") {
+		return nil
+	}
+	if err := m.DropColumn(&model.RuleList{}, "entries"); err != nil {
+		return err
+	}
+	return db.Model(&model.RuleList{}).Where("1 = 1").Updates(map[string]any{"srs": nil, "count": 0}).Error
 }
 
 // initUser creates a default admin user if the users table is empty.

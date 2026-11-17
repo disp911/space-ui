@@ -74,6 +74,49 @@ func TestParseRuleList(t *testing.T) {
 	}
 }
 
+func TestBuildRuleListTakesTheEnabledSections(t *testing.T) {
+	sections, entries, err := BuildRuleList(RuleListDomains, []model.RuleListSection{
+		{Name: " YouTube ", Enabled: true, Entries: "youtube.com\nWWW.youtube.com\nytimg.com"},
+		{Name: "Discord", Enabled: false, Entries: "discord.com"},
+		{Name: "Google", Enabled: true, Entries: "# shared\nytimg.com\ngoogle.com"},
+		{Name: "Empty", Enabled: true},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"youtube.com", "www.youtube.com", "ytimg.com", "google.com"}; !slices.Equal(entries, want) {
+		t.Fatalf("entries %v, want %v", entries, want)
+	}
+	if sections[0].Name != "YouTube" || sections[0].Count != 3 || sections[0].Entries != "youtube.com\nwww.youtube.com\nytimg.com" {
+		t.Fatalf("first section kept as %+v", sections[0])
+	}
+	// A section switched off keeps its entries, only out of the rule-set.
+	if sections[1].Enabled || sections[1].Count != 1 || sections[1].Entries != "discord.com" {
+		t.Fatalf("switched off section kept as %+v", sections[1])
+	}
+
+	for name, in := range map[string][]model.RuleListSection{
+		"no name":   {{Name: " ", Enabled: true}},
+		"same name": {{Name: "Telegram"}, {Name: "telegram"}},
+		"long name": {{Name: string(make([]rune, MaxRuleListSectionName+1))}},
+		"two lines": {{Name: "a\nb"}},
+	} {
+		if _, _, err := BuildRuleList(RuleListDomains, in); err == nil {
+			t.Errorf("%s passes", name)
+		}
+	}
+
+	_, _, err = BuildRuleList(RuleListSubnets, []model.RuleListSection{{Name: "Telegram", Entries: "91.108.4.0/22"}, {Name: "Bad", Entries: "1.2.3.0/24\nnot-a-subnet"}})
+	var sec *RuleListSectionError
+	var line *RuleListLineError
+	if !errors.As(err, &sec) || sec.Section != 2 || sec.Name != "Bad" || !errors.As(err, &line) || line.Line != 2 {
+		t.Fatalf("a wrong line in the second section: %v", err)
+	}
+	if _, _, err := BuildRuleList(RuleListDomains, make([]model.RuleListSection, MaxRuleListSections+1)); err == nil {
+		t.Fatal("too many sections pass")
+	}
+}
+
 func listsTestDB(t *testing.T) {
 	t.Helper()
 	logger.InitLogger(logging.CRITICAL)
@@ -86,17 +129,25 @@ func listsTestDB(t *testing.T) {
 func TestRuleListsAreServedBySecretAndName(t *testing.T) {
 	listsTestDB(t)
 	s := RuleListService{}
-	list, err := s.Save(&model.RuleList{Name: "youtube", Kind: RuleListDomains, Entries: "youtube.com\nytimg.com"})
+	list, err := s.Save(&model.RuleList{Name: "youtube", Kind: RuleListDomains, Sections: []model.RuleListSection{
+		{Name: "YouTube", Enabled: true, Entries: "youtube.com\nytimg.com"},
+		{Name: "Off", Entries: "example.com"},
+	}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if list.Count != 2 || list.Entries != "youtube.com\nytimg.com" {
+	if list.Count != 2 || len(list.Sections) != 2 || list.Sections[1].Entries != "example.com" {
 		t.Fatalf("saved %+v", list)
 	}
-	if _, err := s.Save(&model.RuleList{Name: "youtube", Kind: RuleListSubnets, Entries: "1.2.3.4"}); err == nil {
+	var stored model.RuleList
+	if err := database.GetDB().First(&stored, list.Id).Error; err != nil || len(stored.Sections) != 2 || stored.Sections[0].Name != "YouTube" {
+		t.Fatalf("stored %+v %v", stored, err)
+	}
+	subnets := []model.RuleListSection{{Name: "a", Entries: "1.2.3.4"}}
+	if _, err := s.Save(&model.RuleList{Name: "youtube", Kind: RuleListSubnets, Sections: subnets}); err == nil {
 		t.Fatal("a second list takes the same name")
 	}
-	if _, err := s.Save(&model.RuleList{Id: list.Id, Name: "youtube", Kind: RuleListSubnets, Entries: "1.2.3.4"}); err == nil {
+	if _, err := s.Save(&model.RuleList{Id: list.Id, Name: "youtube", Kind: RuleListSubnets, Sections: subnets}); err == nil {
 		t.Fatal("a list changes its kind")
 	}
 	if _, err := s.Save(&model.RuleList{Name: "Bad Name", Kind: RuleListDomains}); err == nil {
@@ -129,5 +180,41 @@ func TestRuleListsAreServedBySecretAndName(t *testing.T) {
 	}
 	if _, ok := s.ServedRuleList(secret + "/youtube.srs"); ok {
 		t.Fatal("a deleted list is served")
+	}
+}
+
+// A list made before lists had sections loses its one text: it is kept with
+// no sections and served as an empty rule-set until saved again.
+func TestOldListsLoseTheirTextAndAreServedEmpty(t *testing.T) {
+	logger.InitLogger(logging.CRITICAL)
+	path := filepath.Join(t.TempDir(), "space-ui.db")
+	if err := database.InitDB(path); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { database.CloseDB() })
+	db := database.GetDB()
+	if err := db.Exec("ALTER TABLE rule_lists ADD COLUMN entries text NOT NULL DEFAULT ''").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("INSERT INTO rule_lists (name, kind, entries, count, srs) VALUES ('old', 'subnets', '1.2.3.0/24', 1, x'01')").Error; err != nil {
+		t.Fatal(err)
+	}
+	database.CloseDB()
+	if err := database.InitDB(path); err != nil {
+		t.Fatal(err)
+	}
+	if database.GetDB().Migrator().HasColumn(&model.RuleList{}, "entries") {
+		t.Fatal("the old column is still there")
+	}
+	s := RuleListService{}
+	lists, err := s.All()
+	if err != nil || len(lists) != 1 || lists[0].Name != "old" || lists[0].Count != 0 || len(lists[0].Sections) != 0 {
+		t.Fatalf("old list kept as %+v %v", lists, err)
+	}
+	secret, _ := s.GetListsSecret()
+	file, ok := s.ServedRuleList(secret + "/old.srs")
+	empty, _ := CompileRuleList(RuleListSubnets, nil)
+	if !ok || !slices.Equal(file.Data, empty) {
+		t.Fatalf("old list served as %v %v", file, ok)
 	}
 }

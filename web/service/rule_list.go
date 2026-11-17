@@ -10,6 +10,7 @@ import (
 	"net/netip"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/disp911/space-ui/v3/database"
 	"github.com/disp911/space-ui/v3/database/model"
@@ -29,8 +30,12 @@ const (
 	RuleListDomains = "domains"
 	RuleListSubnets = "subnets"
 
-	// MaxRuleListEntries bounds one list.
+	// MaxRuleListEntries bounds one list, its sections' entries together.
 	MaxRuleListEntries = 200000
+	// MaxRuleListSections bounds a list's sections.
+	MaxRuleListSections = 100
+	// MaxRuleListSectionName bounds a section's name, in characters.
+	MaxRuleListSectionName = 64
 )
 
 // A list's name is its file's: routers name the rule-set after it.
@@ -51,6 +56,19 @@ type RuleListLineError struct {
 func (e *RuleListLineError) Error() string {
 	return fmt.Sprintf("line %d is not valid: %s", e.Line, e.Text)
 }
+
+// RuleListSectionError is what is wrong in a section, counted from 1.
+type RuleListSectionError struct {
+	Section int
+	Name    string
+	Err     error
+}
+
+func (e *RuleListSectionError) Error() string {
+	return fmt.Sprintf("section %d «%s»: %v", e.Section, e.Name, e.Err)
+}
+
+func (e *RuleListSectionError) Unwrap() error { return e.Err }
 
 // NormalizeDomain returns the name as a list keeps it: lowercase ASCII
 // (punycode), without a leading "*." or "." and a trailing dot. A name
@@ -156,6 +174,54 @@ func ParseRuleList(kind, text string) ([]string, error) {
 	return out, nil
 }
 
+// BuildRuleList checks a list's sections and returns them as the list keeps
+// them, each with its entries normalized and counted, and the entries of the
+// enabled ones for the rule-set, each once, in the sections' order.
+func BuildRuleList(kind string, sections []model.RuleListSection) ([]model.RuleListSection, []string, error) {
+	if kind != RuleListDomains && kind != RuleListSubnets {
+		return nil, nil, common.NewError("unknown list kind:", kind)
+	}
+	if len(sections) > MaxRuleListSections {
+		return nil, nil, common.NewErrorf("a list holds at most %d sections", MaxRuleListSections)
+	}
+	out := make([]model.RuleListSection, 0, len(sections))
+	names := map[string]bool{}
+	seen := map[string]bool{}
+	var entries []string
+	total := 0
+	for i, sec := range sections {
+		name := strings.TrimSpace(sec.Name)
+		fail := func(err error) error { return &RuleListSectionError{Section: i + 1, Name: name, Err: err} }
+		switch {
+		case name == "":
+			return nil, nil, fail(errors.New("a section needs a name"))
+		case utf8.RuneCountInString(name) > MaxRuleListSectionName || strings.ContainsAny(name, "\r\n"):
+			return nil, nil, fail(common.NewErrorf("a section's name is one line of at most %d characters", MaxRuleListSectionName))
+		case names[strings.ToLower(name)]:
+			return nil, nil, fail(errors.New("there is a section with this name already"))
+		}
+		names[strings.ToLower(name)] = true
+		list, err := ParseRuleList(kind, sec.Entries)
+		if err != nil {
+			return nil, nil, fail(err)
+		}
+		if total += len(list); total > MaxRuleListEntries {
+			return nil, nil, common.NewErrorf("a list holds at most %d entries", MaxRuleListEntries)
+		}
+		out = append(out, model.RuleListSection{Name: name, Enabled: sec.Enabled, Entries: strings.Join(list, "\n"), Count: len(list)})
+		if !sec.Enabled {
+			continue
+		}
+		for _, e := range list {
+			if !seen[e] {
+				seen[e] = true
+				entries = append(entries, e)
+			}
+		}
+	}
+	return out, entries, nil
+}
+
 // CompileRuleList builds the list's rule-set.
 func CompileRuleList(kind string, entries []string) ([]byte, error) {
 	var buf bytes.Buffer
@@ -216,7 +282,7 @@ func (s *RuleListService) Save(in *model.RuleList) (*model.RuleList, error) {
 	if taken > 0 {
 		return nil, common.NewError("there is a list named", in.Name, "already")
 	}
-	entries, err := ParseRuleList(list.Kind, in.Entries)
+	sections, entries, err := BuildRuleList(list.Kind, in.Sections)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +291,7 @@ func (s *RuleListService) Save(in *model.RuleList) (*model.RuleList, error) {
 		return nil, err
 	}
 	list.Name = in.Name
-	list.Entries = strings.Join(entries, "\n")
+	list.Sections = sections
 	list.Count = len(entries)
 	list.Srs = data
 	if err := db.Save(&list).Error; err != nil {
@@ -285,8 +351,17 @@ func (s *RuleListService) ServedRuleList(rest string) (*RuleListFile, bool) {
 		return nil, false
 	}
 	var list model.RuleList
-	if err := database.GetDB().Where("name = ?", name).First(&list).Error; err != nil || list.Srs == nil {
+	if err := database.GetDB().Where("name = ?", name).First(&list).Error; err != nil {
 		return nil, false
+	}
+	if list.Srs == nil {
+		// Not saved since lists had sections: an empty rule-set, so a router
+		// fetching it keeps working.
+		data, err := CompileRuleList(list.Kind, nil)
+		if err != nil {
+			return nil, false
+		}
+		list.Srs = data
 	}
 	sum := sha256.Sum256(list.Srs)
 	return &RuleListFile{Data: list.Srs, ETag: `"` + hex.EncodeToString(sum[:8]) + `"`, UpdatedAt: list.UpdatedAt}, true

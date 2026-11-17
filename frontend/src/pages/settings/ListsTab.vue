@@ -54,6 +54,7 @@ const url = (l: RuleList) => listUrl(base.value, f.saved.listsPath, f.saved.list
 const columns = computed<GridColumn[]>(() => [
   { key: 'name', label: t('settings.listName'), phone: 'head' },
   { key: 'kind', label: t('settings.listKind'), size: 'fit' },
+  { key: 'sections', label: t('settings.listSections'), size: 'fit' },
   { key: 'count', label: t('settings.listCount'), size: 'fit' },
   { key: 'url', label: t('settings.listUrl'), size: '2fr' },
 ])
@@ -139,6 +140,9 @@ async function remove() {
       <template #cell-name="{ row }"><span class="lists__mono">{{ row.name }}</span></template>
       <template #cell-kind="{ row }">
         <XChip :tone="row.kind === 'domains' ? 'on' : 'neutral'">{{ row.kind === 'domains' ? t('settings.listDomains') : t('settings.listSubnets') }}</XChip>
+      </template>
+      <template #cell-sections="{ row }">
+        {{ t('settings.listSectionsOn', { on: (row.sections ?? []).filter((s) => s.enabled).length, all: (row.sections ?? []).length }) }}
       </template>
       <template #cell-count="{ row }">{{ row.count }}</template>
       <template #cell-url="{ row }">
