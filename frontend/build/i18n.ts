@@ -3,12 +3,15 @@
 // own namespaces from them; the other tables belong to the old pages.
 //
 // Run directly (node build/i18n.ts) it checks that every language has the
-// same keys, that every key is used somewhere in src/, and refreshes the
-// generated key type. Vite uses the same functions to serve the messages.
+// same keys, that every message compiles as vue-i18n reads it, that a key
+// takes the same named values in every language and that every key is used
+// somewhere in src/, and refreshes the generated key type. Vite uses the same
+// functions to serve the messages.
 
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { baseCompile, type CompileError } from '@intlify/message-compiler'
 import { parse } from 'smol-toml'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -55,6 +58,51 @@ export function parityErrors(): string[] {
   return errors
 }
 
+function entries(tree: Tree, prefix = ''): [string, string][] {
+  return Object.entries(tree).flatMap(([k, v]) => (typeof v === 'string' ? [[prefix + k, v] as [string, string]] : entries(v, `${prefix}${k}.`)))
+}
+
+/**
+ * Messages vue-i18n cannot read, as readable lines: in a message "{…}" is a
+ * value put in and "@" starts a link to another message, so a literal brace
+ * or at sign is written {'{'} or {'@'}. Such a message throws when shown and
+ * stops the page it is on from updating.
+ */
+export function syntaxErrors(): string[] {
+  const errors: string[] = []
+  for (const locale of Object.keys(localeFiles) as Locale[]) {
+    for (const [key, text] of entries(loadMessages(locale))) {
+      baseCompile(text, {
+        location: false,
+        onError: (e: CompileError) => errors.push(`${localeFiles[locale]}: ${key}: ${e.message}`),
+      })
+    }
+  }
+  return errors
+}
+
+/** The named values a message takes, e.g. n in "{n} entries"; literals such as {'@'} are not. */
+export function placeholders(text: string): string[] {
+  return [...new Set([...text.matchAll(/\{\s*([A-Za-z_]\w*)\s*\}/g)].map((m) => m[1]!))].sort()
+}
+
+/** Keys whose languages take different named values: one of them would show an empty gap. */
+export function placeholderErrors(): string[] {
+  const [first, ...rest] = Object.keys(localeFiles) as Locale[]
+  const base = new Map(entries(loadMessages(first!)))
+  const errors: string[] = []
+  for (const locale of rest) {
+    for (const [key, text] of entries(loadMessages(locale))) {
+      const want = base.get(key)
+      if (want === undefined) continue
+      const a = placeholders(want).join(', ')
+      const b = placeholders(text).join(', ')
+      if (a !== b) errors.push(`${key}: ${localeFiles[first!]} takes {${a}}, ${localeFiles[locale]} takes {${b}}`)
+    }
+  }
+  return errors
+}
+
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = join(dir, e.name)
@@ -92,7 +140,7 @@ export function writeSchema(): boolean {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const errors = [...parityErrors(), ...unusedKeys().map((k) => `unused key ${k}`)]
+  const errors = [...parityErrors(), ...syntaxErrors(), ...placeholderErrors(), ...unusedKeys().map((k) => `unused key ${k}`)]
   if (writeSchema()) console.log(`updated ${relative(root, schemaFile)}`)
   if (errors.length) {
     console.error(errors.join('\n'))
