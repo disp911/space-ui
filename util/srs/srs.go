@@ -21,7 +21,7 @@ import (
 )
 
 // Version is the rule-set version written: 3, read by sing-box 1.11 and
-// later (podkop needs 1.12). Versions 2 and 3 store domains and prefixes
+// later (routers run 1.12 and later). Versions 2 and 3 store domains and prefixes
 // alike; version 1 matched domain suffixes the old way.
 const Version = 3
 

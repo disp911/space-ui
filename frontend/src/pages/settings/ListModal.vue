@@ -7,8 +7,8 @@ import { cause } from './form'
 import { checkList, listNamePattern, maxEntries, type ListKind, type RuleList } from './lists'
 
 /**
- * A podkop list: its file's name, whether it holds domains or subnets (kept
- * once made, podkop takes the two apart) and its entries, one a line. The
+ * A router list: its file's name, whether it holds domains or subnets (kept
+ * once made, routers take the two apart) and its entries, one a line. The
  * entries can be loaded from a .txt or .lst file. The server checks it all
  * again and builds the rule-set on saving.
  */
@@ -84,8 +84,8 @@ async function save() {
   <XModal v-model:open="open" :title="list ? t('settings.listEditTitle', { name: list.name }) : t('settings.listNew')" size="lg" full cancel :dismissible="!saving">
     <div class="list-window">
       <XFieldGrid :cols="2" top>
-        <XField v-slot="a" :label="t('settings.listFileName')" :hint="nameError ? undefined : t('settings.listFileNameHint', { name: name.trim() || 'name' })" :error="nameError">
-          <XInput v-bind="a" v-model="name" mono placeholder="youtube" :invalid="!!nameError" />
+        <XField v-slot="a" :label="t('settings.listFileName')" :hint="nameError ? undefined : t('settings.listFileNameHint')" :error="nameError">
+          <XInput v-bind="a" v-model="name" mono :invalid="!!nameError" />
         </XField>
         <XField :label="t('settings.listKind')">
           <XSegmented v-model="kind" :options="kinds" :disabled="!!list" />

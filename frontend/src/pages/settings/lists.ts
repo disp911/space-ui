@@ -1,5 +1,5 @@
-// The lists of domains and subnets the panel serves to a router's podkop as
-// sing-box rule-sets (web/service/rule_list.go): what the API gives and the
+// The lists of domains and subnets the panel serves to a router as sing-box
+// rule-sets (web/service/rule_list.go): what the API gives and the
 // checks the server makes, so a window can show a wrong line before saving.
 
 export type ListKind = 'domains' | 'subnets'
@@ -21,12 +21,12 @@ export interface ListsReply {
   lists: RuleList[] | null
 }
 
-/** A list's name is its file's: podkop names the rule-set after it. */
+/** A list's name is its file's: routers name the rule-set after it. */
 export const listNamePattern = /^[a-z0-9][a-z0-9_-]{0,62}$/
 
 export const maxEntries = 200000
 
-/** Where podkop fetches the list: <base><path><secret>/<name>.srs. */
+/** Where a router fetches the list: <base><path><secret>/<name>.srs. */
 export function listUrl(base: string, path: string, secret: string, name: string) {
   return `${base.replace(/\/$/, '')}${path}${secret}/${name}.srs`
 }

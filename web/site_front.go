@@ -36,7 +36,7 @@ type siteFront struct {
 	panel    http.Handler
 	site     http.Handler
 	hosts    []string
-	// listsPath is where the podkop lists are, see serveRuleList.
+	// listsPath is where the router lists are, see serveRuleList.
 	listsPath string
 }
 
@@ -95,7 +95,7 @@ func (f siteFront) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.site.ServeHTTP(w, r)
 }
 
-// serveRuleList answers with the podkop list at rest, "<secret>/<name>.srs"
+// serveRuleList answers with the router list at rest, "<secret>/<name>.srs"
 // under the lists' path, and reports whether there was one: a wrong secret or
 // name is left to the website, as any unknown path is.
 func serveRuleList(w http.ResponseWriter, r *http.Request, rest string) bool {
@@ -113,7 +113,7 @@ func serveRuleList(w http.ResponseWriter, r *http.Request, rest string) bool {
 	return true
 }
 
-// listsPath is where the podkop lists are served, empty if unknown.
+// listsPath is where the router lists are served, empty if unknown.
 func (s *Server) listsPath() string {
 	p, err := s.settingService.GetListsPath()
 	if err != nil {

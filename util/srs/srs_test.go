@@ -135,8 +135,8 @@ func TestWriteEmpty(t *testing.T) {
 	}
 }
 
-// TestRealSingBox decompiles the rule-sets with sing-box itself, the release
-// podkop runs, when SINGBOX_BIN names it (as CI does).
+// TestRealSingBox decompiles the rule-sets with sing-box itself, the oldest
+// release routers run, when SINGBOX_BIN names it (as CI does).
 func TestRealSingBox(t *testing.T) {
 	bin := os.Getenv("SINGBOX_BIN")
 	if bin == "" {

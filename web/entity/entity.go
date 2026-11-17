@@ -76,7 +76,7 @@ type AllSetting struct {
 	SubJsonMux                  string `json:"subJsonMux" form:"subJsonMux"`                                   // JSON subscription mux configuration
 	SubJsonRules                string `json:"subJsonRules" form:"subJsonRules"`
 
-	// Lists for a router's podkop, served at <ListsPath><ListsSecret>/<name>.srs
+	// Lists for a router running sing-box, served at <ListsPath><ListsSecret>/<name>.srs
 	ListsPath   string `json:"listsPath" form:"listsPath"`
 	ListsSecret string `json:"listsSecret" form:"listsSecret"`
 

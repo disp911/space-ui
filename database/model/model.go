@@ -138,8 +138,8 @@ type CustomGeoResource struct {
 }
 
 // RuleList is a list of domains or of subnets the panel hands out as a
-// sing-box rule-set (.srs), for a router's podkop to fetch as a remote
-// domain list or a remote subnet list.
+// sing-box rule-set (.srs), for a router running sing-box to fetch as a
+// remote rule-set.
 type RuleList struct {
 	Id   int    `json:"id" gorm:"primaryKey;autoIncrement"`
 	Name string `json:"name" gorm:"not null;uniqueIndex"`

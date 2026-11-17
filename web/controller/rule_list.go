@@ -10,7 +10,7 @@ import (
 )
 
 // RuleListController edits the lists of domains and subnets served to a
-// router's podkop as sing-box rule-sets.
+// router as sing-box rule-sets.
 type RuleListController struct {
 	BaseController
 	service service.RuleListService

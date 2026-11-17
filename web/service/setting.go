@@ -79,7 +79,7 @@ var defaultValueMap = map[string]string{
 	"restartXrayOnClientDisable":  "true",
 	"xrayOutboundTestUrl":         "https://www.google.com/generate_204",
 
-	// Lists for a router's podkop; their secret is made at first use, see GetListsSecret.
+	// Lists for a router running sing-box; their secret is made at first use, see GetListsSecret.
 	"listsPath": "/lists/",
 
 	// The website on port 443, see SiteMode.

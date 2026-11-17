@@ -186,7 +186,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	g.GET("/ws", s.ws.HandleWebSocket)
 
 	// With the panel at the root there is no website in front of it: the
-	// panel serves the podkop lists itself (siteFront does otherwise).
+	// panel serves the router lists itself (siteFront does otherwise).
 	if lists, _ := s.settingService.GetListsPath(); basePath == "/" && lists != "" && lists != "/" {
 		engine.GET(lists+":secret/:file", func(c *gin.Context) {
 			if !serveRuleList(c.Writer, c.Request, c.Param("secret")+"/"+c.Param("file")) {

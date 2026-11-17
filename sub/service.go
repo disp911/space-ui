@@ -986,7 +986,7 @@ func searchKey(data any, key string) (any, bool) {
 // Two encodings are written so every popular client can read at least one:
 //
 //   - x_padding_bytes=<range>  — flat param, understood by sing-box and its
-//     derivatives (Podkop, OpenWRT sing-box, Karing, NekoBox, …).
+//     derivatives (OpenWRT sing-box, Karing, NekoBox, …).
 //   - extra=<url-encoded-json> — the client's side of the xhttp settings
 //     (see xhttpExtra), which is how xray-core clients (v2rayNG, Happ,
 //     Furious, Exclave, …) pick up the obfs-mode key / header / placement /

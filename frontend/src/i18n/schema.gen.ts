@@ -214,7 +214,6 @@ export interface MessageSchema {
     "listAdd": string
     "listsLoading": string
     "listsEmpty": string
-    "listsEmptyHint": string
     "listName": string
     "listKind": string
     "listCount": string

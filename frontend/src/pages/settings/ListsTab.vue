@@ -11,9 +11,9 @@ import { listUrl, type ListsReply, type RuleList } from './lists'
 import ListModal from './ListModal.vue'
 
 /**
- * Lists of domains and subnets for a router's podkop: the panel keeps them
- * and serves each as a sing-box rule-set at <path><secret>/<name>.srs, the
- * address podkop takes in its remote domain and subnet lists. The path and
+ * Lists of domains and subnets for a router running sing-box: the panel keeps
+ * them and serves each as a sing-box rule-set at <path><secret>/<name>.srs, the
+ * address a router takes as a remote rule-set. The path and
  * the secret are settings, saved with the page; a list is saved by its window.
  */
 const { t } = useI18n()
@@ -149,7 +149,7 @@ async function remove() {
       </template>
     </XGridTable>
     <XCard v-else>
-      <XEmpty icon="rules" :title="t('settings.listsEmpty')" :hint="t('settings.listsEmptyHint')" tab />
+      <XEmpty icon="rules" :title="t('settings.listsEmpty')" tab />
     </XCard>
 
     <ListModal v-model:open="windowOpen" :list="editing" :taken="lists.map((l) => l.name)" @saved="saved" />

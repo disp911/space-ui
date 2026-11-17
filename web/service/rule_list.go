@@ -20,9 +20,9 @@ import (
 	"golang.org/x/net/idna"
 )
 
-// Lists of domains or subnets for a router's podkop: kept in the panel and
-// served as sing-box rule-sets at <listsPath><listsSecret>/<name>.srs.
-// podkop tells the format by the address's extension, so the secret goes in
+// Lists of domains or subnets for a router running sing-box: kept in the
+// panel and served as sing-box rule-sets at <listsPath><listsSecret>/<name>.srs.
+// Routers tell the format by the address's extension, so the secret goes in
 // the path and the address ends in ".srs".
 
 const (
@@ -33,7 +33,7 @@ const (
 	MaxRuleListEntries = 200000
 )
 
-// A list's name is its file's: podkop names the rule-set after it.
+// A list's name is its file's: routers name the rule-set after it.
 var ruleListName = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,62}$`)
 
 // A domain label once in ASCII; "_" is let through, as service names use it.
