@@ -257,6 +257,7 @@ export interface MessageSchema {
     "listJsonSection": string
     "listJsonBadDomain": string
     "listJsonBadSubnet": string
+    "listIpv6": string
     "listSave": string
     "listCreate": string
     "save": string

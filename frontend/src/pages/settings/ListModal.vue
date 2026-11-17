@@ -161,6 +161,18 @@ const jsonProblem = computed(() => {
   return undefined
 })
 
+/** A section's IPv6 entries: how many, the first, and that a router may not load them. */
+const v6Note = (i: number) => {
+  const v6 = checks.value[i]!.v6!
+  return t('settings.listIpv6', { n: v6.count, line: v6.line, text: v6.text })
+}
+/** In JSON the first section with IPv6 entries. */
+const jsonV6 = computed(() => {
+  const i = checks.value.findIndex((c) => c.v6)
+  if (i < 0) return undefined
+  return t('settings.listJsonSection', { n: i + 1, name: sections.value[i]!.name.trim() || t('settings.listSectionUnnamed'), error: v6Note(i) })
+})
+
 // --- Loading a file into a section -----------------------------------------------
 
 const picker = ref<HTMLInputElement | null>(null)
@@ -221,6 +233,7 @@ async function save() {
         <XCodeEditor :model-value="json" :height="420" :phone-height="360" label="JSON" @update:model-value="onJson" />
         <XFieldNote v-if="jsonShape" tone="err" attached>{{ t('settings.listJsonShape') }}</XFieldNote>
         <XFieldNote v-else-if="jsonProblem" tone="err" attached>{{ jsonProblem }}</XFieldNote>
+        <XFieldNote v-else-if="jsonV6" tone="warn" attached>{{ jsonV6 }}</XFieldNote>
       </template>
       <XListHead v-else :title="t('settings.listSections')" :add="!tooManySections" @add="add">
         <div class="list-window__sections">
@@ -248,6 +261,7 @@ async function save() {
               <XFieldNote v-if="checks[i]!.bad" tone="err" attached>
                 {{ t(kind === 'domains' ? 'settings.listBadDomain' : 'settings.listBadSubnet', { line: checks[i]!.bad!.line, text: checks[i]!.bad!.text }) }}
               </XFieldNote>
+              <XFieldNote v-else-if="checks[i]!.v6" tone="warn" attached>{{ v6Note(i) }}</XFieldNote>
             </div>
           </XSection>
         </div>

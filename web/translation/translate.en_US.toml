@@ -346,6 +346,7 @@
 "listJsonSection" = "Section {n} “{name}”: {error}"
 "listJsonBadDomain" = "“{text}” is not a domain"
 "listJsonBadSubnet" = "“{text}” is not a subnet or an address"
+"listIpv6" = "IPv6 entries: {n}, the first on line {line}: “{text}”. Some routers keep a subnet list for IPv4 only: such lines, and entries loaded with them, may fail to load"
 "listSave" = "Save"
 "listCreate" = "Create"
 "save" = "Save"

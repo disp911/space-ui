@@ -107,17 +107,29 @@ export function isSubnet(raw: string): boolean {
   return bits === undefined || Number(bits) <= 128
 }
 
-/** The first line that is not an entry of the kind, counted from 1, and how many good entries there are. */
-export function checkList(kind: ListKind, text: string): { bad?: { line: number; text: string }; count: number } {
+/**
+ * The first line that is not an entry of the kind, counted from 1, how many
+ * good entries there are and, in a subnet list, its IPv6 entries: how many
+ * and the first. Some routers keep a subnet list in an IPv4 set, where an IPv6
+ * entry fails to load and may take the entries loaded with it along.
+ */
+export function checkList(kind: ListKind, text: string): { bad?: { line: number; text: string }; count: number; v6?: { line: number; text: string; count: number } } {
   const seen = new Set<string>()
   let bad: { line: number; text: string } | undefined
+  let v6: { line: number; text: string; count: number } | undefined
   const lines = text.split('\n')
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!.trim()
     if (!line || line.startsWith('#')) continue
     const entry = kind === 'domains' ? normalizeDomain(line) : isSubnet(line) ? line.toLowerCase() : null
     if (entry === null) bad ??= { line: i + 1, text: line }
-    else seen.add(entry)
+    else if (!seen.has(entry)) {
+      seen.add(entry)
+      if (kind === 'subnets' && entry.includes(':')) {
+        v6 ??= { line: i + 1, text: line, count: 0 }
+        v6.count++
+      }
+    }
   }
-  return { bad, count: seen.size }
+  return { bad, count: seen.size, v6 }
 }
