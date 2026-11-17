@@ -8,9 +8,11 @@ import type { ClientCounts } from './model'
 /**
  * How many clients there are and how many of them are disabled, depleted,
  * nearly depleted or online, each state a chip that lists its emails.
- * labelled names the states, as the summary does.
+ * labelled names the states, as the summary does. reserveOnline keeps the
+ * online chip's room while nobody is online, so a table's columns, as wide as
+ * what they hold, stay put as clients come and go.
  */
-const props = defineProps<{ counts: ClientCounts; labelled?: boolean }>()
+const props = defineProps<{ counts: ClientCounts; labelled?: boolean; reserveOnline?: boolean }>()
 const { t } = useI18n()
 
 const states = computed(() => {
@@ -29,6 +31,9 @@ const states = computed(() => {
   <div :class="['counts', { 'counts--labelled': labelled }]">
     <XChip tone="ok" icon="user" mono :title="t('inbounds.clients')">{{ counts.clients }}</XChip>
     <XCountList v-for="s in states" :key="s.key" :tone="s.tone" :label="s.label" :items="s.items" :dot="s.dot" :labelled="labelled" />
+    <span v-if="reserveOnline && !counts.online.length" class="counts__room" aria-hidden="true" inert>
+      <XCountList tone="ok" :label="t('inbounds.stOnline')" :items="[]" dot />
+    </span>
   </div>
 </template>
 
@@ -42,5 +47,11 @@ const states = computed(() => {
 
 .counts--labelled {
   flex-wrap: wrap;
+}
+
+/* Room kept for the online chip, unseen. */
+.counts__room {
+  display: flex;
+  visibility: hidden;
 }
 </style>

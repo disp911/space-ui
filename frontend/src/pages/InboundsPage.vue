@@ -471,7 +471,7 @@ const clientFilter = computed<Filter>(() => (mode.value === 'filter' ? filter.va
           </div>
         </template>
         <template #cell-clients="{ row }">
-          <ClientCounts v-if="hasClients(row) && countsOf(row)" :counts="countsOf(row)!" />
+          <ClientCounts v-if="hasClients(row) && countsOf(row)" :counts="countsOf(row)!" reserve-online />
         </template>
         <template #cell-traffic="{ row }">
           <XTooltip :delay="0">
