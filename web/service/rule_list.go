@@ -354,15 +354,6 @@ func (s *RuleListService) ServedRuleList(rest string) (*RuleListFile, bool) {
 	if err := database.GetDB().Where("name = ?", name).First(&list).Error; err != nil {
 		return nil, false
 	}
-	if list.Srs == nil {
-		// Not saved since lists had sections: an empty rule-set, so a router
-		// fetching it keeps working.
-		data, err := CompileRuleList(list.Kind, nil)
-		if err != nil {
-			return nil, false
-		}
-		list.Srs = data
-	}
 	sum := sha256.Sum256(list.Srs)
 	return &RuleListFile{Data: list.Srs, ETag: `"` + hex.EncodeToString(sum[:8]) + `"`, UpdatedAt: list.UpdatedAt}, true
 }

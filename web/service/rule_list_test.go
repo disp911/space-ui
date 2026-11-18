@@ -182,39 +182,3 @@ func TestRuleListsAreServedBySecretAndName(t *testing.T) {
 		t.Fatal("a deleted list is served")
 	}
 }
-
-// A list made before lists had sections loses its one text: it is kept with
-// no sections and served as an empty rule-set until saved again.
-func TestOldListsLoseTheirTextAndAreServedEmpty(t *testing.T) {
-	logger.InitLogger(logging.CRITICAL)
-	path := filepath.Join(t.TempDir(), "space-ui.db")
-	if err := database.InitDB(path); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { database.CloseDB() })
-	db := database.GetDB()
-	if err := db.Exec("ALTER TABLE rule_lists ADD COLUMN entries text NOT NULL DEFAULT ''").Error; err != nil {
-		t.Fatal(err)
-	}
-	if err := db.Exec("INSERT INTO rule_lists (name, kind, entries, count, srs) VALUES ('old', 'subnets', '1.2.3.0/24', 1, x'01')").Error; err != nil {
-		t.Fatal(err)
-	}
-	database.CloseDB()
-	if err := database.InitDB(path); err != nil {
-		t.Fatal(err)
-	}
-	if database.GetDB().Migrator().HasColumn(&model.RuleList{}, "entries") {
-		t.Fatal("the old column is still there")
-	}
-	s := RuleListService{}
-	lists, err := s.All()
-	if err != nil || len(lists) != 1 || lists[0].Name != "old" || lists[0].Count != 0 || len(lists[0].Sections) != 0 {
-		t.Fatalf("old list kept as %+v %v", lists, err)
-	}
-	secret, _ := s.GetListsSecret()
-	file, ok := s.ServedRuleList(secret + "/old.srs")
-	empty, _ := CompileRuleList(RuleListSubnets, nil)
-	if !ok || !slices.Equal(file.Data, empty) {
-		t.Fatalf("old list served as %v %v", file, ok)
-	}
-}
