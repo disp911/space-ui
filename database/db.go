@@ -58,7 +58,9 @@ func dropListEntries() error {
 	if !m.HasColumn(&model.RuleList{}, "entries") {
 		return nil
 	}
-	if err := m.DropColumn(&model.RuleList{}, "entries"); err != nil {
+	// SQLite's own DROP COLUMN: the driver's DropColumn rebuilds the table and
+	// silently keeps a column whose name its DDL parser does not find unquoted.
+	if err := db.Exec("ALTER TABLE rule_lists DROP COLUMN entries").Error; err != nil {
 		return err
 	}
 	return db.Model(&model.RuleList{}).Where("1 = 1").Updates(map[string]any{"srs": nil, "count": 0}).Error
