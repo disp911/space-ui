@@ -91,9 +91,18 @@
   --badge-h: 20px;
   --counter-h: 16px;
   --counter-r: var(--r-pill);
-  /* Menus and popovers, and the items inside them (the box's radius less its 4px padding). */
-  --pop-r: var(--r-12);
-  --pop-item-r: var(--r-8);
+  /* Menus, lists and popovers, as Apple draws its menus: items of a set height lit as
+     capsules, the box that far from them and rounded concentric to them (half an item
+     and the room around it). 34px items on desktop, Apple's 42px on phones. */
+  --pop-pad: 6px;
+  --pop-item-h: 34px;
+  --pop-item-px: 12px;
+  --pop-item-r: var(--r-pill);
+  --pop-r: calc(var(--pop-item-h) / 2 + var(--pop-pad));
+  /* A chosen item's check, as Apple sets it: closer to the capsule's edge and to the
+     words than an icon is (pulls on the check's box, which has room around its glyph). */
+  --pop-check-ml: -5px;
+  --pop-check-mr: -5px;
   --icon-s: 12px;
   --icon-m: 14px;
   --icon-l: 16px;
@@ -109,6 +118,17 @@
   /* An inline button's box (28px, 36px on phones), and the room around its 14px icon: a column label over such buttons starts this far in, over the icon. */
   --inline-btn: 28px;
   --inline-inset: calc((var(--inline-btn) - var(--icon-m)) / 2);
+
+  /* Tables: one look for every table in the kit. A heading of plain words on the
+     control tint (.x-table-head), rows split by thin lines, the same side room and
+     room between the columns. A dense row, e.g. a log's or a window's, keeps the
+     heading and is lower, its type a size smaller. */
+  --table-head-h: 33px;
+  --table-head-bg: var(--ctrl);
+  --table-row-h: 46px;
+  --table-row-dense-h: 34px;
+  --table-px: 14px;
+  --table-gap: 10px;
 
   /* Motion */
   /* A pressed control gives a little: buttons, chips, then small icon buttons and boxes more. */
@@ -383,8 +403,11 @@
     --chip-h: 28px;
     --badge-h: 24px;
     --counter-h: 20px;
-    --pop-r: var(--r-16);
-    --pop-item-r: var(--r-12);
+    --pop-pad: 10px;
+    --pop-item-h: 42px;
+    --pop-item-px: 14px;
+    --pop-check-ml: -6px;
+    --pop-check-mr: -4px;
     --icon-k: 1.2;
     --icon-s: 14px;
     --icon-m: 17px;

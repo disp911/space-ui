@@ -91,7 +91,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
   <section ref="root" :class="['x-expand', { 'x-expand--phone': phone }]">
     <div v-if="$slots.tools" class="x-expand__tools"><slot name="tools" /></div>
 
-    <div class="x-expand__head x-caps" role="row">
+    <div class="x-expand__head x-table-head" role="row">
       <span v-if="!phone" aria-hidden="true" />
       <span
         v-for="c in columns"
@@ -147,9 +147,9 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
 
 <style scoped>
 .x-expand {
-  /* A desktop heading and row. */
-  --head-h: 33px;
-  --row-h: 46px;
+  /* A desktop heading and row, as every table's. */
+  --head-h: var(--table-head-h);
+  --row-h: var(--table-row-h);
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--card-r);
@@ -164,14 +164,15 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
 .x-expand__row {
   display: grid;
   grid-template-columns: v-bind(template);
-  gap: 10px;
+  gap: var(--table-gap);
   align-items: center;
 }
 
 .x-expand__head {
-  padding: 10px 14px;
+  min-height: var(--head-h);
+  padding: 0 var(--table-px);
   border-top: 1px solid var(--div);
-  background: var(--field);
+  background: var(--table-head-bg);
   white-space: nowrap;
 }
 
@@ -186,7 +187,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
 
 .x-expand__row {
   min-height: var(--row-h);
-  padding: 9px 14px;
+  padding: 9px var(--table-px);
   transition: background-color var(--t-fast);
 }
 
@@ -291,7 +292,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
 }
 
 .x-expand__foot {
-  padding: 10px 14px;
+  padding: 10px var(--table-px);
 }
 
 .x-expand--phone .x-expand__tools {
@@ -302,7 +303,7 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
   /* No gap between the columns: the row toggle's own padding spaces its chevron from the menu. */
   gap: 0;
   /* A heading stands over its rows' first glyph: the row's 4px and the row toggle's 6px before its chevron. */
-  padding: 9px 14px 9px 10px;
+  padding: 0 14px 0 10px;
   /* On a narrow desktop window, as tall as the desktop heading; phones' larger type makes it taller anyway. */
   min-height: var(--head-h);
 }

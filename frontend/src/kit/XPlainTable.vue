@@ -71,7 +71,7 @@ const fitted = computed(() => props.columns.slice(1).filter((c) => c.fit))
     <table>
       <thead v-if="head">
         <tr>
-          <th v-for="c in columns" :key="c.key" :class="{ 'x-ptable__fit': c.fit }"><slot :name="`head-${c.key}`">{{ c.label }}</slot></th>
+          <th v-for="c in columns" :key="c.key" :class="['x-table-head', { 'x-ptable__fit': c.fit }]"><slot :name="`head-${c.key}`">{{ c.label }}</slot></th>
         </tr>
       </thead>
       <tbody>
@@ -108,18 +108,22 @@ const fitted = computed(() => props.columns.slice(1).filter((c) => c.fit))
   border-collapse: collapse;
 }
 
+/* As every table's heading; rows are dense, as in a window. */
 .x-ptable th {
-  padding: var(--sp-8) var(--sp-12);
+  height: var(--table-head-h);
+  padding: 0 var(--table-px);
   border-bottom: 1px solid var(--div);
-  background: var(--ctrl);
-  color: var(--mut);
-  font: 600 var(--fs-12) / var(--lh-tight) var(--font-sans);
+  background: var(--table-head-bg);
   text-align: left;
   white-space: nowrap;
 }
 
+.x-ptable tbody tr {
+  height: var(--table-row-dense-h);
+}
+
 .x-ptable td {
-  padding: var(--sp-6) var(--sp-12);
+  padding: var(--sp-6) var(--table-px);
   color: var(--fg2);
   font: 400 var(--fs-12) / var(--lh-tight) var(--font-sans);
   vertical-align: middle;
@@ -183,11 +187,11 @@ const fitted = computed(() => props.columns.slice(1).filter((c) => c.fit))
 
 /* A list: rows of a set height, the buttons close to the edge. */
 .x-ptable--list tr {
-  height: 40px;
+  height: var(--table-row-dense-h);
 }
 
 .x-ptable--list td {
-  padding: 0 var(--sp-12);
+  padding: 0 var(--table-px);
 }
 
 .x-ptable--list td.x-ptable__fit {

@@ -45,7 +45,8 @@ const sizes = computed(() => pageSizes(store.defaults?.pageSize || 25, shown.val
 // --- Rows --------------------------------------------------------------------------
 
 const columns = computed<InnerColumn[]>(() => [
-  { key: 'menu', label: t('inbounds.colMenu'), size: '148px', quiet: true },
+  // Five inline buttons side by side, their own room around the icons spacing them.
+  { key: 'menu', label: t('inbounds.colMenu'), size: 'calc(5 * var(--inline-btn))', quiet: true },
   { key: 'enable', label: t('inbounds.colEnable'), size: 'var(--switch-w)', quiet: true },
   // As wide as the widest status chip, «Офлайн» or the heading.
   { key: 'online', label: t('inbounds.colOnline'), size: 'fit' },
@@ -318,7 +319,6 @@ async function confirmed(request: Promise<unknown>) {
 <style scoped>
 .clients__acts {
   display: flex;
-  gap: 2px;
 }
 
 /* One line: the dot in its middle, the comment after the email, cut first when the line runs out. */

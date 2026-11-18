@@ -40,7 +40,7 @@ const template = computed(() => columns.value.map(track).join(' '))
 
 <template>
   <div ref="root" :class="['x-inner', { 'x-inner--phone': phone }]" role="table">
-    <div class="x-inner__head x-caps" role="row">
+    <div class="x-inner__head x-table-head" role="row">
       <span v-for="c in columns" :key="c.key" :class="{ 'is-end': c.align === 'end' }" role="columnheader" :data-col="mark(c)"><span :class="{ 'sr-only': c.quiet }">{{ c.label }}</span></span>
     </div>
     <div v-for="(row, i) in rows" :key="rowKey(row, i)" class="x-inner__row" role="row">
@@ -54,9 +54,9 @@ const template = computed(() => columns.value.map(track).join(' '))
 
 <style scoped>
 .x-inner {
-  /* A desktop heading, and a row: a usage pill or a chip with the padding around it. */
-  --head-h: 30px;
-  --row-h: 43px;
+  /* A desktop heading and row, as every table's. */
+  --head-h: var(--table-head-h);
+  --row-h: var(--table-row-h);
   min-width: 0;
 }
 
@@ -64,12 +64,14 @@ const template = computed(() => columns.value.map(track).join(' '))
 .x-inner__row {
   display: grid;
   grid-template-columns: v-bind(template);
-  gap: 12px;
+  gap: var(--table-gap);
   align-items: center;
 }
 
 .x-inner__head {
-  padding: 9px 12px;
+  min-height: var(--head-h);
+  padding: 0 var(--table-px);
+  background: var(--table-head-bg);
   white-space: nowrap;
 }
 
@@ -79,7 +81,7 @@ const template = computed(() => columns.value.map(track).join(' '))
 
 .x-inner__row {
   min-height: var(--row-h);
-  padding: 7px 12px;
+  padding: 7px var(--table-px);
   border-top: 1px solid var(--div);
   transition: background-color var(--t-fast);
 }
@@ -100,7 +102,7 @@ const template = computed(() => columns.value.map(track).join(' '))
 }
 
 .x-inner__foot {
-  padding: 9px 12px;
+  padding: 9px var(--table-px);
   border-top: 1px solid var(--div);
 }
 
@@ -108,7 +110,7 @@ const template = computed(() => columns.value.map(track).join(' '))
   /* Room between the menu button and a status dot with its pulse ring. */
   gap: 8px;
   /* The rows' own side padding, so a heading stands over its column's first glyph. */
-  padding: 8px 8px 8px 4px;
+  padding: 0 8px 0 4px;
   /* On a narrow desktop window, as tall as the desktop heading; phones' larger type makes it taller anyway. */
   min-height: var(--head-h);
 }

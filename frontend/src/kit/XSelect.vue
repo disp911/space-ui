@@ -201,10 +201,10 @@ function onKeydown(e: KeyboardEvent) {
         >
           <span v-if="columns" class="x-select__glyph">{{ o.glyph ?? o.label }}</span>
           <template v-else>
+            <XIcon name="check" :size="16" :stroke="1.8" :class="['x-popup-check', { 'is-on': o.value === model }]" />
             <span v-if="parts(o.label)" class="x-select__label">{{ parts(o.label)![0] }}<mark class="x-select__match">{{ parts(o.label)![1] }}</mark>{{ parts(o.label)![2] }}</span>
             <span v-else class="x-select__label">{{ o.label }}</span>
-            <XIcon v-if="o.value === model" name="check" :size="14" :stroke="1.8" />
-            <XIcon v-else-if="o.disabled && o.note" name="lock" :size="12" :stroke="1.5" />
+            <XIcon v-if="o.disabled && o.note" name="lock" :size="12" :stroke="1.5" />
             <span v-if="o.note" class="x-select__note">{{ o.note }}</span>
           </template>
         </li>

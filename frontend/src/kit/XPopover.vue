@@ -50,4 +50,9 @@ function toggle(e: MouseEvent) {
   background: var(--dlg);
   box-shadow: var(--shadow-pop);
 }
+
+/* As a menu's: the scrollbar clear of the rounded corners. */
+.x-popover::-webkit-scrollbar-track {
+  margin-block: calc(var(--pop-r) - 1px);
+}
 </style>

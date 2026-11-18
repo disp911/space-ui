@@ -215,22 +215,24 @@ function select(key: string, o: Outbound, i: number) {
   margin-left: auto;
 }
 
+/* One line: the tag, then its chips; the tag is cut first, the chips never. */
 .outbounds__tag {
   display: flex;
   flex: 1;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
 .outbounds__name {
+  flex: 0 1 auto;
   color: var(--fg);
   font: 500 var(--fs-13) / var(--lh-tight) var(--font-mono);
 }
 
 .outbounds__chips {
   display: flex;
-  flex-wrap: wrap;
+  flex: none;
   gap: 4px;
 }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, useId } from 'vue'
+import { computed, nextTick, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 import XButton from './XButton.vue'
 import XIcon from './XIcon.vue'
@@ -36,6 +36,7 @@ const props = withDefaults(
   defineProps<{
     items: MenuItem[]
     placement?: Placement
+    /** Shown over the items only in a phone sheet, which opens far from its button; a dropdown under its button reads it from there. */
     title?: string
     /** On phones opens as a bottom sheet over a scrim: filters in windows. */
     sheet?: boolean
@@ -46,6 +47,8 @@ const props = withDefaults(
   }>(),
   { placement: 'bottom-end' },
 )
+/** Some item has an icon: one without keeps its room, so every item's words start in one line. */
+const iconed = computed(() => props.items.some((i) => i.icon))
 const emit = defineEmits<{ select: [key: string] }>()
 
 const { t } = useI18n()
@@ -147,9 +150,9 @@ function choose(item: MenuItem) {
         @pointerdown="onPointerDown"
       >
         <div v-if="asSheet" class="x-menu__grip" aria-hidden="true" />
-        <div v-if="title" class="x-caps x-menu__title" aria-hidden="true">{{ title }}</div>
+        <div v-if="title && asSheet" class="x-caps x-menu__title" aria-hidden="true">{{ title }}</div>
         <template v-for="item in items" :key="item.key">
-          <div v-if="item.divided" class="x-menu__divider" role="separator" />
+          <div v-if="item.divided" class="x-popup-divider" role="separator" />
           <button
             type="button"
             :role="item.switch || (item.checked !== undefined && multiple) ? 'menuitemcheckbox' : item.checked === undefined ? 'menuitem' : 'menuitemradio'"
@@ -159,13 +162,15 @@ function choose(item: MenuItem) {
             :class="['x-popup-item', { 'is-danger': item.danger, 'is-selected': item.checked && !item.switch }]"
             @click="choose(item)"
           >
+            <XIcon v-if="item.checked !== undefined && !item.switch" name="check" :size="16" :stroke="1.8" :class="['x-popup-check', { 'is-on': item.checked }]" />
+            <XIcon v-if="item.icon && !item.switch" :name="item.icon" :size="14" :stroke="1.4" />
+            <span v-else-if="iconed" class="x-menu__icon-room" />
+            <span v-if="item.dot" class="x-menu__dot" :style="{ background: item.dot }" />
+            <span class="x-menu__label">{{ item.label }}</span>
+            <!-- After the words, as Apple puts it: they start in line with the other items'. -->
             <span v-if="item.switch" :class="['x-menu__switch', { 'is-on': item.checked, 'is-busy': item.busy }]" aria-hidden="true">
               <span class="x-menu__knob"><XSpinner v-if="item.busy" :size="12" /></span>
             </span>
-            <XIcon v-else-if="item.icon" :name="item.icon" :size="14" :stroke="1.4" />
-            <span v-if="item.dot" class="x-menu__dot" :style="{ background: item.dot }" />
-            <span class="x-menu__label">{{ item.label }}</span>
-            <XIcon v-if="item.checked !== undefined && !item.switch" name="check" :size="12" :stroke="1.8" :class="['x-menu__check', { 'is-on': item.checked }]" />
           </button>
         </template>
         <!-- Each choice applies at once; the button closes the list. -->
@@ -176,12 +181,14 @@ function choose(item: MenuItem) {
 </template>
 
 <style scoped>
-/* A switch in a menu item: smaller than XSwitch, drawn, as the whole item is the control. */
+/* A switch in a menu item: drawn, as the whole item is the control, and as large as XSwitch. */
 .x-menu__switch {
+  --knob-size: calc(var(--switch-h) - 6px);
+  --inset: calc((var(--switch-h) - var(--knob-size)) / 2);
   position: relative;
   flex: none;
-  width: 30px;
-  height: 18px;
+  width: var(--switch-w);
+  height: var(--switch-h);
   border-radius: var(--r-pill);
   background: var(--track);
   transition: background-color var(--t-med);
@@ -197,13 +204,13 @@ function choose(item: MenuItem) {
 
 .x-menu__knob {
   position: absolute;
-  top: 3px;
-  left: 3px;
+  top: var(--inset);
+  left: var(--inset);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 12px;
-  height: 12px;
+  width: var(--knob-size);
+  height: var(--knob-size);
   border-radius: var(--r-pill);
   background: var(--knob);
   color: var(--dim);
@@ -212,7 +219,7 @@ function choose(item: MenuItem) {
 }
 
 .x-menu__switch.is-on .x-menu__knob {
-  left: 15px;
+  left: calc(100% - var(--knob-size) - var(--inset));
   background: var(--knob-on);
   color: var(--acc);
 }
@@ -254,15 +261,6 @@ function choose(item: MenuItem) {
   touch-action: none;
 }
 
-.x-menu--sheet .x-popup-item {
-  --item-px: 12px;
-  border-radius: var(--pop-item-r);
-}
-
-.x-menu--sheet .x-menu__check {
-  width: 14px;
-  height: 14px;
-}
 
 .x-menu-scrim {
   position: fixed;
@@ -315,6 +313,11 @@ function choose(item: MenuItem) {
   padding: 8px 10px 6px;
 }
 
+.x-menu__icon-room {
+  flex: none;
+  width: round(calc(14px * var(--icon-k)), 1px);
+}
+
 .x-menu__dot {
   flex: none;
   width: 6px;
@@ -327,23 +330,9 @@ function choose(item: MenuItem) {
   min-width: 0;
 }
 
-.x-menu__check {
-  visibility: hidden;
-}
-
-.x-menu__check.is-on {
-  visibility: visible;
-}
-
 .x-menu__foot {
   display: flex;
   flex-direction: column;
   margin-top: 10px;
-}
-
-.x-menu__divider {
-  height: 1px;
-  margin: 4px 6px;
-  background: var(--div);
 }
 </style>

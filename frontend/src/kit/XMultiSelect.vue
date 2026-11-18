@@ -102,8 +102,8 @@ function onKeydown(e: KeyboardEvent) {
           @pointerdown.prevent
           @click="toggle(o.value)"
         >
+          <XIcon name="check" :size="16" :stroke="1.8" :class="['x-popup-check', { 'is-on': model.includes(o.value) }]" />
           <span class="x-multi__label">{{ o.label }}</span>
-          <XIcon v-if="model.includes(o.value)" name="check" :size="14" :stroke="1.8" />
         </li>
         <li v-if="!options.length" class="x-popup-empty">{{ empty }}</li>
       </ul>

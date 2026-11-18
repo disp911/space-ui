@@ -190,8 +190,8 @@ function onBlur() {
           @pointerdown.prevent
           @click="toggle(p.value)"
         >
+          <XIcon name="check" :size="16" :stroke="1.8" :class="['x-popup-check', { 'is-on': model.includes(p.value) }]" />
           <span class="x-tags__label">{{ p.label }}</span>
-          <XIcon v-if="model.includes(p.value)" name="check" :size="14" :stroke="1.8" />
         </li>
         <li
           v-if="custom"

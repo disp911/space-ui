@@ -51,11 +51,14 @@ const hintId = useId()
 const root = ref<HTMLElement | null>(null)
 
 const lead = computed(() => props.sortable || props.numbered || !!props.menu)
+/** On desktop the row opens with its menu and handle, in a column of their own. */
+const acts = computed(() => props.sortable || !!props.menu)
 // The number column is as wide as the longest number, so «#» and the digits share one centre.
 const digits = computed(() => String(Math.max(props.rows.length, 1)).length)
-// The lead, holding the handle, the number and the menu, is as wide as they are, as a 'fit' column.
+// The menu and the handle, then the number: each a 'fit' column, as wide as what it holds.
 const LEAD = { key: '#lead', size: 'fit' }
-const sized = computed(() => [...(lead.value ? [LEAD] : []), ...props.columns])
+const NUM = { key: '#num', size: 'fit' }
+const sized = computed(() => [...(acts.value ? [LEAD] : []), ...(props.numbered ? [NUM] : []), ...props.columns])
 // Its 'fit' columns keep to their width: the fr ones, holding the records' text, take the room left.
 const { track, mark } = useFitColumns(root, sized, () => props.rows, phone, false)
 const template = computed(() => sized.value.map((c) => (c.size === 'fit' ? track(c) : `minmax(0, ${c.size ?? '1fr'})`)).join(' '))
@@ -197,10 +200,13 @@ function rowStyle(k: number) {
   <div ref="root" :class="['x-grid', { 'x-grid--phone': phone, 'x-grid--center': center, 'x-grid--nested': nested, 'is-dragging': lifted >= 0 }]" role="table">
     <span :id="hintId" hidden>{{ t('kit.moveHint') }}</span>
 
-    <div v-if="!phone" class="x-grid__head x-caps" role="row">
-      <span v-if="lead" class="x-grid__lead-head" role="columnheader" :data-col="mark(LEAD)">
+    <div v-if="!phone" class="x-grid__head x-table-head" role="row">
+      <span v-if="acts" class="x-grid__lead-head" role="columnheader" :data-col="mark(LEAD)">
+        <span v-if="menu" class="x-grid__more-room" />
         <span v-if="sortable" class="x-grid__grip-room" />
-        <span v-if="numbered" class="x-grid__number x-grid__number--head">#</span>
+      </span>
+      <span v-if="numbered" class="x-grid__lead-head" role="columnheader" :data-col="mark(NUM)">
+        <span class="x-grid__number x-grid__number--head">#</span>
       </span>
       <span v-for="c in columns" :key="c.key" role="columnheader" :data-col="mark(c)">{{ c.label }}</span>
     </div>
@@ -214,11 +220,20 @@ function rowStyle(k: number) {
       role="row"
     >
       <div
-        v-if="lead || (phone && headColumns.length)"
+        v-if="phone ? lead || headColumns.length : acts"
         :class="phone ? 'x-grid__card-head' : 'x-grid__lead'"
         :role="phone ? undefined : 'cell'"
         :data-col="phone ? undefined : mark(LEAD)"
       >
+        <!-- On desktop the menu leads the row, the number in the next column; a card has it at its right. -->
+        <template v-if="!phone && menu">
+          <XMenu v-if="menu(row, i).length" v-slot="{ props: trigger }" :items="menu(row, i)" @select="emit('select', $event, row, i)">
+            <button type="button" class="x-grid__more" v-bind="trigger" :aria-label="t('kit.rowActions', { row: name(i) })">
+              <XIcon name="dots" :size="14" />
+            </button>
+          </XMenu>
+          <span v-else class="x-grid__more-room" />
+        </template>
         <button
           v-if="sortable"
           type="button"
@@ -236,21 +251,24 @@ function rowStyle(k: number) {
         >
           <XIcon name="grip" :size="phone ? 16 : 14" />
         </button>
-        <span v-if="numbered" class="x-grid__number">{{ i + 1 }}</span>
+        <span v-if="numbered && phone" class="x-grid__number">{{ i + 1 }}</span>
         <div v-if="phone" class="x-grid__card-title">
           <template v-for="c in headColumns" :key="c.key">
             <span v-if="isBlank(row, c.key)" class="x-grid__blank">—</span>
             <slot v-else :name="`cell-${c.key}`" :row="row" :index="i" />
           </template>
         </div>
-        <XMenu v-if="menu && menu(row, i).length" v-slot="{ props: trigger }" :items="menu(row, i)" @select="emit('select', $event, row, i)">
+        <XMenu v-if="phone && menu && menu(row, i).length" v-slot="{ props: trigger }" :items="menu(row, i)" @select="emit('select', $event, row, i)">
           <button type="button" class="x-grid__more" v-bind="trigger" :aria-label="t('kit.rowActions', { row: name(i) })">
-            <XIcon name="dots" :size="phone ? 16 : 14" />
+            <XIcon name="dots" :size="16" />
           </button>
         </XMenu>
       </div>
 
       <template v-if="!phone">
+        <div v-if="numbered" class="x-grid__lead" role="cell" :data-col="mark(NUM)">
+          <span class="x-grid__number">{{ i + 1 }}</span>
+        </div>
         <div v-for="c in columns" :key="c.key" class="x-grid__cell" role="cell" :data-col="mark(c)">
           <span v-if="isBlank(row, c.key)" class="x-grid__blank">—</span>
           <slot v-else :name="`cell-${c.key}`" :row="row" :index="i" />
@@ -283,13 +301,17 @@ function rowStyle(k: number) {
 .x-grid:not(.x-grid--phone) .x-grid__row {
   display: grid;
   grid-template-columns: v-bind(template);
-  gap: 14px;
-  padding: 10px 14px;
+  gap: var(--table-gap);
+  padding: 10px var(--table-px);
 }
 
+/* As every table's heading; a row of one line is as tall as every table's row. */
 .x-grid__head {
+  align-items: center;
+  min-height: var(--table-head-h);
+  padding-block: 0;
   border-radius: calc(var(--card-r) - 1px) calc(var(--card-r) - 1px) 0 0;
-  background: var(--field);
+  background: var(--table-head-bg);
 }
 
 /* The head repeats the lead's layout: room for the handle, then «#» over the numbers. */
@@ -304,8 +326,15 @@ function rowStyle(k: number) {
   width: 22px;
 }
 
+/* The menu's room: over the menus in the head, and in a row that has none. */
+.x-grid__more-room {
+  flex: none;
+  width: var(--inline-btn);
+}
+
 .x-grid:not(.x-grid--phone) .x-grid__row {
   position: relative;
+  min-height: var(--table-row-h);
   align-items: start;
   border-top: 1px solid var(--div);
   transition: background-color var(--t-fast);
@@ -401,15 +430,15 @@ function rowStyle(k: number) {
 .x-grid__number {
   flex: none;
   width: calc(v-bind(digits) * 1ch);
-  /* The handle and the dots carry 4px and 7px of room inside their boxes: 8px of space either side of the number. */
-  margin-right: -3px;
   color: var(--dim);
   font: 500 var(--fs-12) / 1 var(--font-mono);
   text-align: center;
 }
 
+/* «#» is a heading: the heading's type and colour. */
 .x-grid__number--head {
   color: inherit;
+  font-size: inherit;
 }
 
 /* While a row is lifted the others step aside smoothly; the lifted one follows the pointer at once. */

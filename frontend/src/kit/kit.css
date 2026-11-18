@@ -89,24 +89,29 @@
   display: flex;
   flex-direction: column;
   min-width: 160px;
-  padding: 4px;
+  padding: var(--pop-pad);
   overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: var(--pop-r);
   background: var(--dlg);
   box-shadow: var(--shadow-pop);
-  font: 500 var(--ctl-fs) / var(--lh-tight) var(--font-sans);
+  font: 400 var(--ctl-fs) / var(--lh-tight) var(--font-sans);
   overscroll-behavior: contain;
 }
 
+/* Its scrollbar runs along the straight edge only, clear of the rounded corners: the radius less the border. */
+.x-popup::-webkit-scrollbar-track {
+  margin-block: calc(var(--pop-r) - 1px);
+}
+
 .x-popup-item {
-  --item-px: 10px;
+  --item-px: var(--pop-item-px);
   position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: var(--menu-item-h);
+  min-height: var(--pop-item-h);
   padding: 0 var(--item-px);
   border: 0;
   border-radius: var(--pop-item-r);
@@ -152,9 +157,9 @@
   transition: border-color var(--t-fast);
 }
 
-/* None around the item under the pointer or keyboard, nor around the chosen one. */
-.x-popup-item:is(:hover, :focus-visible, .is-hover, .is-active, .is-selected):not([aria-disabled='true'])::before,
-.x-popup-item:is(:hover, :focus-visible, .is-hover, .is-active, .is-selected):not([aria-disabled='true']) + .x-popup-item::before {
+/* None around the item under the pointer or keyboard: its capsule stands alone. */
+.x-popup-item:is(:hover, :focus-visible, .is-hover, .is-active):not([aria-disabled='true'])::before,
+.x-popup-item:is(:hover, :focus-visible, .is-hover, .is-active):not([aria-disabled='true']) + .x-popup-item::before {
   border-color: transparent;
 }
 
@@ -163,13 +168,27 @@
   box-shadow: inset 0 0 0 2px var(--acc-line);
 }
 
-/* The chosen value of a select or menu: accent tint, kept under hover. */
-.x-popup-item.is-selected,
-.x-popup-item.is-selected:hover,
-.x-popup-item.is-selected.is-hover,
-.x-popup-item.is-selected.is-active {
-  background-color: var(--acc-soft);
-  color: var(--acc-t);
+/*
+ * The chosen value of a select or menu is marked by a check before it, as Apple
+ * marks it, not by a tint: every item of a list of choices keeps the check's room,
+ * so their words start in one line.
+ */
+.x-popup-check {
+  flex: none;
+  margin: 0 var(--pop-check-mr) 0 var(--pop-check-ml);
+  visibility: hidden;
+}
+
+.x-popup-check.is-on {
+  visibility: visible;
+}
+
+/* A line between groups of items, inset like their words, with room above and below. */
+.x-popup-divider {
+  flex: none;
+  height: 1px;
+  margin: var(--pop-pad) calc(var(--pop-item-px) + 2px);
+  background: var(--div);
 }
 
 .x-popup-item.is-danger {
@@ -330,6 +349,12 @@
 }
 
 /* Caps label: field names, card titles, toolbar labels. */
+/* A table's heading: its column names in plain words, as every table has them. */
+.x-table-head {
+  color: var(--mut);
+  font: 600 var(--fs-12) / var(--lh-tight) var(--font-sans);
+}
+
 .x-caps {
   color: var(--dim);
   font: 500 var(--fs-10) / var(--lh-tight) var(--font-mono);

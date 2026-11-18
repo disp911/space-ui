@@ -133,7 +133,7 @@ const measure = (el: unknown) => {
   flex-direction: column;
   width: 280px;
   max-width: calc(100vw - 16px);
-  padding: 4px;
+  padding: var(--pop-pad);
   border: 1px solid var(--line);
   border-radius: var(--pop-r);
   background: var(--dlg);
@@ -179,6 +179,11 @@ const measure = (el: unknown) => {
   mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-end)), transparent);
 }
 
+/* The rows end the popup's padding above its rounded bottom: the scrollbar stops clear of the corner. */
+.x-count__items::-webkit-scrollbar-track {
+  margin-bottom: calc(var(--pop-r) - var(--pop-pad) - 1px);
+}
+
 .x-count__items--top {
   --fade-top: 24px;
 }
@@ -192,8 +197,8 @@ const measure = (el: unknown) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: var(--menu-item-h);
-  padding: 0 4px 0 10px;
+  height: var(--pop-item-h);
+  padding: 0 4px 0 var(--pop-item-px);
   border-radius: var(--pop-item-r);
 }
 

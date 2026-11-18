@@ -158,6 +158,11 @@ onBeforeUnmount(() => clearTimeout(timer))
   overscroll-behavior: contain;
 }
 
+/* The list ends 6px above the popup's rounded bottom: its scrollbar stops clear of the corner. */
+.x-value-chip__items::-webkit-scrollbar-track {
+  margin-bottom: calc(var(--pop-r) - 7px);
+}
+
 .x-value-chip__item {
   padding: 2px 0;
   color: var(--fg2);

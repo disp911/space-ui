@@ -39,7 +39,8 @@ const props = defineProps<{
 }>()
 
 /** The gap between cells, as .x-table__row has it. */
-const GAP = 14
+/** Room between the columns: --table-gap. */
+const GAP = 10
 const least = (c: TableColumn) => c.min ?? c.width ?? 0
 /** What all the columns need at their least, without the gaps. */
 const leastTotal = computed(() => props.columns.reduce((sum, c) => sum + least(c), 0) || 1)
@@ -61,7 +62,7 @@ const skeleton = [72, 58, 80, 64, 50, 76, 60, 68, 54, 74, 62, 70, 56, 66]
 
 <template>
   <div class="x-table" role="table">
-    <div class="x-table__head x-caps" role="row">
+    <div class="x-table__head x-table-head" role="row">
       <span v-for="c in columns" :key="c.key" class="x-table__cell x-ellipsis" role="columnheader" :style="cellStyle(c)">{{ c.label }}</span>
     </div>
     <div class="x-table__body" :style="{ height: height ? `${height}px` : undefined }" tabindex="0" :aria-busy="loading || undefined">
@@ -110,19 +111,19 @@ const skeleton = [72, 58, 80, 64, 50, 76, 60, 68, 54, 74, 62, 70, 56, 66]
 .x-table__row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 14px;
+  gap: var(--table-gap);
+  padding: 0 var(--table-px);
   white-space: nowrap;
 }
 
 /* Body and head keep room for the scrollbar, so rows do not move when it appears and stay under their column names. */
 .x-table__head {
   flex: none;
-  height: 34px;
+  height: var(--table-head-h);
   overflow: hidden;
   scrollbar-gutter: stable;
-  border-bottom: 1px solid var(--line);
-  background: var(--field);
+  border-bottom: 1px solid var(--div);
+  background: var(--table-head-bg);
 }
 
 .x-table__body {
@@ -131,8 +132,9 @@ const skeleton = [72, 58, 80, 64, 50, 76, 60, 68, 54, 74, 62, 70, 56, 66]
   outline: none;
 }
 
+/* A dense row, as a log's. */
 .x-table__row {
-  height: 34px;
+  height: var(--table-row-dense-h);
   border-bottom: 1px solid var(--div);
   color: var(--fg2);
   font: 400 var(--fs-12) / var(--lh-tight) var(--font-mono);
