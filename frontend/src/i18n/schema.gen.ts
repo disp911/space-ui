@@ -253,6 +253,12 @@ export interface MessageSchema {
     "listSectionNameTaken": string
     "listSectionsTooMany": string
     "listSectionEntries": string
+    "listSectionNetwork": string
+    "listNetworkAny": string
+    "listSectionPorts": string
+    "listPortsBad": string
+    "listPortsTooMany": string
+    "listFilterPorts": string
     "listJsonShape": string
     "listJsonSection": string
     "listJsonBadDomain": string

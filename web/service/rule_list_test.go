@@ -1,6 +1,10 @@
 package service
 
 import (
+	"bufio"
+	"bytes"
+	"compress/zlib"
+	"encoding/binary"
 	"errors"
 	"path/filepath"
 	"slices"
@@ -9,6 +13,7 @@ import (
 	"github.com/disp911/space-ui/v3/database"
 	"github.com/disp911/space-ui/v3/database/model"
 	"github.com/disp911/space-ui/v3/logger"
+	"github.com/disp911/space-ui/v3/util/srs"
 
 	"github.com/op/go-logging"
 )
@@ -116,6 +121,90 @@ func TestBuildRuleListTakesTheEnabledSections(t *testing.T) {
 		t.Fatal("too many sections pass")
 	}
 }
+
+func TestParseRuleListPorts(t *testing.T) {
+	kept, ports, ranges, err := ParseRuleListPorts([]string{" 3478 ", "19000-20000", "19000 - 20000", "443-443", "50000-65535"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"3478", "19000-20000", "443", "50000-65535"}; !slices.Equal(kept, want) {
+		t.Fatalf("kept %v, want %v", kept, want)
+	}
+	if !slices.Equal(ports, []uint16{3478, 443}) || len(ranges) != 2 || ranges[0] != (srs.PortRange{From: 19000, To: 20000}) || ranges[1] != (srs.PortRange{From: 50000, To: 65535}) {
+		t.Fatalf("ports %v ranges %v", ports, ranges)
+	}
+	for _, bad := range []string{"", "0", "65536", "20000-19000", "80-", "-80", "a", "1.5", "+80", "080", "80:90"} {
+		if _, _, _, err := ParseRuleListPorts([]string{bad}); err == nil {
+			t.Errorf("%q passes", bad)
+		}
+	}
+	if _, _, _, err := ParseRuleListPorts(make([]string, MaxRuleListPorts+1)); err == nil {
+		t.Error("too many ports pass")
+	}
+}
+
+// TestRuleListSectionsKeptToPorts checks a subnets section's protocol and
+// ports as they are kept, refused, and written: the sections for every
+// connection in the first rule, those kept to the same ports in one more.
+func TestRuleListSectionsKeptToPorts(t *testing.T) {
+	sections, _, err := BuildRuleList(RuleListSubnets, []model.RuleListSection{
+		{Name: "Discord", Enabled: true, Entries: "104.29.128.0/18", Network: " UDP ", Ports: []string{"19000-20000", "50000-65535"}},
+		{Name: "Telegram", Enabled: true, Entries: "91.108.4.0/22"},
+		{Name: "Voice", Enabled: true, Entries: "66.22.192.0/18", Network: "udp", Ports: []string{"19000-20000", "50000-65535"}},
+		{Name: "Off", Enabled: false, Entries: "1.2.3.0/24", Network: "tcp"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := sections[0]; s.Network != "udp" || !slices.Equal(s.Ports, []string{"19000-20000", "50000-65535"}) {
+		t.Fatalf("kept as %+v", s)
+	}
+	if s := sections[1]; s.Network != "" || s.Ports != nil {
+		t.Fatalf("a section for every connection kept as %+v", s)
+	}
+
+	for name, in := range map[string]model.RuleListSection{
+		"protocol": {Name: "A", Entries: "1.2.3.0/24", Network: "icmp"},
+		"port":     {Name: "A", Entries: "1.2.3.0/24", Ports: []string{"70000"}},
+	} {
+		if _, _, err := BuildRuleList(RuleListSubnets, []model.RuleListSection{in}); err == nil {
+			t.Errorf("a wrong %s passes", name)
+		}
+	}
+	for _, in := range []model.RuleListSection{{Name: "A", Entries: "example.com", Network: "udp"}, {Name: "A", Entries: "example.com", Ports: []string{"443"}}} {
+		if _, _, err := BuildRuleList(RuleListDomains, []model.RuleListSection{in}); err == nil {
+			t.Errorf("a domains section kept to %+v passes", in)
+		}
+	}
+
+	data, err := CompileRuleList(RuleListSubnets, sections)
+	if err != nil {
+		t.Fatal(err)
+	}
+	z, err := zlib.NewReader(bytes.NewReader(data[4:]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := bufio.NewReader(z)
+	if n, _ := binary.ReadUvarint(r); n != 2 {
+		t.Fatalf("%d rules, want 2", n)
+	}
+	// The first rule is the one for every connection: its first item is the addresses (6), not a network (1).
+	if kind, item := must(r.ReadByte()), must(r.ReadByte()); kind != 0 || item != 6 {
+		t.Fatalf("first rule starts %d %d", kind, item)
+	}
+
+	empty, err := CompileRuleList(RuleListSubnets, []model.RuleListSection{{Name: "Off", Entries: "1.2.3.0/24", Network: "udp", Ports: []string{"443"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	z, _ = zlib.NewReader(bytes.NewReader(empty[4:]))
+	if n, _ := binary.ReadUvarint(bufio.NewReader(z)); n != 0 {
+		t.Fatalf("a list with its sections off has %d rules", n)
+	}
+}
+
+func must[T any](v T, _ error) T { return v }
 
 func listsTestDB(t *testing.T) {
 	t.Helper()

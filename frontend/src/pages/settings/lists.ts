@@ -4,6 +4,9 @@
 
 export type ListKind = 'domains' | 'subnets'
 
+/** The connections a subnets section is kept to: '' every one, else one network's. */
+export type ListNetwork = '' | 'tcp' | 'udp'
+
 /** A named part of a list, e.g. a service's domains, that can be switched off and keeps its entries. */
 export interface RuleListSection {
   name: string
@@ -11,14 +14,21 @@ export interface RuleListSection {
   /** One entry a line, as the server normalized them. */
   entries: string
   count: number
+  /** A subnets section's network and ports, each a port or a range ("19000-20000"); none mean every one. */
+  network?: 'tcp' | 'udp'
+  ports?: string[]
 }
 
 /** A section as the window's JSON shows it: its entries one a string. */
 export interface RawSection {
   name: string
   enabled: boolean
+  network?: 'tcp' | 'udp'
+  ports?: string[]
   entries: string[]
 }
+
+const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every((e) => typeof e === 'string')
 
 /** Sections read from parsed JSON; null when it is not a list of them. enabled is true unless false. */
 export function readRawSections(v: unknown): RawSection[] | null {
@@ -26,9 +36,12 @@ export function readRawSections(v: unknown): RawSection[] | null {
   const out: RawSection[] = []
   for (const s of v) {
     if (!s || typeof s !== 'object' || Array.isArray(s)) return null
-    const { name, enabled = true, entries = [] } = s as Record<string, unknown>
-    if (typeof name !== 'string' || typeof enabled !== 'boolean' || !Array.isArray(entries) || !entries.every((e) => typeof e === 'string')) return null
-    out.push({ name, enabled, entries: entries as string[] })
+    const { name, enabled = true, network, ports, entries = [] } = s as Record<string, unknown>
+    if (typeof name !== 'string' || typeof enabled !== 'boolean' || !strings(entries)) return null
+    if (network !== undefined && network !== 'tcp' && network !== 'udp') return null
+    if (ports !== undefined && !strings(ports)) return null
+    const kept = ports as string[] | undefined
+    out.push({ name, enabled, ...(network ? { network } : {}), ...(kept?.length ? { ports: kept } : {}), entries })
   }
   return out
 }
@@ -58,6 +71,29 @@ export const maxEntries = 200000
 export const maxSections = 100
 /** A section's name, in characters. */
 export const maxSectionName = 64
+/** A section's ports and port ranges. */
+export const maxPorts = 64
+
+/**
+ * A section's ports as the window takes them, split by commas, each a port
+ * ("3478") or a range ("19000-20000"), kept as the server keeps them: without
+ * repeats, a range of one port as that port. The first that is neither, or
+ * that there are too many.
+ */
+export function readPorts(text: string | string[]): { ports: string[]; bad?: string; tooMany?: boolean } {
+  const parts = (Array.isArray(text) ? text : text.split(',')).map((p) => p.trim()).filter(Boolean)
+  const port = (s: string) => (/^[1-9]\d{0,4}$/.test(s) && Number(s) <= 65535 ? Number(s) : null)
+  const ports: string[] = []
+  for (const part of parts) {
+    const [from = '', to, extra] = part.split('-').map((p) => p.trim())
+    const a = port(from)
+    const b = to === undefined ? a : port(to)
+    if (extra !== undefined || a === null || b === null || a > b) return { ports, bad: part }
+    const kept = a === b ? String(a) : `${a}-${b}`
+    if (!ports.includes(kept)) ports.push(kept)
+  }
+  return { ports, tooMany: ports.length > maxPorts }
+}
 
 /** Where a router fetches the list: <base><path><secret>/<name>.srs. */
 export function listUrl(base: string, path: string, secret: string, name: string) {

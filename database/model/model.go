@@ -163,6 +163,11 @@ type RuleListSection struct {
 	// Entries are the section's lines as the panel normalized them, one a line.
 	Entries string `json:"entries"`
 	Count   int    `json:"count"`
+	// Network and Ports keep a subnets section to connections of one network
+	// ("tcp" or "udp") and to some ports, each a port ("3478") or a range
+	// ("19000-20000"), e.g. a service's voice calls; none mean every one.
+	Network string   `json:"network,omitempty"`
+	Ports   []string `json:"ports,omitempty"`
 }
 
 type ClientReverse struct {

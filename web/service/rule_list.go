@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"cmp"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
@@ -9,6 +10,8 @@ import (
 	"fmt"
 	"net/netip"
 	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -36,6 +39,8 @@ const (
 	MaxRuleListSections = 100
 	// MaxRuleListSectionName bounds a section's name, in characters.
 	MaxRuleListSectionName = 64
+	// MaxRuleListPorts bounds a section's ports and port ranges.
+	MaxRuleListPorts = 64
 )
 
 // A list's name is its file's: routers name the rule-set after it.
@@ -69,6 +74,50 @@ func (e *RuleListSectionError) Error() string {
 }
 
 func (e *RuleListSectionError) Unwrap() error { return e.Err }
+
+// ParseRuleListPorts reads a section's ports, each a port ("3478") or a range
+// of ports ("19000-20000"), and returns them as the list keeps them, without
+// repeats, and as the rule-set writes them. A range of one port is that port.
+func ParseRuleListPorts(in []string) ([]string, []uint16, []srs.PortRange, error) {
+	if len(in) > MaxRuleListPorts {
+		return nil, nil, nil, common.NewErrorf("a section holds at most %d ports and port ranges", MaxRuleListPorts)
+	}
+	port := func(s string) (uint16, bool) {
+		n, err := strconv.Atoi(s)
+		return uint16(n), err == nil && n >= 1 && n <= 65535 && s == strconv.Itoa(n)
+	}
+	seen := map[string]bool{}
+	var kept []string
+	var ports []uint16
+	var ranges []srs.PortRange
+	for _, raw := range in {
+		s := strings.TrimSpace(raw)
+		from, to, isRange := strings.Cut(s, "-")
+		a, okA := port(strings.TrimSpace(from))
+		b, okB := a, okA
+		if isRange {
+			b, okB = port(strings.TrimSpace(to))
+		}
+		if !okA || !okB || a > b {
+			return nil, nil, nil, common.NewError("not a port or a port range:", s)
+		}
+		norm := strconv.Itoa(int(a))
+		if a != b {
+			norm += "-" + strconv.Itoa(int(b))
+		}
+		if seen[norm] {
+			continue
+		}
+		seen[norm] = true
+		kept = append(kept, norm)
+		if a == b {
+			ports = append(ports, a)
+		} else {
+			ranges = append(ranges, srs.PortRange{From: a, To: b})
+		}
+	}
+	return kept, ports, ranges, nil
+}
 
 // NormalizeDomain returns the name as a list keeps it: lowercase ASCII
 // (punycode), without a leading "*." or "." and a trailing dot. A name
@@ -205,10 +254,21 @@ func BuildRuleList(kind string, sections []model.RuleListSection) ([]model.RuleL
 		if err != nil {
 			return nil, nil, fail(err)
 		}
+		network := strings.ToLower(strings.TrimSpace(sec.Network))
+		if network != "" && network != "tcp" && network != "udp" {
+			return nil, nil, fail(common.NewError("a section's protocol is tcp or udp, not", sec.Network))
+		}
+		ports, _, _, err := ParseRuleListPorts(sec.Ports)
+		if err != nil {
+			return nil, nil, fail(err)
+		}
+		if kind == RuleListDomains && (network != "" || len(ports) > 0) {
+			return nil, nil, fail(errors.New("only a subnets list's sections are kept to a protocol or ports"))
+		}
 		if total += len(list); total > MaxRuleListEntries {
 			return nil, nil, common.NewErrorf("a list holds at most %d entries", MaxRuleListEntries)
 		}
-		out = append(out, model.RuleListSection{Name: name, Enabled: sec.Enabled, Entries: strings.Join(list, "\n"), Count: len(list)})
+		out = append(out, model.RuleListSection{Name: name, Enabled: sec.Enabled, Entries: strings.Join(list, "\n"), Count: len(list), Network: network, Ports: ports})
 		if !sec.Enabled {
 			continue
 		}
@@ -222,24 +282,79 @@ func BuildRuleList(kind string, sections []model.RuleListSection) ([]model.RuleL
 	return out, entries, nil
 }
 
-// CompileRuleList builds the list's rule-set.
-func CompileRuleList(kind string, entries []string) ([]byte, error) {
+// CompileRuleList builds the list's rule-set from its enabled sections, as
+// BuildRuleList returns them. A subnets list is a rule for the sections kept
+// to no protocol or ports, matching every connection to their addresses, then
+// a rule for each protocol and ports some sections are kept to, matching only
+// such connections; sections kept to the same ones share a rule.
+func CompileRuleList(kind string, sections []model.RuleListSection) ([]byte, error) {
 	var buf bytes.Buffer
 	if kind == RuleListDomains {
+		var entries []string
+		seen := map[string]bool{}
+		for _, sec := range sections {
+			if !sec.Enabled {
+				continue
+			}
+			for _, e := range strings.Fields(sec.Entries) {
+				if !seen[e] {
+					seen[e] = true
+					entries = append(entries, e)
+				}
+			}
+		}
 		if err := srs.WriteDomains(&buf, entries); err != nil {
 			return nil, err
 		}
 		return buf.Bytes(), nil
 	}
-	prefixes := make([]netip.Prefix, 0, len(entries))
-	for _, e := range entries {
-		p, err := netip.ParsePrefix(e)
+	type group struct {
+		network string
+		ports   []string
+		seen    map[netip.Prefix]bool
+		rule    srs.PrefixRule
+	}
+	var groups []*group
+	byKey := map[string]*group{}
+	for _, sec := range sections {
+		if !sec.Enabled {
+			continue
+		}
+		key := sec.Network + "|" + strings.Join(sec.Ports, ",")
+		g := byKey[key]
+		if g == nil {
+			g = &group{network: sec.Network, ports: sec.Ports, seen: map[netip.Prefix]bool{}}
+			byKey[key] = g
+			groups = append(groups, g)
+		}
+		for _, e := range strings.Fields(sec.Entries) {
+			p, err := netip.ParsePrefix(e)
+			if err != nil {
+				return nil, err
+			}
+			if !g.seen[p] {
+				g.seen[p] = true
+				g.rule.Prefixes = append(g.rule.Prefixes, p)
+			}
+		}
+	}
+	// The rule for every connection leads, wherever its sections are.
+	slices.SortStableFunc(groups, func(a, b *group) int {
+		return cmp.Compare(len(a.network)+len(a.ports), len(b.network)+len(b.ports))
+	})
+	rules := make([]srs.PrefixRule, 0, len(groups))
+	for _, g := range groups {
+		if len(g.rule.Prefixes) == 0 {
+			continue
+		}
+		_, ports, ranges, err := ParseRuleListPorts(g.ports)
 		if err != nil {
 			return nil, err
 		}
-		prefixes = append(prefixes, p)
+		g.rule.Network, g.rule.Ports, g.rule.Ranges = g.network, ports, ranges
+		rules = append(rules, g.rule)
 	}
-	if err := srs.WritePrefixes(&buf, prefixes); err != nil {
+	if err := srs.WritePrefixRules(&buf, rules); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -286,7 +401,7 @@ func (s *RuleListService) Save(in *model.RuleList) (*model.RuleList, error) {
 	if err != nil {
 		return nil, err
 	}
-	data, err := CompileRuleList(list.Kind, entries)
+	data, err := CompileRuleList(list.Kind, sections)
 	if err != nil {
 		return nil, err
 	}
