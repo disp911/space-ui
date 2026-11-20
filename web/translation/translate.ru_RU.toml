@@ -348,6 +348,8 @@
 "listPortsBad" = "«{text}» — не порт и не диапазон портов"
 "listPortsTooMany" = "Не больше {n} портов и диапазонов"
 "listFilterPorts" = "{n} порт | {n} порта | {n} портов"
+"listLoneSubnet" = "Роутер не прочитает правило из одной подсети и не загрузит весь список. Добавьте ещё одну подсеть"
+"listLoneSubnetFiltered" = "Роутер не прочитает правило из одной подсети и не загрузит весь список. Добавьте ещё одну подсеть или уберите протокол и порты"
 "listJsonShape" = "JSON — это список секций, у каждой name (строка), enabled (true или false) и entries (список строк), а в списке подсетей по желанию network (tcp или udp) и ports (список строк)"
 "listJsonSection" = "Секция {n} «{name}»: {error}"
 "listJsonBadDomain" = "«{text}» — не домен"

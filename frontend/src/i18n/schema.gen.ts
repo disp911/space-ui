@@ -259,6 +259,8 @@ export interface MessageSchema {
     "listPortsBad": string
     "listPortsTooMany": string
     "listFilterPorts": string
+    "listLoneSubnet": string
+    "listLoneSubnetFiltered": string
     "listJsonShape": string
     "listJsonSection": string
     "listJsonBadDomain": string

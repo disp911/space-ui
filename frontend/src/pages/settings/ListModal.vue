@@ -8,7 +8,7 @@ import {
 } from '../../kit'
 import { cause } from './form'
 import {
-  checkList, listNamePattern, maxEntries, maxPorts, maxSectionName, maxSections, readPorts, readRawSections, type ListKind, type ListNetwork, type RawSection, type RuleList,
+  checkList, listNamePattern, loneSubnetSections, maxEntries, maxPorts, maxSectionName, maxSections, readPorts, readRawSections, type ListKind, type ListNetwork, type RawSection, type RuleList,
 } from './lists'
 
 /**
@@ -17,7 +17,8 @@ import {
  * service: a name, a switch that keeps a section out of the rule-set
  * without losing it, and its entries, one a line, which can be loaded from a
  * .txt or .lst file. A subnets section can be kept to one protocol and to
- * some ports, e.g. a service's voice calls. The sections can also be edited as JSON, as the Xray
+ * some ports, e.g. a service's voice calls; the sections kept to the same ones
+ * make one rule, which a router cannot read when it is one subnet. The sections can also be edited as JSON, as the Xray
  * template is: JSON that reads as sections goes into them as it is typed.
  * The server checks it all again and builds the rule-set from the enabled
  * sections on saving.
@@ -106,6 +107,17 @@ const portErrors = computed(() =>
     p.bad !== undefined ? t('settings.listPortsBad', { text: p.bad }) : p.tooMany ? t('settings.listPortsTooMany', { n: maxPorts }) : undefined,
   ),
 )
+/** Each section's error when its rule would be one subnet, which a router cannot read, so loading none of the list. */
+const loneErrors = computed(() => {
+  if (kind.value !== 'subnets') return sections.value.map(() => undefined)
+  const lone = loneSubnetSections(
+    sections.value.map((s, i) => ({ enabled: s.enabled, network: s.network, ports: portChecks.value[i]!.ports, entries: lines(s.text) })),
+  )
+  return lone.map((on, i) => {
+    if (!on) return undefined
+    return t(sections.value[i]!.network || portChecks.value[i]!.ports.length ? 'settings.listLoneSubnetFiltered' : 'settings.listLoneSubnet')
+  })
+})
 /** What a section is kept to, on its chip: «UDP · 2 ports»; nothing when it takes every connection. */
 const filterChip = (i: number) => {
   if (kind.value !== 'subnets') return undefined
@@ -121,6 +133,7 @@ const canSave = computed(
     !nameError.value &&
     sectionNameErrors.value.every((e) => !e) &&
     portErrors.value.every((e) => !e) &&
+    loneErrors.value.every((e) => !e) &&
     checks.value.every((c) => !c.bad) &&
     !tooMany.value &&
     !tooManySections.value &&
@@ -196,7 +209,8 @@ const jsonProblem = computed(() => {
     const what =
       sectionNameErrors.value[i] ??
       (checks.value[i]!.bad && t(kind.value === 'domains' ? 'settings.listJsonBadDomain' : 'settings.listJsonBadSubnet', { text: checks.value[i]!.bad!.text })) ??
-      portErrors.value[i]
+      portErrors.value[i] ??
+      loneErrors.value[i]
     if (what) return t('settings.listJsonSection', { n: i + 1, name: s.name.trim() || t('settings.listSectionUnnamed'), error: what })
   }
   return undefined
@@ -316,6 +330,7 @@ async function save() {
               <XFieldNote v-if="checks[i]!.bad" tone="err" attached>
                 {{ t(kind === 'domains' ? 'settings.listBadDomain' : 'settings.listBadSubnet', { line: checks[i]!.bad!.line, text: checks[i]!.bad!.text }) }}
               </XFieldNote>
+              <XFieldNote v-else-if="loneErrors[i]" tone="err" attached>{{ loneErrors[i] }}</XFieldNote>
               <XFieldNote v-else-if="checks[i]!.v6" tone="warn" attached>{{ v6Note(i) }}</XFieldNote>
             </div>
           </XSection>

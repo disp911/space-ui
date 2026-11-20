@@ -21,6 +21,7 @@ import (
 	"github.com/disp911/space-ui/v3/util/random"
 	"github.com/disp911/space-ui/v3/util/srs"
 
+	"go4.org/netipx"
 	"golang.org/x/net/idna"
 )
 
@@ -74,6 +75,28 @@ func (e *RuleListSectionError) Error() string {
 }
 
 func (e *RuleListSectionError) Unwrap() error { return e.Err }
+
+// RuleListLoneSubnetError is a rule of a subnets list whose addresses are one
+// subnet. sing-box writes such a rule's subnet out of the rule-set as a
+// string, not a list of them, and a router reading a list there fails to load
+// the whole list. Names are the sections the rule is made of.
+type RuleListLoneSubnetError struct {
+	Names []string
+	// Filtered is that the sections are kept to a protocol or ports.
+	Filtered bool
+}
+
+func (e *RuleListLoneSubnetError) Error() string {
+	names := make([]string, len(e.Names))
+	for i, n := range e.Names {
+		names[i] = "«" + n + "»"
+	}
+	advice := "add another subnet"
+	if e.Filtered {
+		advice += " or keep the section to no protocol and ports"
+	}
+	return fmt.Sprintf("section %s: a router cannot read a rule with one subnet and then loads none of the list: %s", strings.Join(names, ", "), advice)
+}
 
 // ParseRuleListPorts reads a section's ports, each a port ("3478") or a range
 // of ports ("19000-20000"), and returns them as the list keeps them, without
@@ -286,7 +309,8 @@ func BuildRuleList(kind string, sections []model.RuleListSection) ([]model.RuleL
 // BuildRuleList returns them. A subnets list is a rule for the sections kept
 // to no protocol or ports, matching every connection to their addresses, then
 // a rule for each protocol and ports some sections are kept to, matching only
-// such connections; sections kept to the same ones share a rule.
+// such connections; sections kept to the same ones share a rule. A rule whose
+// addresses are one subnet is refused (RuleListLoneSubnetError).
 func CompileRuleList(kind string, sections []model.RuleListSection) ([]byte, error) {
 	var buf bytes.Buffer
 	if kind == RuleListDomains {
@@ -311,6 +335,7 @@ func CompileRuleList(kind string, sections []model.RuleListSection) ([]byte, err
 	type group struct {
 		network string
 		ports   []string
+		names   []string
 		seen    map[netip.Prefix]bool
 		rule    srs.PrefixRule
 	}
@@ -326,6 +351,9 @@ func CompileRuleList(kind string, sections []model.RuleListSection) ([]byte, err
 			g = &group{network: sec.Network, ports: sec.Ports, seen: map[netip.Prefix]bool{}}
 			byKey[key] = g
 			groups = append(groups, g)
+		}
+		if sec.Entries != "" {
+			g.names = append(g.names, sec.Name)
 		}
 		for _, e := range strings.Fields(sec.Entries) {
 			p, err := netip.ParsePrefix(e)
@@ -347,6 +375,9 @@ func CompileRuleList(kind string, sections []model.RuleListSection) ([]byte, err
 		if len(g.rule.Prefixes) == 0 {
 			continue
 		}
+		if oneSubnet(g.rule.Prefixes) {
+			return nil, &RuleListLoneSubnetError{Names: g.names, Filtered: g.network != "" || len(g.ports) > 0}
+		}
 		_, ports, ranges, err := ParseRuleListPorts(g.ports)
 		if err != nil {
 			return nil, err
@@ -358,6 +389,18 @@ func CompileRuleList(kind string, sections []model.RuleListSection) ([]byte, err
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// oneSubnet is whether the prefixes' addresses together are one subnet, as
+// sing-box writes them out of a rule-set: 10.0.0.0/25 and 10.0.0.128/25 are
+// 10.0.0.0/24.
+func oneSubnet(prefixes []netip.Prefix) bool {
+	var b netipx.IPSetBuilder
+	for _, p := range prefixes {
+		b.AddPrefix(p)
+	}
+	set, err := b.IPSet()
+	return err == nil && len(set.Prefixes()) == 1
 }
 
 // RuleListService keeps the lists.

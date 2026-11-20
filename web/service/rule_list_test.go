@@ -149,7 +149,7 @@ func TestParseRuleListPorts(t *testing.T) {
 func TestRuleListSectionsKeptToPorts(t *testing.T) {
 	sections, _, err := BuildRuleList(RuleListSubnets, []model.RuleListSection{
 		{Name: "Discord", Enabled: true, Entries: "104.29.128.0/18", Network: " UDP ", Ports: []string{"19000-20000", "50000-65535"}},
-		{Name: "Telegram", Enabled: true, Entries: "91.108.4.0/22"},
+		{Name: "Telegram", Enabled: true, Entries: "91.108.4.0/22\n149.154.160.0/20"},
 		{Name: "Voice", Enabled: true, Entries: "66.22.192.0/18", Network: "udp", Ports: []string{"19000-20000", "50000-65535"}},
 		{Name: "Off", Enabled: false, Entries: "1.2.3.0/24", Network: "tcp"},
 	})
@@ -201,6 +201,50 @@ func TestRuleListSectionsKeptToPorts(t *testing.T) {
 	z, _ = zlib.NewReader(bytes.NewReader(empty[4:]))
 	if n, _ := binary.ReadUvarint(bufio.NewReader(z)); n != 0 {
 		t.Fatalf("a list with its sections off has %d rules", n)
+	}
+}
+
+// TestRuleListLoneSubnetRefused checks that no rule of a subnets list is one
+// subnet, its addresses together, whichever sections it is made of.
+func TestRuleListLoneSubnetRefused(t *testing.T) {
+	udp := func(name, entries string) model.RuleListSection {
+		return model.RuleListSection{Name: name, Enabled: true, Entries: entries, Network: "udp", Ports: []string{"27015-27050"}}
+	}
+	every := func(name, entries string) model.RuleListSection {
+		return model.RuleListSection{Name: name, Enabled: true, Entries: entries}
+	}
+	many := every("Telegram", "91.108.4.0/22\n149.154.160.0/20")
+	for name, c := range map[string]struct {
+		sections []model.RuleListSection
+		lone     []string
+		filtered bool
+	}{
+		"filtered":        {[]model.RuleListSection{many, udp("Faceit", "121.127.33.0/25")}, []string{"Faceit"}, true},
+		"for every":       {[]model.RuleListSection{every("Telegram", "91.108.4.0/22"), udp("Voice", "66.22.192.0/18\n104.29.128.0/18")}, []string{"Telegram"}, false},
+		"halves":          {[]model.RuleListSection{many, udp("Faceit", "10.0.0.0/25\n10.0.0.128/25")}, []string{"Faceit"}, true},
+		"inside":          {[]model.RuleListSection{many, udp("A", "10.0.0.0/8"), udp("B", "10.1.0.0/16")}, []string{"A", "B"}, true},
+		"other off":       {[]model.RuleListSection{many, udp("Faceit", "121.127.33.0/25"), {Name: "Off", Entries: "1.2.3.0/24", Network: "udp", Ports: []string{"27015-27050"}}}, []string{"Faceit"}, true},
+		"two":             {[]model.RuleListSection{many, udp("Faceit", "121.127.33.0/25\n121.127.46.0/24")}, nil, false},
+		"one each, apart": {[]model.RuleListSection{many, udp("A", "10.0.0.0/8"), udp("B", "11.0.0.0/16")}, nil, false},
+		"v4 and v6":       {[]model.RuleListSection{udp("A", "10.0.0.0/8\n2001:db8::/32")}, nil, false},
+		"all off":         {[]model.RuleListSection{{Name: "Off", Entries: "1.2.3.0/24"}}, nil, false},
+		"none":            {nil, nil, false},
+	} {
+		built, _, err := BuildRuleList(RuleListSubnets, c.sections)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		_, err = CompileRuleList(RuleListSubnets, built)
+		var lone *RuleListLoneSubnetError
+		if c.lone == nil {
+			if err != nil {
+				t.Errorf("%s: refused: %v", name, err)
+			}
+			continue
+		}
+		if !errors.As(err, &lone) || !slices.Equal(lone.Names, c.lone) || lone.Filtered != c.filtered {
+			t.Errorf("%s: %v, want sections %v filtered %v", name, err, c.lone, c.filtered)
+		}
 	}
 }
 

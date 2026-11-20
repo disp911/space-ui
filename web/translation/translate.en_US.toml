@@ -348,6 +348,8 @@
 "listPortsBad" = "“{text}” is not a port or a port range"
 "listPortsTooMany" = "At most {n} ports and ranges"
 "listFilterPorts" = "{n} port | {n} ports"
+"listLoneSubnet" = "A router cannot read a rule of one subnet and loads none of the list. Add another subnet"
+"listLoneSubnetFiltered" = "A router cannot read a rule of one subnet and loads none of the list. Add another subnet or remove the protocol and ports"
 "listJsonShape" = "The JSON is a list of sections, each with name (a string), enabled (true or false) and entries (a list of strings), and in a subnets list optionally network (tcp or udp) and ports (a list of strings)"
 "listJsonSection" = "Section {n} “{name}”: {error}"
 "listJsonBadDomain" = "“{text}” is not a domain"

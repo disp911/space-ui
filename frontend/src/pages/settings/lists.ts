@@ -143,6 +143,72 @@ export function isSubnet(raw: string): boolean {
   return bits === undefined || Number(bits) <= 128
 }
 
+/** An address as a number and its length in bits; null when it is none. */
+function addrNumber(addr: string): { bits: 32 | 128; n: bigint } | null {
+  if (ipv4.test(addr)) return { bits: 32, n: addr.split('.').reduce((n, o) => (n << 8n) | BigInt(o), 0n) }
+  let host: string
+  try {
+    host = new URL(`http://[${addr}]`).hostname.slice(1, -1)
+  } catch {
+    return null
+  }
+  // The URL writes the address as hex groups, at most one "::".
+  const [head = '', tail] = host.split('::')
+  const left = head ? head.split(':') : []
+  const right = tail ? tail.split(':') : []
+  const groups = tail === undefined ? left : [...left, ...Array<string>(8 - left.length - right.length).fill('0'), ...right]
+  return { bits: 128, n: groups.reduce((n, g) => (n << 16n) | BigInt(parseInt(g, 16)), 0n) }
+}
+
+/**
+ * Whether the subnets' addresses together are one subnet, as sing-box writes
+ * a rule's subnets out of a rule-set: 10.0.0.0/25 and 10.0.0.128/25 are
+ * 10.0.0.0/24. Lines that are no subnet are left out.
+ */
+export function isOneSubnet(subnets: string[]): boolean {
+  const ranges: { bits: number; from: bigint; to: bigint }[] = []
+  for (const s of subnets) {
+    if (!isSubnet(s)) continue
+    const [addr = '', len] = s.trim().split('/')
+    const a = addrNumber(addr)
+    if (!a) continue
+    const host = BigInt(a.bits - (len === undefined ? a.bits : Number(len)))
+    const from = (a.n >> host) << host
+    ranges.push({ bits: a.bits, from, to: from + (1n << host) - 1n })
+  }
+  ranges.sort((x, y) => x.bits - y.bits || (x.from < y.from ? -1 : x.from > y.from ? 1 : 0))
+  const merged: typeof ranges = []
+  for (const r of ranges) {
+    const last = merged[merged.length - 1]
+    if (last && last.bits === r.bits && r.from <= last.to + 1n) last.to = r.to > last.to ? r.to : last.to
+    else merged.push({ ...r })
+  }
+  if (merged.length !== 1) return false
+  const { from, to } = merged[0]!
+  const size = to - from + 1n
+  return (size & (size - 1n)) === 0n && from % size === 0n
+}
+
+/**
+ * The sections of a subnets list whose rule would be one subnet, which a router
+ * cannot read, so loading none of the list: the enabled sections kept to the
+ * same protocol and ports make one rule, as the server builds them.
+ */
+export function loneSubnetSections(sections: { enabled: boolean; network: ListNetwork; ports: string[]; entries: string[] }[]): boolean[] {
+  const groups = new Map<string, number[]>()
+  sections.forEach((s, i) => {
+    if (!s.enabled) return
+    const key = `${s.network}|${s.ports.join(',')}`
+    groups.set(key, [...(groups.get(key) ?? []), i])
+  })
+  const lone = sections.map(() => false)
+  for (const members of groups.values()) {
+    const entries = members.flatMap((i) => sections[i]!.entries)
+    if (isOneSubnet(entries)) for (const i of members) lone[i] = sections[i]!.entries.some(isSubnet)
+  }
+  return lone
+}
+
 /**
  * The first line that is not an entry of the kind, counted from 1, how many
  * good entries there are and, in a subnet list, its IPv6 entries: how many
