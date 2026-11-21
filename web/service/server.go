@@ -120,7 +120,6 @@ type Release struct {
 // It handles system status collection, IP detection, and application statistics.
 type ServerService struct {
 	xrayService        XrayService
-	inboundService     InboundService
 	telemtService      TelemtService
 	cachedIPv4         string
 	cachedIPv6         string
