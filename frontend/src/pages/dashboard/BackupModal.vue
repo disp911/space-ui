@@ -24,7 +24,10 @@ async function exportDb() {
   }
 }
 
-// Import: pick a file, confirm, upload, then restart the panel and reload as it comes back.
+// Import: pick a file, confirm, upload; the panel checks it, restarts on it
+// and the page reloads as it comes back. What went wrong putting it in place
+// shows after the reload: this tab remembers an import is under way.
+const importing = 'dash.dbImport'
 const picker = ref<HTMLInputElement | null>(null)
 const file = ref<File | null>(null)
 const confirming = ref(false)
@@ -44,7 +47,11 @@ async function restore() {
     const body = new FormData()
     body.set('db', file.value)
     await api.post('panel/api/server/importDB', body)
-    await api.post('panel/setting/restartPanel')
+    try {
+      sessionStorage.setItem(importing, '1')
+    } catch {
+      // the error, if any, stays in the panel's log
+    }
     setTimeout(() => location.reload(), 5000)
   } catch (e) {
     failed(e)
@@ -52,6 +59,22 @@ async function restore() {
     confirming.value = false
   }
 }
+
+async function importResult() {
+  try {
+    if (sessionStorage.getItem(importing) !== '1') return
+    sessionStorage.removeItem(importing)
+  } catch {
+    return
+  }
+  try {
+    const { error } = await api.get<{ error: string }>('panel/api/server/importResult')
+    if (error) toast('err', t('dashboard.backupRestoreFailed', { error }))
+  } catch {
+    // the panel's log has it
+  }
+}
+importResult()
 </script>
 
 <template>

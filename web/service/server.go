@@ -1165,6 +1165,8 @@ func (s *ServerService) PrepareDBImport(file multipart.File) (string, error) {
 		// Validate integrity (no migrations / side effects)
 		if verr := database.ValidateSQLiteDB(tempPath); verr != nil {
 			err = common.NewErrorf("Invalid or corrupt db file: %v", verr)
+		} else if verr := database.ValidatePanelDB(tempPath); verr != nil {
+			err = common.NewError(verr.Error())
 		}
 	} else {
 		err = common.NewErrorf("Error saving db: %v", err)
@@ -1178,77 +1180,108 @@ func (s *ServerService) PrepareDBImport(file multipart.File) (string, error) {
 	return tempPath, nil
 }
 
-// ApplyDBImport puts a database PrepareDBImport kept in place of the
-// current one, with Xray stopped meanwhile, migrates it and starts Xray.
-// Should anything fail, the current database comes back.
-func (s *ServerService) ApplyDBImport(tempPath string) error {
+// The database import waits for the panel's restart, which puts the file in
+// place while the panel is stopped, Xray and the jobs too, so nothing uses
+// the database meanwhile; the restart then starts everything on it.
+var dbImport struct {
+	sync.Mutex
+	path string
+	// err is what went wrong with the last import put in place, "" if nothing.
+	err string
+}
+
+// QueueDBImport keeps a database PrepareDBImport checked for the panel's
+// next restart.
+func QueueDBImport(path string) {
+	dbImport.Lock()
+	defer dbImport.Unlock()
+	dbImport.path = path
+}
+
+// ApplyQueuedDBImport puts the queued database, if any, in place of the
+// current one. The panel's restart runs it with the panel stopped.
+func ApplyQueuedDBImport() {
+	dbImport.Lock()
+	defer dbImport.Unlock()
+	if dbImport.path == "" {
+		return
+	}
+	err := applyDBImport(dbImport.path)
+	dbImport.path = ""
+	dbImport.err = ""
+	if err != nil {
+		dbImport.err = err.Error()
+		logger.Error("Importing the database failed:", err)
+	}
+}
+
+// LastDBImportError is what went wrong with the last database import, "" if
+// it went well or there was none since the panel started.
+func LastDBImportError() string {
+	dbImport.Lock()
+	defer dbImport.Unlock()
+	return dbImport.err
+}
+
+// applyDBImport puts the database at tempPath in place of the current one and
+// opens it. Should anything fail, the current database comes back and is open
+// again; should even that fail, it is left at <db>.backup.
+func applyDBImport(tempPath string) error {
 	defer func() {
-		if _, err := os.Stat(tempPath); err == nil {
-			if rerr := os.Remove(tempPath); rerr != nil {
-				logger.Warningf("Warning: failed to remove temp file: %v", rerr)
+		if err := removeDB(tempPath); err != nil {
+			logger.Warningf("Warning: failed to remove temp file: %v", err)
+		}
+	}()
+	dbPath := config.GetDBPath()
+	fallbackPath := dbPath + ".backup"
+
+	// reopen opens the current database again after err.
+	reopen := func(err error) error {
+		if ierr := database.InitDB(dbPath); ierr != nil {
+			return common.NewErrorf("%v; opening the current database again: %v", err, ierr)
+		}
+		return err
+	}
+	// restore puts the current database back from fallbackPath after err.
+	restore := func(err error) error {
+		if rerr := removeDB(dbPath); rerr != nil {
+			return common.NewErrorf("%v; the current database is left at %s: %v", err, fallbackPath, rerr)
+		}
+		if rerr := moveDB(fallbackPath, dbPath); rerr != nil {
+			return common.NewErrorf("%v; the current database is left at %s: %v", err, fallbackPath, rerr)
+		}
+		return reopen(err)
+	}
+
+	if err := database.CloseDB(); err != nil {
+		logger.Warningf("Failed to close the database before replacing it: %v", err)
+	}
+	if err := removeDB(fallbackPath); err != nil {
+		return reopen(common.NewErrorf("Error removing the old fallback db: %v", err))
+	}
+	// The current database moves aside with its WAL files: left behind, they
+	// would be read into the imported one.
+	if err := moveDB(dbPath, fallbackPath); err != nil {
+		err = common.NewErrorf("Error moving the current db aside: %v", err)
+		// The database may have moved without its WAL files; then it goes back.
+		if _, serr := os.Stat(fallbackPath); serr == nil {
+			if rerr := moveDB(fallbackPath, dbPath); rerr != nil {
+				return common.NewErrorf("%v; the current database is left at %s: %v", err, fallbackPath, rerr)
 			}
 		}
-	}()
-
-	// Stop Xray (ignore error but log)
-	if errStop := s.StopXrayService(); errStop != nil {
-		logger.Warningf("Failed to stop Xray before DB import: %v", errStop)
+		return reopen(err)
 	}
-
-	// Close existing DB to release file locks (especially on Windows)
-	if errClose := database.CloseDB(); errClose != nil {
-		logger.Warningf("Failed to close existing DB before replacement: %v", errClose)
+	if err := moveDB(tempPath, dbPath); err != nil {
+		return restore(common.NewErrorf("Error moving the imported db in place: %v", err))
 	}
-
-	// Backup the current database for fallback
-	fallbackPath := fmt.Sprintf("%s.backup", config.GetDBPath())
-
-	// Remove the existing fallback file (if any)
-	if err := removeDB(fallbackPath); err != nil {
-		return common.NewErrorf("Error removing existing fallback db file: %v", err)
-	}
-
-	// Move the current database to the fallback location, with its WAL files:
-	// left behind, they would be read into the imported database.
-	if err := moveDB(config.GetDBPath(), fallbackPath); err != nil {
-		return common.NewErrorf("Error backing up current db file: %v", err)
-	}
-
-	// Defer fallback cleanup ONLY if everything goes well
-	defer func() {
-		if rerr := removeDB(fallbackPath); rerr != nil {
-			logger.Warningf("Warning: failed to remove fallback file: %v", rerr)
-		}
-	}()
-
-	// Move temp to DB path
-	if err := moveDB(tempPath, config.GetDBPath()); err != nil {
-		// Restore from fallback
-		if errRename := moveDB(fallbackPath, config.GetDBPath()); errRename != nil {
-			return common.NewErrorf("Error moving db file and restoring fallback: %v", errRename)
-		}
-		return common.NewErrorf("Error moving db file: %v", err)
-	}
-
-	// Open & migrate new DB
-	if err := database.InitDB(config.GetDBPath()); err != nil {
+	if err := database.InitDB(dbPath); err != nil {
 		database.CloseDB()
-		if errRemove := removeDB(config.GetDBPath()); errRemove != nil {
-			logger.Warningf("Warning: failed to remove the db that failed to migrate: %v", errRemove)
-		}
-		if errRename := moveDB(fallbackPath, config.GetDBPath()); errRename != nil {
-			return common.NewErrorf("Error migrating db and restoring fallback: %v", errRename)
-		}
-		return common.NewErrorf("Error migrating db: %v", err)
+		return restore(common.NewErrorf("Error opening the imported db: %v", err))
 	}
-
-	s.inboundService.MigrateDB()
-
-	// Start Xray
-	if err := s.RestartXrayService(); err != nil {
-		return common.NewErrorf("Imported DB but failed to start Xray: %v", err)
+	new(InboundService).MigrateDB()
+	if err := removeDB(fallbackPath); err != nil {
+		logger.Warningf("Warning: failed to remove fallback file: %v", err)
 	}
-
 	return nil
 }
 

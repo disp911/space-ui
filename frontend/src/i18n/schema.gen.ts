@@ -112,6 +112,7 @@ export interface MessageSchema {
     "backupRestoreTitle": string
     "backupRestoreText": string
     "backupRestore": string
+    "backupRestoreFailed": string
     "backupRestoring": string
     "xrayUpdate": string
     "xrayVersionWarnTitle": string

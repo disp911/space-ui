@@ -241,3 +241,38 @@ func ValidateSQLiteDB(dbPath string) error {
 	}
 	return nil
 }
+
+// panelTables are the tables every panel database has.
+var panelTables = []string{"users", "inbounds", "settings"}
+
+// ValidatePanelDB checks that the SQLite database at dbPath is a panel's: it
+// has the panel's tables and a user to sign in with. Another program's
+// database would otherwise come up as an empty panel with the default user.
+func ValidatePanelDB(dbPath string) error {
+	gdb, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{Logger: logger.Discard})
+	if err != nil {
+		return err
+	}
+	sqlDB, err := gdb.DB()
+	if err != nil {
+		return err
+	}
+	defer sqlDB.Close()
+	for _, table := range panelTables {
+		var n int64
+		if err := gdb.Raw("SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = ?", table).Scan(&n).Error; err != nil {
+			return err
+		}
+		if n == 0 {
+			return errors.New("not a panel database: it has no " + table + " table")
+		}
+	}
+	var users int64
+	if err := gdb.Raw("SELECT count(*) FROM users").Scan(&users).Error; err != nil {
+		return err
+	}
+	if users == 0 {
+		return errors.New("not a panel database: it has no user")
+	}
+	return nil
+}

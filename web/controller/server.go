@@ -51,6 +51,7 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/getPanelUpdateInfo", a.getPanelUpdateInfo)
 	g.GET("/getConfigJson", a.getConfigJson)
 	g.GET("/getDb", a.getDb)
+	g.GET("/importResult", a.importResult)
 	g.GET("/getNewUUID", a.getNewUUID)
 	g.GET("/getNewX25519Cert", a.getNewX25519Cert)
 	g.GET("/getNewmldsa65", a.getNewmldsa65)
@@ -370,7 +371,10 @@ func isValidFilename(filename string) bool {
 	return filenameRegex.MatchString(filename)
 }
 
-// importDB imports a database file and restarts the Xray service.
+// importDB imports a database file: it is checked now, and the panel's
+// restart, a moment after the answer, puts it in place with the panel
+// stopped and starts the panel and Xray on it. Behind REALITY this request
+// runs through Xray, which the restart stops.
 func (a *ServerController) importDB(c *gin.Context) {
 	// Get the file from the request body
 	file, _, err := c.Request.FormFile("db")
@@ -379,20 +383,23 @@ func (a *ServerController) importDB(c *gin.Context) {
 		return
 	}
 	defer file.Close()
-	// The import stops Xray: the file is checked and kept now, and put in
-	// place after the answer.
 	tempPath, err := a.serverService.PrepareDBImport(file)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.index.importDatabaseError"), err)
 		return
 	}
+	service.QueueDBImport(tempPath)
+	if err := a.panelService.RestartPanel(time.Second); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.index.importDatabaseError"), err)
+		return
+	}
 	jsonObj(c, I18nWeb(c, "pages.index.importDatabaseSuccess"), nil)
-	afterAnswer(func() {
-		if err := a.serverService.ApplyDBImport(tempPath); err != nil {
-			logger.Error("Importing the database failed:", err)
-		}
-		a.serverService.RestartXrayService()
-	})
+}
+
+// importResult tells what went wrong with the last database import, "" if
+// nothing.
+func (a *ServerController) importResult(c *gin.Context) {
+	jsonObj(c, gin.H{"error": service.LastDBImportError()}, nil)
 }
 
 // getNewX25519Cert generates a new X25519 certificate.

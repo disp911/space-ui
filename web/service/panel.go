@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/disp911/space-ui/v3/config"
@@ -28,18 +27,22 @@ type PanelUpdateInfo struct {
 	UpdateAvailable bool   `json:"updateAvailable"`
 }
 
+// restarts carries the panel's own requests to restart to main, which treats
+// them as SIGHUP: a signal to itself does not reach a panel on Windows.
+var restarts = make(chan struct{}, 1)
+
+// Restarts are the panel's own requests to restart its servers.
+func Restarts() <-chan struct{} { return restarts }
+
+// RestartPanel restarts the panel's servers after the delay, in the same
+// process, as SIGHUP does.
 func (s *PanelService) RestartPanel(delay time.Duration) error {
-	p, err := os.FindProcess(syscall.Getpid())
-	if err != nil {
-		return err
-	}
-	go func() {
-		time.Sleep(delay)
-		err := p.Signal(syscall.SIGHUP)
-		if err != nil {
-			logger.Error("failed to send SIGHUP signal:", err)
+	time.AfterFunc(delay, func() {
+		select {
+		case restarts <- struct{}{}:
+		default: // one is waiting already
 		}
-	}()
+	})
 	return nil
 }
 

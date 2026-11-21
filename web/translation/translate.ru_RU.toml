@@ -201,6 +201,7 @@
 "backupRestoreTitle" = "Восстановить базу данных?"
 "backupRestoreText" = "Текущая база данных будет заменена файлом {name}, после этого панель перезапустится."
 "backupRestore" = "Восстановить"
+"backupRestoreFailed" = "База данных не восстановлена: {error}"
 "backupRestoring" = "Восстановление…"
 "xrayUpdate" = "Обновление Xray"
 "xrayVersionWarnTitle" = "Важно"

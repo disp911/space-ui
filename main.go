@@ -81,7 +81,12 @@ func runWebServer() {
 	// Trap shutdown signals
 	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGTERM, sys.SIGUSR1)
 	for {
-		sig := <-sigCh
+		var sig os.Signal
+		select {
+		case sig = <-sigCh:
+		case <-service.Restarts():
+			sig = syscall.SIGHUP
+		}
 
 		switch sig {
 		case syscall.SIGHUP:
@@ -95,6 +100,8 @@ func runWebServer() {
 			if err != nil {
 				logger.Debug("Error stopping sub server:", err)
 			}
+			// An imported database goes in place while the panel is stopped.
+			service.ApplyQueuedDBImport()
 
 			server = web.NewServer()
 			global.SetWebServer(server)

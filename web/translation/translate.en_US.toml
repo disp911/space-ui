@@ -201,6 +201,7 @@
 "backupRestoreTitle" = "Restore the database?"
 "backupRestoreText" = "The current database will be replaced with {name}, then the panel restarts."
 "backupRestore" = "Restore"
+"backupRestoreFailed" = "The database was not restored: {error}"
 "backupRestoring" = "Restoring…"
 "xrayUpdate" = "Xray update"
 "xrayVersionWarnTitle" = "Important"
