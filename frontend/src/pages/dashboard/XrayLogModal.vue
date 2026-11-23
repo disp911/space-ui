@@ -163,7 +163,7 @@ const columns = computed<TableColumn[]>(() => [
 
 const rows = computed(() =>
   (data.value?.entries ?? []).map((e, i) => {
-    // The clock of the panel's time zone, as the server sent it with its offset: no conversion to this browser's.
+    // The server's own clock, as the day was cut by it: no conversion to this browser's zone.
     const [, , month = '', dayOfMonth = '', clock = ''] = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2})/.exec(e.DateTime) ?? []
     const kind = byEvent[e.Event] ?? 'direct'
     return {
