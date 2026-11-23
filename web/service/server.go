@@ -764,9 +764,12 @@ func (s *ServerService) InstallXray(zipFileName string) error {
 	return nil
 }
 
+// GetLogs returns the panel's latest log lines, from its own buffer or, with
+// syslog, from the system journal, their times in the panel's time zone.
 func (s *ServerService) GetLogs(count string, level string, syslog string) []string {
 	c, _ := strconv.Atoi(count)
 	var lines []string
+	loc := panelZone()
 
 	if syslog == "true" {
 		// Check if running on Windows - journalctl is not available
@@ -797,6 +800,10 @@ func (s *ServerService) GetLogs(count string, level string, syslog string) []str
 
 		// Use hardcoded command with validated parameters
 		cmd := exec.Command("journalctl", "-u", "space-ui", "--no-pager", "-n", strconv.Itoa(countInt), "-p", level)
+		// journalctl writes its times in TZ; the server's own zone is its default.
+		if loc != time.Local {
+			cmd.Env = append(os.Environ(), "TZ="+loc.String())
+		}
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		err = cmd.Run()
@@ -805,7 +812,7 @@ func (s *ServerService) GetLogs(count string, level string, syslog string) []str
 		}
 		lines = strings.Split(out.String(), "\n")
 	} else {
-		lines = logger.GetLogs(c, level)
+		lines = logger.GetLogs(c, level, loc)
 	}
 
 	return lines
@@ -865,7 +872,7 @@ func (s *ServerService) GetXrayLogs(
 		return result
 	}
 
-	loc := xrayLogZone()
+	loc := panelZone()
 	result.Dates = xrayLogDates(db, loc)
 	result.Clients = xrayLogClients(db)
 	result.Date = resolveXrayLogDay(result.Dates, date)
@@ -916,7 +923,7 @@ func (s *ServerService) ResolveXrayLogDay(date string) string {
 	if db == nil {
 		return ""
 	}
-	return resolveXrayLogDay(xrayLogDates(db, xrayLogZone()), date)
+	return resolveXrayLogDay(xrayLogDates(db, panelZone()), date)
 }
 
 // ExportXrayLogs writes every stored entry of day, a day of the panel's time
@@ -939,7 +946,7 @@ func (s *ServerService) ExportXrayLogs(
 		return nil
 	}
 
-	return exportXrayLogs(w, db, xrayLogZone(), day, email, filter, showDirect, showBlocked, showProxy, freedoms, blackholes)
+	return exportXrayLogs(w, db, panelZone(), day, email, filter, showDirect, showBlocked, showProxy, freedoms, blackholes)
 }
 
 // exportXrayLogs is ExportXrayLogs with the time zone given.
@@ -1074,9 +1081,9 @@ func writeXrayLogLine(w *bufio.Writer, row *model.XrayLogEntry, event int, loc *
 	return err
 }
 
-// xrayLogZone is the time zone the log's days and times are in: the panel's,
-// the server's own by default.
-func xrayLogZone() *time.Location {
+// panelZone is the time zone the logs show their times in, and the Xray log
+// cuts its days in: the panel's, the server's own by default.
+func panelZone() *time.Location {
 	loc, err := new(SettingService).GetTimeLocation()
 	if err != nil {
 		return time.Local

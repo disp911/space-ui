@@ -23,9 +23,10 @@ var (
 	logger  *logging.Logger
 	logFile *os.File
 
-	// logBuffer maintains recent log entries in memory for web UI retrieval
+	// logBuffer maintains recent log entries in memory for web UI retrieval,
+	// each with its moment: the window shows it in the panel's time zone.
 	logBuffer []struct {
-		time  string
+		time  time.Time
 		level logging.Level
 		log   string
 	}
@@ -194,24 +195,24 @@ func addToBuffer(level string, newLog string) {
 
 	logLevel, _ := logging.LogLevel(level)
 	logBuffer = append(logBuffer, struct {
-		time  string
+		time  time.Time
 		level logging.Level
 		log   string
 	}{
-		time:  t.Format(timeFormat),
+		time:  t,
 		level: logLevel,
 		log:   newLog,
 	})
 }
 
 // GetLogs retrieves up to c log entries from the buffer that are at or below the specified level.
-func GetLogs(c int, level string) []string {
+func GetLogs(c int, level string, loc *time.Location) []string {
 	var output []string
 	logLevel, _ := logging.LogLevel(level)
 
 	for i := len(logBuffer) - 1; i >= 0 && len(output) <= c; i-- {
 		if logBuffer[i].level <= logLevel {
-			output = append(output, fmt.Sprintf("%s %s - %s", logBuffer[i].time, logBuffer[i].level, logBuffer[i].log))
+			output = append(output, fmt.Sprintf("%s %s - %s", logBuffer[i].time.In(loc).Format(timeFormat), logBuffer[i].level, logBuffer[i].log))
 		}
 	}
 	return output
