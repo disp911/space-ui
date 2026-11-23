@@ -80,25 +80,25 @@ const skeleton = [62, 48, 71, 55, 38, 66, 52, 44, 69, 58, 41, 63]
     </template>
 
     <div class="log-bar">
-      <XButton icon="refresh" :label="t('dashboard.logRefresh')" :loading="loading" @click="load" />
-
       <XMenu v-slot="{ props }" :items="countItems" :title="t('dashboard.logRows')" placement="bottom-start" sheet @select="count = Number($event)">
-        <XButton v-bind="props" :label="`${t('dashboard.logRows')}: ${count}`" caret>
+        <XButton v-bind="props" :label="`${t('dashboard.logRows')}: ${count}`" caret class="log-rows">
           <span class="x-caps log-filter__label">{{ t('dashboard.logRows') }}</span> <span class="mono">{{ count }}</span>
         </XButton>
       </XMenu>
 
       <XMenu v-slot="{ props }" :items="levelItems" :title="t('dashboard.logLevel')" placement="bottom-start" sheet @select="level = $event">
-        <XButton v-bind="props" :label="`${t('dashboard.logLevel')}: ${current.label}`" caret>
-          <span class="x-caps log-filter__label log-filter__label--level">{{ t('dashboard.logLevel') }}</span> <XStatusDot size="sm" :color="current.dot" class="log-filter__dot" /> {{ current.label }}
+        <XButton v-bind="props" :label="`${t('dashboard.logLevel')}: ${current.label}`" caret class="log-level">
+          <span class="x-caps log-filter__label">{{ t('dashboard.logLevel') }}</span> <XStatusDot size="sm" :color="current.dot" class="log-filter__dot" /> {{ current.label }}
         </XButton>
       </XMenu>
 
-      <XCheckbox v-model="syslog" boxed>SysLog</XCheckbox>
+      <XCheckbox v-model="syslog" boxed class="log-syslog">SysLog</XCheckbox>
 
       <XButton icon="download" :label="t('dashboard.logDownload')" phone-icon-only class="log-download" @click="download">
         {{ t('dashboard.logDownload') }}
       </XButton>
+
+      <XButton icon="refresh" :label="t('dashboard.logRefresh')" :loading="loading" class="log-refresh" @click="load" />
     </div>
 
     <div class="log-area">
@@ -218,7 +218,11 @@ const skeleton = [62, 48, 71, 55, 38, 66, 52, 44, 69, 58, 41, 63]
 }
 
 @media (max-width: 767px) {
-  /* No level label on phones; at phone type sizes the tools take two lines, as in the Xray log. */
+  /*
+   * The tools take two even lines, as in the Xray log: rows and SysLog
+   * halving the first, the level across the second with the download and
+   * refresh squares at its right.
+   */
   .log-bar {
     flex-wrap: wrap;
     gap: 8px;
@@ -229,8 +233,25 @@ const skeleton = [62, 48, 71, 55, 38, 66, 52, 44, 69, 58, 41, 63]
     flex: none;
   }
 
-  .log-filter__label--level {
-    display: none;
+  .log-bar > .log-rows,
+  .log-bar > .log-syslog {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+
+  .log-bar > .log-syslog {
+    order: 1;
+  }
+
+  .log-bar > .log-level {
+    flex: 1;
+    min-width: 0;
+    order: 2;
+  }
+
+  .log-bar > .log-download,
+  .log-bar > .log-refresh {
+    order: 3;
   }
 
   .log-box {

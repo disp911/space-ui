@@ -167,13 +167,17 @@ const rows = computed(() =>
     // time in it, with its offset, and the clock is shown as it comes.
     const [, , month = '', dayOfMonth = '', clock = ''] = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2})/.exec(e.DateTime) ?? []
     const kind = byEvent[e.Event] ?? 'direct'
+    // Xray writes the network before the address, «tcp:host:443»: it goes beside the inbound instead.
+    const [, network = '', to = e.ToAddress] = /^(tcp|udp):(.*)$/i.exec(e.ToAddress) ?? []
+    // The panel tags an inbound «inbound-<where it listens>»: the column names it by the rest.
+    const inbound = e.Inbound.replace(/^inbound-/, '')
     return {
       id: i,
       time: `${dayOfMonth}.${month} ${clock}`,
       clock,
-      from: e.FromAddress,
-      to: e.ToAddress,
-      inbound: e.Inbound,
+      from: e.FromAddress.replace(/^(tcp|udp):/i, ''),
+      to,
+      inbound: network ? `${inbound} · ${network.toUpperCase()}` : inbound,
       outbound: e.Outbound,
       email: e.Email,
       kind,
@@ -207,8 +211,6 @@ async function download() {
     </template>
 
     <div class="xlog-bar">
-      <XButton icon="refresh" :label="t('dashboard.logRefresh')" :loading="loading" class="xlog-refresh" @click="load" />
-
       <XMenu v-slot="{ props }" :items="dayItems" :title="t('dashboard.xlogDate')" placement="bottom-start" sheet @select="date = $event">
         <XButton v-bind="props" :label="`${t('dashboard.xlogDate')}: ${day}`" caret class="xlog-filter">
           <span class="x-caps xlog-filter__label">{{ t('dashboard.xlogDate') }}</span> <span class="mono">{{ day }}</span>
@@ -242,6 +244,8 @@ async function download() {
       <XButton icon="download" :label="t('dashboard.logDownload')" :loading="downloading" phone-icon-only class="xlog-download" @click="download">
         {{ t('dashboard.logDownload') }}
       </XButton>
+
+      <XButton icon="refresh" :label="t('dashboard.logRefresh')" :loading="loading" class="xlog-refresh" @click="load" />
     </div>
 
     <div class="xlog-area">
@@ -401,22 +405,22 @@ async function download() {
     display: none;
   }
 
-  /* Refresh, search and the download square on the first line, then date, client and the types square. */
+  /* Date, client and the types square on the first line, then search with the download and refresh squares. */
   .xlog-bar {
     padding: 10px 14px;
   }
 
-  .xlog-refresh {
-    order: -3;
-  }
-
   .xlog-search {
     flex-basis: calc(100% - 2 * var(--btn-sq) - 16px);
-    order: -2;
+    order: 1;
   }
 
   .xlog-download {
-    order: -1;
+    order: 2;
+  }
+
+  .xlog-refresh {
+    order: 3;
   }
 
   /* Date and client share the line, the types square keeps to its right; a long value ends in an ellipsis. */

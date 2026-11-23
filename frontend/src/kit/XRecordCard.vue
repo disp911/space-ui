@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import XBadge from './XBadge.vue'
-import XStatusDot from './XStatusDot.vue'
 import type { RowTone } from './XDataTable.vue'
 
 /**
  * One log record as a card, for phones where a table does not fit: the time
- * on top with a name and a detail at the right; a dot and the title below,
- * with the badge at the right. Tinted by tone like XDataTable rows. loading
- * draws grey bars instead.
+ * on top with a name and a detail at the right; the title below, with the
+ * badge at the right, which tells the record's kind. Tinted by tone like
+ * XDataTable rows. loading draws grey bars instead.
  */
 defineProps<{
   title?: string
@@ -32,7 +31,6 @@ defineProps<{
       <span class="x-record__detail x-ellipsis">{{ detail }}</span>
     </div>
     <div class="x-record__bottom">
-      <XStatusDot size="sm" :color="tone ? `var(--${tone === 'err' ? 'err' : 'upload'})` : 'var(--faint)'" />
       <span class="x-record__title x-ellipsis">{{ title }}</span>
       <XBadge v-if="badge" kind="outline" mono :tone="tone">{{ badge }}</XBadge>
     </div>
