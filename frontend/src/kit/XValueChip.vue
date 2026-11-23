@@ -30,6 +30,12 @@ function hide() {
   timer = window.setTimeout(() => (open.value = false), 160)
 }
 
+// Focus opens it only from the keyboard: focus given back by a closing window
+// would leave it open with the pointer elsewhere.
+function focus(e: FocusEvent) {
+  if ((e.target as Element | null)?.matches?.(':focus-visible')) show()
+}
+
 function tap() {
   if (!hoverable) open.value = !open.value
 }
@@ -46,7 +52,7 @@ onBeforeUnmount(() => clearTimeout(timer))
     :aria-controls="`${id}-list`"
     @mouseenter="hoverable && show()"
     @mouseleave="hoverable && hide()"
-    @focus="show"
+    @focus="focus"
     @blur="hide"
     @click="tap"
   >

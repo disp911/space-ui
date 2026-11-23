@@ -3,7 +3,7 @@ import { ref, useId, watch } from 'vue'
 import { useFloating } from './floating'
 
 /**
- * Short hint shown on hover and keyboard focus; error is what a failure said:
+ * Short hint shown on hover and on focus from the keyboard; error is what a failure said:
  * a red frame and mono text. block lets what it hangs on fill its place, e.g.
  * a usage pill across a cell. silent keeps it away, e.g. while the button it
  * names has a popover open.
@@ -28,6 +28,13 @@ function hide() {
   open.value = false
 }
 
+// Focus shows it only from the keyboard: a window that closes gives focus
+// back to the button that opened it, and the hint would stay up there with
+// the pointer elsewhere, as no mouseleave comes to take it away.
+function focusIn(e: FocusEvent) {
+  if ((e.target as Element | null)?.matches?.(':focus-visible')) show()
+}
+
 watch(
   () => props.silent,
   (h) => h && hide(),
@@ -41,7 +48,7 @@ watch(
     :aria-describedby="open ? id : undefined"
     @mouseenter="show"
     @mouseleave="hide"
-    @focusin="show"
+    @focusin="focusIn"
     @focusout="hide"
   >
     <slot />
