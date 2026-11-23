@@ -255,29 +255,31 @@ func (a *ServerController) getLogs(c *gin.Context) {
 	jsonObj(c, logs, nil)
 }
 
-// getXrayLogs retrieves one page of Xray logs for a single day, with filtering
-// options for client, direct, blocked, and proxy traffic.
+// getXrayLogs retrieves one page of Xray logs for a single day of the viewer's
+// time zone (tz), with filtering options for client, direct, blocked, and
+// proxy traffic.
 func (a *ServerController) getXrayLogs(c *gin.Context) {
 	page, _ := strconv.Atoi(c.PostForm("page"))
 	freedoms, blackholes := a.xrayOutboundTags()
 
-	logs := a.serverService.GetXrayLogs(c.PostForm("date"), page, c.PostForm("email"), c.PostForm("filter"),
+	logs := a.serverService.GetXrayLogs(c.PostForm("tz"), c.PostForm("date"), page, c.PostForm("email"), c.PostForm("filter"),
 		c.PostForm("showDirect"), c.PostForm("showBlocked"), c.PostForm("showProxy"), freedoms, blackholes)
 	jsonObj(c, logs, nil)
 }
 
-// downloadXrayLogs streams every entry of the selected day that matches the
-// viewer's filters as a text file.
+// downloadXrayLogs streams every entry of the selected day, a day of the
+// viewer's time zone, that matches the viewer's filters as a text file.
 func (a *ServerController) downloadXrayLogs(c *gin.Context) {
 	freedoms, blackholes := a.xrayOutboundTags()
-	day := a.serverService.ResolveXrayLogDay(c.PostForm("date"))
+	tz := c.PostForm("tz")
+	day := a.serverService.ResolveXrayLogDay(tz, c.PostForm("date"))
 	email := c.PostForm("email")
 
 	c.Header("Content-Type", "text/plain; charset=utf-8")
 	c.Header("Content-Disposition", `attachment; filename="`+xrayLogFilename(day, email)+`"`)
 	c.Status(http.StatusOK)
 
-	err := a.serverService.ExportXrayLogs(c.Writer, day, email, c.PostForm("filter"),
+	err := a.serverService.ExportXrayLogs(c.Writer, tz, day, email, c.PostForm("filter"),
 		c.PostForm("showDirect"), c.PostForm("showBlocked"), c.PostForm("showProxy"), freedoms, blackholes)
 	if err != nil {
 		logger.Warning("Failed to export Xray logs:", err)

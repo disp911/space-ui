@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -837,10 +838,12 @@ const (
 
 var xrayLogEventNames = [...]string{"DIRECT", "BLOCKED", "PROXY"}
 
-// GetXrayLogs returns one page of stored access log entries for a single day.
-// Entries are ingested into the log database by XrayLogIngestJob, so this is
-// a plain indexed query rather than a scan of the log files.
+// GetXrayLogs returns one page of stored access log entries for a single day
+// of the viewer's time zone tz. Entries are ingested into the log database by
+// XrayLogIngestJob, so this is a plain indexed query rather than a scan of the
+// log files.
 func (s *ServerService) GetXrayLogs(
+	tz string,
 	date string,
 	page int,
 	email string,
@@ -863,14 +866,15 @@ func (s *ServerService) GetXrayLogs(
 		return result
 	}
 
-	result.Dates = xrayLogDates(db)
+	loc := xrayLogZone(tz)
+	result.Dates = xrayLogDates(db, loc)
 	result.Clients = xrayLogClients(db)
 	result.Date = resolveXrayLogDay(result.Dates, date)
 	if result.Date == "" {
 		return result
 	}
 
-	query, ok := xrayLogQuery(db, result.Date, email, filter, showDirect, showBlocked, showProxy, freedoms, blackholes)
+	query, ok := xrayLogQuery(db, loc, result.Date, email, filter, showDirect, showBlocked, showProxy, freedoms, blackholes)
 	if !ok {
 		return result
 	}
@@ -905,21 +909,24 @@ func (s *ServerService) GetXrayLogs(
 	return result
 }
 
-// ResolveXrayLogDay maps a requested day onto the days that have stored
-// entries, the same way the viewer does. It returns "" when nothing is stored.
-func (s *ServerService) ResolveXrayLogDay(date string) string {
+// ResolveXrayLogDay maps a requested day of the time zone tz onto the days
+// that have stored entries, the same way the viewer does. It returns "" when
+// nothing is stored.
+func (s *ServerService) ResolveXrayLogDay(tz string, date string) string {
 	db := database.GetLogDB()
 	if db == nil {
 		return ""
 	}
-	return resolveXrayLogDay(xrayLogDates(db), date)
+	return resolveXrayLogDay(xrayLogDates(db, xrayLogZone(tz)), date)
 }
 
-// ExportXrayLogs writes every stored entry of day that matches the filters to
-// w, oldest first, one line per entry. Rows are streamed from the database, so
-// a busy day never has to fit in memory.
+// ExportXrayLogs writes every stored entry of day, a day of the time zone tz,
+// that matches the filters to w, oldest first, one line per entry, its time in
+// that zone. Rows are streamed from the database, so a busy day never has to
+// fit in memory.
 func (s *ServerService) ExportXrayLogs(
 	w io.Writer,
+	tz string,
 	day string,
 	email string,
 	filter string,
@@ -934,7 +941,8 @@ func (s *ServerService) ExportXrayLogs(
 		return nil
 	}
 
-	query, ok := xrayLogQuery(db, day, email, filter, showDirect, showBlocked, showProxy, freedoms, blackholes)
+	loc := xrayLogZone(tz)
+	query, ok := xrayLogQuery(db, loc, day, email, filter, showDirect, showBlocked, showProxy, freedoms, blackholes)
 	if !ok {
 		return nil
 	}
@@ -951,7 +959,7 @@ func (s *ServerService) ExportXrayLogs(
 		if err := db.ScanRows(rows, &row); err != nil {
 			return err
 		}
-		if err := writeXrayLogLine(out, &row, xrayLogEvent(row.Outbound, freedoms, blackholes)); err != nil {
+		if err := writeXrayLogLine(out, &row, xrayLogEvent(row.Outbound, freedoms, blackholes), loc); err != nil {
 			return err
 		}
 	}
@@ -973,10 +981,12 @@ func resolveXrayLogDay(days []string, date string) string {
 	return days[0]
 }
 
-// xrayLogQuery builds the filtered query for one day that both the viewer and
-// the export run. ok is false when the filters cannot match any row.
+// xrayLogQuery builds the filtered query for one day of loc that both the
+// viewer and the export run: the entries from its midnight to the next. ok is
+// false when the day is no date or the filters cannot match any row.
 func xrayLogQuery(
 	db *gorm.DB,
+	loc *time.Location,
 	day string,
 	email string,
 	filter string,
@@ -986,7 +996,11 @@ func xrayLogQuery(
 	freedoms []string,
 	blackholes []string) (*gorm.DB, bool) {
 
-	query := db.Model(&model.XrayLogEntry{}).Where("day = ?", day)
+	from, to, ok := xrayLogDayRange(day, loc)
+	if !ok {
+		return nil, false
+	}
+	query := db.Model(&model.XrayLogEntry{}).Where("timestamp >= ? AND timestamp < ?", from, to)
 
 	if email != "" {
 		query = query.Where("email = ?", email)
@@ -1031,10 +1045,10 @@ func xrayLogEvent(outbound string, freedoms []string, blackholes []string) int {
 	return xrayLogProxied
 }
 
-// writeXrayLogLine writes one exported entry. The timestamp is in the server's
-// local time and in Xray's own layout, so exported lines match the log files.
-func writeXrayLogLine(w *bufio.Writer, row *model.XrayLogEntry, event int) error {
-	line := time.UnixMicro(row.Timestamp).Format("2006/01/02 15:04:05.000000") +
+// writeXrayLogLine writes one exported entry, its time in loc, the zone the
+// day was cut in, and in Xray's own layout.
+func writeXrayLogLine(w *bufio.Writer, row *model.XrayLogEntry, event int, loc *time.Location) error {
+	line := time.UnixMicro(row.Timestamp).In(loc).Format("2006/01/02 15:04:05.000000") +
 		" FROM=" + row.FromAddress +
 		" TO=" + row.ToAddress +
 		" INBOUND=" + row.Inbound +
@@ -1046,19 +1060,69 @@ func writeXrayLogLine(w *bufio.Writer, row *model.XrayLogEntry, event int) error
 	return err
 }
 
-// xrayLogDates lists the days that currently have stored entries, newest
-// first. The day column is indexed, so this stays cheap as the table grows.
-func xrayLogDates(db *gorm.DB) []string {
-	var days []string
-	err := db.Model(&model.XrayLogEntry{}).
-		Distinct().
-		Order("day desc").
-		Pluck("day", &days).Error
+// xrayLogZone is the viewer's time zone, an IANA name; the server's own when
+// it is none the panel knows.
+func xrayLogZone(tz string) *time.Location {
+	if tz == "" {
+		return time.Local
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return time.Local
+	}
+	return loc
+}
+
+// xrayLogDayRange is the day of loc, as 2006-01-02, from its midnight to the
+// next one in unix microseconds; a day with a clock change is 23 or 25 hours.
+func xrayLogDayRange(day string, loc *time.Location) (from int64, to int64, ok bool) {
+	start, err := time.ParseInLocation(xray.AccessPersistentLogDateFormat, day, loc)
+	if err != nil {
+		return 0, 0, false
+	}
+	return start.UnixMicro(), start.AddDate(0, 0, 1).UnixMicro(), true
+}
+
+// xrayLogDates lists the days of loc that have stored entries, newest first:
+// each day from the newest entry's to the oldest's that holds one. The rows
+// are indexed by their time, and the retention keeps the days few.
+func xrayLogDates(db *gorm.DB, loc *time.Location) []string {
+	// One min or max a query: SQLite answers each from the index alone.
+	var oldestAt, newestAt sql.NullInt64
+	err := db.Model(&model.XrayLogEntry{}).Select("min(timestamp)").Row().Scan(&oldestAt)
+	if err == nil {
+		err = db.Model(&model.XrayLogEntry{}).Select("max(timestamp)").Row().Scan(&newestAt)
+	}
 	if err != nil {
 		logger.Warning("Failed to list Xray log days:", err)
 		return nil
 	}
-	return days
+	if !oldestAt.Valid || !newestAt.Valid {
+		return nil
+	}
+	oldest := time.UnixMicro(oldestAt.Int64).In(loc).Format(xray.AccessPersistentLogDateFormat)
+	var days []string
+	day := time.UnixMicro(newestAt.Int64).In(loc)
+	for {
+		name := day.Format(xray.AccessPersistentLogDateFormat)
+		from, to, _ := xrayLogDayRange(name, loc)
+		var one []int64
+		err := db.Model(&model.XrayLogEntry{}).
+			Where("timestamp >= ? AND timestamp < ?", from, to).
+			Limit(1).
+			Pluck("id", &one).Error
+		if err != nil {
+			logger.Warning("Failed to list Xray log days:", err)
+			return days
+		}
+		if len(one) > 0 {
+			days = append(days, name)
+		}
+		if name <= oldest {
+			return days
+		}
+		day = day.AddDate(0, 0, -1)
+	}
 }
 
 // xrayLogClients lists every client that appears anywhere in the stored logs.

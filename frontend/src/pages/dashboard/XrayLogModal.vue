@@ -56,6 +56,8 @@ const failed = ref('')
 
 function form(withPage: boolean) {
   const body = new FormData()
+  // Days are this browser's, as the times are: the server cuts them in its zone.
+  body.set('tz', Intl.DateTimeFormat().resolvedOptions().timeZone)
   body.set('date', date.value)
   body.set('email', client.value)
   body.set('filter', query.value.trim())
