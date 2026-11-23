@@ -299,13 +299,15 @@ func (a *InboundController) getClientIps(c *gin.Context) {
 
 	var ipsWithTime []ipWithTimestamp
 	if err := json.Unmarshal([]byte(ips), &ipsWithTime); err == nil && len(ipsWithTime) > 0 {
+		// When each address was seen, in the panel's time zone.
+		loc := service.PanelLocation()
 		formatted := make([]string, 0, len(ipsWithTime))
 		for _, item := range ipsWithTime {
 			if item.IP == "" {
 				continue
 			}
 			if item.Timestamp > 0 {
-				ts := time.Unix(item.Timestamp, 0).Local().Format("2006-01-02 15:04:05")
+				ts := time.Unix(item.Timestamp, 0).In(loc).Format("2006-01-02 15:04:05")
 				formatted = append(formatted, fmt.Sprintf("%s (%s)", item.IP, ts))
 				continue
 			}

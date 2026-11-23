@@ -173,7 +173,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	// The panel's frontend, served from the base path: its files, and for any
 	// other page index.html, so the app's own routes survive a reload.
 	app := spa.Handler(AppFS(), func(c *gin.Context) spa.Config {
-		return spa.Config{Base: basePath, Mount: basePath, LoggedIn: session.IsLogin(c), Version: config.GetVersion()}
+		return spa.Config{Base: basePath, Mount: basePath, LoggedIn: session.IsLogin(c), Version: config.GetVersion(), Zone: service.PanelZoneName()}
 	})
 
 	// Initialize WebSocket hub

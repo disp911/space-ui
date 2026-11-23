@@ -3,13 +3,15 @@ import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import XIcon from './XIcon.vue'
 import XInlineButton from './XInlineButton.vue'
+import { clockOf, momentOf } from '../i18n/zone'
 import { useFieldAttrs } from './useFieldAttrs'
 
 /**
  * A date and time, e.g. when an inbound ends: typed as YYYY-MM-DD HH:mm:ss or
  * picked in the browser's own calendar from the button. The value is
- * milliseconds since the epoch in local time; 0 is none, and the cross clears
- * it to none. Text that is not a date marks the field until it is one.
+ * milliseconds since the epoch; the date and time are read and shown in the
+ * panel's time zone. 0 is none, and the cross clears it to none. Text that is
+ * not a date marks the field until it is one.
  */
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(defineProps<{ placeholder?: string; disabled?: boolean; invalid?: boolean; modified?: boolean }>(), {
@@ -23,17 +25,21 @@ const p2 = (n: number) => String(n).padStart(2, '0')
 
 function format(ms: number, sep = ' ') {
   if (!ms) return ''
-  const d = new Date(ms)
-  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}${sep}${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`
+  const c = clockOf(ms)
+  return `${c.year}-${p2(c.month)}-${p2(c.day)}${sep}${p2(c.hour)}:${p2(c.minute)}:${p2(c.second)}`
 }
 
 /** Typed text as a date: the date alone, with hours and minutes, or with seconds. */
 function parse(text: string): number | null {
   const m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(text.trim())
   if (!m) return null
-  const [y, mo, d, h = '0', mi = '0', s = '0'] = m.slice(1)
-  const date = new Date(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi), Number(s))
-  return date.getMonth() === Number(mo) - 1 && date.getDate() === Number(d) ? date.getTime() : null
+  // Hours, minutes and seconds left out are 0.
+  const [y = 0, mo = 0, d = 0, h = 0, mi = 0, s = 0] = m.slice(1).map((v) => (v ? Number(v) : 0))
+  if (h > 23 || mi > 59 || s > 59) return null
+  // A day the month does not have, e.g. 31 April, rolls over: refused.
+  const day = new Date(Date.UTC(y, mo - 1, d))
+  if (day.getUTCMonth() !== mo - 1 || day.getUTCDate() !== d) return null
+  return momentOf({ year: y, month: mo, day: d, hour: h, minute: mi, second: s })
 }
 
 const text = ref(format(model.value))

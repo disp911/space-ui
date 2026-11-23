@@ -22,6 +22,8 @@ type Config struct {
 	// LoggedIn tells the frontend whether the request carried a session.
 	LoggedIn bool   `json:"loggedIn"`
 	Version  string `json:"version"`
+	// Zone is the panel's time zone by its IANA name: the windows show their dates in it.
+	Zone string `json:"zone,omitempty"`
 }
 
 // placeholder is the comment in the frontend's pages (index.html, sub.html)

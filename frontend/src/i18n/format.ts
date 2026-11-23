@@ -4,6 +4,7 @@
 // Intl's Russian labels differ from ours («кБ», «3 д. 4 ч»).
 
 import { i18n } from '.'
+import { clockOf } from './zone'
 
 const t = (key: string, params: Record<string, string>) => i18n.global.t(key, params)
 const locale = () => i18n.global.locale.value
@@ -71,16 +72,16 @@ export function formatDuration(seconds: number, parts = 2) {
 
 const two = (n: number) => String(n).padStart(2, '0')
 
-/** Unix seconds → «2026-10-09 14:32:05» in local time. */
+/** Unix seconds → «2026-10-09 14:32:05» in the panel's time zone (the browser's on the subscription page). */
 export function formatTimestamp(seconds: number) {
-  const d = new Date(seconds * 1000)
-  return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())} ${two(d.getHours())}:${two(d.getMinutes())}:${two(d.getSeconds())}`
+  const c = clockOf(seconds * 1000)
+  return `${c.year}-${two(c.month)}-${two(c.day)} ${two(c.hour)}:${two(c.minute)}:${two(c.second)}`
 }
 
-/** Milliseconds → «08.10.2026 14:30» in local time. */
+/** Milliseconds → «08.10.2026 14:30» in the panel's time zone (the browser's on the subscription page). */
 export function formatDate(ms: number) {
-  const d = new Date(ms)
-  return `${two(d.getDate())}.${two(d.getMonth() + 1)}.${d.getFullYear()} ${two(d.getHours())}:${two(d.getMinutes())}`
+  const c = clockOf(ms)
+  return `${two(c.day)}.${two(c.month)}.${c.year} ${two(c.hour)}:${two(c.minute)}`
 }
 
 /** A moment from now in hours under a day, in days beyond: «через 41 день», «5 дней назад», "in 3 hours". */

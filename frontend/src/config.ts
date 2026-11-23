@@ -8,6 +8,8 @@ export interface AppConfig {
   mount: string
   loggedIn: boolean
   version: string
+  /** The panel's time zone by its IANA name, which its windows show dates in; none on the subscription page. */
+  zone?: string
 }
 
 function read(): AppConfig {
