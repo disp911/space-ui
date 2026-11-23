@@ -2,10 +2,11 @@
 import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { locales, setLocale, type Locale } from '../../i18n'
-import { XInput, XNumber, XSegmented, XSelect, XSettingRow, XSettingsSection } from '../../kit'
+import { XNumber, XSegmented, XSelect, XSettingRow, XSettingsSection } from '../../kit'
 import { useTheme, type Theme } from '../../stores/theme'
 import { useSettingsForm } from './form'
 import type { SettingKey } from './model'
+import { timeZoneOptions } from './timezones'
 
 /**
  * How the panel looks and counts. The language and the theme belong to this
@@ -21,6 +22,9 @@ const sections = {
   time: ['timeLocation'],
   expiring: ['expireDiff', 'trafficDiff'],
 } satisfies Record<string, SettingKey[]>
+
+// Every zone once, the saved one among them even when the browser does not list it.
+const zones = computed(() => timeZoneOptions(t('settings.timeLocationServer'), f.saved.timeLocation))
 
 const themes = computed(() => [
   { value: 'light' as Theme, label: t('settings.themeLight'), icon: 'sun' as const },
@@ -44,7 +48,7 @@ const themes = computed(() => [
 
     <XSettingsSection v-model:open="open.time" :title="t('settings.secDateTime')" :count="1" :modified="f.count(sections.time).dirty" :errors="f.count(sections.time).errors">
       <XSettingRow :title="t('settings.timeLocation')" :description="t('settings.timeLocationDesc')" :modified="f.isDirty('timeLocation')">
-        <XInput v-model="f.draft.timeLocation" mono placeholder="Local" :modified="f.isDirty('timeLocation')" />
+        <XSelect v-model="f.draft.timeLocation" :options="zones" search :modified="f.isDirty('timeLocation')" />
       </XSettingRow>
     </XSettingsSection>
 

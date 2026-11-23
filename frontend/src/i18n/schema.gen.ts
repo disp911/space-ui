@@ -323,6 +323,7 @@ export interface MessageSchema {
     "pageSizeDesc": string
     "timeLocation": string
     "timeLocationDesc": string
+    "timeLocationServer": string
     "expireDiff": string
     "expireDiffDesc": string
     "trafficDiff": string

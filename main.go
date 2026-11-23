@@ -10,6 +10,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	// The time zones the panel's schedule can keep to, on any system,
+	// Windows included, where the system has none Go can read.
+	_ "time/tzdata"
 	_ "unsafe"
 
 	"github.com/disp911/space-ui/v3/config"

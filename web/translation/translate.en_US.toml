@@ -412,6 +412,7 @@
 "pageSizeDesc" = "Define page size for inbounds table. Set 0 to disable"
 "timeLocation" = "Time Zone"
 "timeLocationDesc" = "Scheduled tasks will run based on this time zone"
+"timeLocationServer" = "Server time"
 "expireDiff" = "Highlight N days before expiry"
 "expireDiffDesc" = "Clients and inbounds with fewer days than this left before expiry are highlighted in the list."
 "trafficDiff" = "Highlight when traffic left is below, GB"
