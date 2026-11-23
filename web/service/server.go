@@ -839,11 +839,10 @@ const (
 var xrayLogEventNames = [...]string{"DIRECT", "BLOCKED", "PROXY"}
 
 // GetXrayLogs returns one page of stored access log entries for a single day
-// of the viewer's time zone tz. Entries are ingested into the log database by
-// XrayLogIngestJob, so this is a plain indexed query rather than a scan of the
-// log files.
+// of the panel's time zone, their times in it. Entries are ingested into the
+// log database by XrayLogIngestJob, so this is a plain indexed query rather
+// than a scan of the log files.
 func (s *ServerService) GetXrayLogs(
-	tz string,
 	date string,
 	page int,
 	email string,
@@ -866,7 +865,7 @@ func (s *ServerService) GetXrayLogs(
 		return result
 	}
 
-	loc := xrayLogZone(tz)
+	loc := xrayLogZone()
 	result.Dates = xrayLogDates(db, loc)
 	result.Clients = xrayLogClients(db)
 	result.Date = resolveXrayLogDay(result.Dates, date)
@@ -896,7 +895,7 @@ func (s *ServerService) GetXrayLogs(
 
 	for _, row := range rows {
 		result.Entries = append(result.Entries, LogEntry{
-			DateTime:    time.UnixMicro(row.Timestamp).UTC(),
+			DateTime:    time.UnixMicro(row.Timestamp).In(loc),
 			FromAddress: row.FromAddress,
 			ToAddress:   row.ToAddress,
 			Inbound:     row.Inbound,
@@ -909,24 +908,23 @@ func (s *ServerService) GetXrayLogs(
 	return result
 }
 
-// ResolveXrayLogDay maps a requested day of the time zone tz onto the days
-// that have stored entries, the same way the viewer does. It returns "" when
-// nothing is stored.
-func (s *ServerService) ResolveXrayLogDay(tz string, date string) string {
+// ResolveXrayLogDay maps a requested day of the panel's time zone onto the
+// days that have stored entries, the same way the viewer does. It returns ""
+// when nothing is stored.
+func (s *ServerService) ResolveXrayLogDay(date string) string {
 	db := database.GetLogDB()
 	if db == nil {
 		return ""
 	}
-	return resolveXrayLogDay(xrayLogDates(db, xrayLogZone(tz)), date)
+	return resolveXrayLogDay(xrayLogDates(db, xrayLogZone()), date)
 }
 
-// ExportXrayLogs writes every stored entry of day, a day of the time zone tz,
-// that matches the filters to w, oldest first, one line per entry, its time in
-// that zone. Rows are streamed from the database, so a busy day never has to
-// fit in memory.
+// ExportXrayLogs writes every stored entry of day, a day of the panel's time
+// zone, that matches the filters to w, oldest first, one line per entry, its
+// time in that zone. Rows are streamed from the database, so a busy day never
+// has to fit in memory.
 func (s *ServerService) ExportXrayLogs(
 	w io.Writer,
-	tz string,
 	day string,
 	email string,
 	filter string,
@@ -941,7 +939,23 @@ func (s *ServerService) ExportXrayLogs(
 		return nil
 	}
 
-	loc := xrayLogZone(tz)
+	return exportXrayLogs(w, db, xrayLogZone(), day, email, filter, showDirect, showBlocked, showProxy, freedoms, blackholes)
+}
+
+// exportXrayLogs is ExportXrayLogs with the time zone given.
+func exportXrayLogs(
+	w io.Writer,
+	db *gorm.DB,
+	loc *time.Location,
+	day string,
+	email string,
+	filter string,
+	showDirect string,
+	showBlocked string,
+	showProxy string,
+	freedoms []string,
+	blackholes []string) error {
+
 	query, ok := xrayLogQuery(db, loc, day, email, filter, showDirect, showBlocked, showProxy, freedoms, blackholes)
 	if !ok {
 		return nil
@@ -1060,13 +1074,10 @@ func writeXrayLogLine(w *bufio.Writer, row *model.XrayLogEntry, event int, loc *
 	return err
 }
 
-// xrayLogZone is the viewer's time zone, an IANA name; the server's own when
-// it is none the panel knows.
-func xrayLogZone(tz string) *time.Location {
-	if tz == "" {
-		return time.Local
-	}
-	loc, err := time.LoadLocation(tz)
+// xrayLogZone is the time zone the log's days and times are in: the panel's,
+// the server's own by default.
+func xrayLogZone() *time.Location {
+	loc, err := new(SettingService).GetTimeLocation()
 	if err != nil {
 		return time.Local
 	}

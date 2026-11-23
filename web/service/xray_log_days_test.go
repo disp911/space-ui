@@ -36,15 +36,15 @@ func xrayLogTestDB(t *testing.T, at ...time.Time) {
 	}
 }
 
-// TestXrayLogDaysAreTheViewersDays checks that the log's days, their entries
-// and the times in an exported file follow the viewer's time zone.
-func TestXrayLogDaysAreTheViewersDays(t *testing.T) {
+// TestXrayLogDaysFollowTheZone checks that the log's days, their entries and
+// the times in an exported file follow the time zone they are read in.
+func TestXrayLogDaysFollowTheZone(t *testing.T) {
 	// 21 November 2026, 22:30 and 23:30 UTC, and 22 November, 12:00 UTC.
 	late := time.Date(2026, 11, 21, 22, 30, 0, 0, time.UTC)
 	later := time.Date(2026, 11, 21, 23, 30, 0, 0, time.UTC)
 	noon := time.Date(2026, 11, 22, 12, 0, 0, 0, time.UTC)
 	xrayLogTestDB(t, late, later, noon)
-	s := new(ServerService)
+	db := database.GetLogDB()
 	free := []string{"direct"}
 
 	for tz, c := range map[string]struct {
@@ -57,26 +57,26 @@ func TestXrayLogDaysAreTheViewersDays(t *testing.T) {
 		"America/New_York": {[]string{"2026-11-22", "2026-11-21"}, []int64{1, 2}},
 		"UTC":              {[]string{"2026-11-22", "2026-11-21"}, []int64{1, 2}},
 	} {
-		page := s.GetXrayLogs(tz, "", 1, "", "", "", "", "", free, nil)
-		if !slices.Equal(page.Dates, c.days) {
-			t.Errorf("%s: days %v, want %v", tz, page.Dates, c.days)
+		loc, err := time.LoadLocation(tz)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if days := xrayLogDates(db, loc); !slices.Equal(days, c.days) {
+			t.Errorf("%s: days %v, want %v", tz, days, c.days)
 			continue
 		}
 		for i, day := range c.days {
-			got := s.GetXrayLogs(tz, day, 1, "", "", "", "", "", free, nil)
-			if got.Date != day || got.Total != c.counts[i] || int64(len(got.Entries)) != c.counts[i] {
-				t.Errorf("%s %s: day %s, %d entries of %d, want %d", tz, day, got.Date, len(got.Entries), got.Total, c.counts[i])
+			query, ok := xrayLogQuery(db, loc, day, "", "", "", "", "", free, nil)
+			var n int64
+			if !ok || query.Count(&n).Error != nil || n != c.counts[i] {
+				t.Errorf("%s %s: %d entries, want %d", tz, day, n, c.counts[i])
 			}
 		}
 	}
 
-	// An unknown zone is the server's own; a day the log does not have is the newest.
-	if got := s.ResolveXrayLogDay("Mars/Olympus", "2020-01-01"); got == "" {
-		t.Error("no day for an unknown zone")
-	}
-
+	ny, _ := time.LoadLocation("America/New_York")
 	var out bytes.Buffer
-	if err := s.ExportXrayLogs(&out, "America/New_York", "2026-11-21", "", "", "", "", "", free, nil); err != nil {
+	if err := exportXrayLogs(&out, db, ny, "2026-11-21", "", "", "", "", "", free, nil); err != nil {
 		t.Fatal(err)
 	}
 	lines := strings.Split(strings.TrimSpace(out.String()), "\n")

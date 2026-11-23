@@ -56,8 +56,6 @@ const failed = ref('')
 
 function form(withPage: boolean) {
   const body = new FormData()
-  // Days are this browser's, as the times are: the server cuts them in its zone.
-  body.set('tz', Intl.DateTimeFormat().resolvedOptions().timeZone)
   body.set('date', date.value)
   body.set('email', client.value)
   body.set('filter', query.value.trim())
@@ -165,14 +163,13 @@ const columns = computed<TableColumn[]>(() => [
 
 const rows = computed(() =>
   (data.value?.entries ?? []).map((e, i) => {
-    // In this browser's time zone, as every time in the panel: the server sends UTC.
-    const d = new Date(e.DateTime)
-    const two = (n: number) => String(n).padStart(2, '0')
-    const clock = `${two(d.getHours())}:${two(d.getMinutes())}:${two(d.getSeconds())}`
+    // The panel's time zone, the one the server cut the days in: it sends each
+    // time in it, with its offset, and the clock is shown as it comes.
+    const [, , month = '', dayOfMonth = '', clock = ''] = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2})/.exec(e.DateTime) ?? []
     const kind = byEvent[e.Event] ?? 'direct'
     return {
       id: i,
-      time: `${two(d.getDate())}.${two(d.getMonth() + 1)} ${clock}`,
+      time: `${dayOfMonth}.${month} ${clock}`,
       clock,
       from: e.FromAddress,
       to: e.ToAddress,
