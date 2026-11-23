@@ -890,9 +890,15 @@ func (s *ServerService) GetXrayLogs(
 		return result
 	}
 
+	// Times in the panel's time zone, its offset with them: the window shows
+	// the clock as it comes.
+	loc, err := new(SettingService).GetTimeLocation()
+	if err != nil {
+		loc = time.Local
+	}
 	for _, row := range rows {
 		result.Entries = append(result.Entries, LogEntry{
-			DateTime:    time.UnixMicro(row.Timestamp).UTC(),
+			DateTime:    time.UnixMicro(row.Timestamp).In(loc),
 			FromAddress: row.FromAddress,
 			ToAddress:   row.ToAddress,
 			Inbound:     row.Inbound,
