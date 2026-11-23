@@ -68,8 +68,13 @@ button.x-test-result:active {
   transition: background-color var(--t-fast);
 }
 
-.x-test-result--fail:hover,
 .x-test-result--fail:focus-visible {
   background: var(--err-bg);
+}
+
+@media (hover: hover) {
+  .x-test-result--fail:hover {
+    background: var(--err-bg);
+  }
 }
 </style>

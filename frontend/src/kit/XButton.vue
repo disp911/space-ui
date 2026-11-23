@@ -256,10 +256,16 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
   background: var(--acc);
   color: var(--acc-ink);
 }
-.x-btn--primary:hover:not(:disabled),
 .x-btn--primary.is-hover {
   background: var(--acc-hover);
   box-shadow: 0 0 0 3px var(--acc-ring), 0 0 14px var(--acc-glow);
+}
+
+@media (hover: hover) {
+  .x-btn--primary:hover:not(:disabled) {
+    background: var(--acc-hover);
+    box-shadow: 0 0 0 3px var(--acc-ring), 0 0 14px var(--acc-glow);
+  }
 }
 .x-btn--primary:active:not(:disabled),
 .x-btn--primary.is-active {
@@ -274,10 +280,16 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
   color: var(--fg2);
   font-weight: 500;
 }
-.x-btn--secondary:hover:not(:disabled),
 .x-btn--secondary.is-hover {
   border-color: var(--field-hover);
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-btn--secondary:hover:not(:disabled) {
+    border-color: var(--field-hover);
+    color: var(--fg);
+  }
 }
 .x-btn--secondary:focus-visible,
 .x-btn--secondary.is-focus {
@@ -297,9 +309,14 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
   border-color: var(--acc-line);
   color: var(--acc-t);
 }
-.x-btn--soft:hover:not(:disabled),
 .x-btn--soft.is-hover {
   border-color: var(--acc);
+}
+
+@media (hover: hover) {
+  .x-btn--soft:hover:not(:disabled) {
+    border-color: var(--acc);
+  }
 }
 
 /* ok: pale green, as danger is pale red; e.g. an update waiting */
@@ -308,9 +325,14 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
   border-color: var(--ok-line);
   color: var(--ok-t);
 }
-.x-btn--ok:hover:not(:disabled),
 .x-btn--ok.is-hover {
   border-color: var(--ok);
+}
+
+@media (hover: hover) {
+  .x-btn--ok:hover:not(:disabled) {
+    border-color: var(--ok);
+  }
 }
 .x-btn--ok:focus-visible,
 .x-btn--ok.is-focus {
@@ -327,9 +349,14 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
   border-color: var(--err-line);
   color: var(--err-t);
 }
-.x-btn--danger:hover:not(:disabled),
 .x-btn--danger.is-hover {
   box-shadow: 0 0 0 3px var(--err-ring);
+}
+
+@media (hover: hover) {
+  .x-btn--danger:hover:not(:disabled) {
+    box-shadow: 0 0 0 3px var(--err-ring);
+  }
 }
 .x-btn--danger:focus-visible,
 .x-btn--danger.is-focus {
@@ -348,11 +375,18 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
   color: var(--fg2);
   font-weight: 500;
 }
-.x-btn--dashed:hover:not(:disabled),
 .x-btn--dashed.is-hover {
   border-color: var(--acc-line);
   background: var(--acc-soft);
   color: var(--acc-t);
+}
+
+@media (hover: hover) {
+  .x-btn--dashed:hover:not(:disabled) {
+    border-color: var(--acc-line);
+    background: var(--acc-soft);
+    color: var(--acc-t);
+  }
 }
 .x-btn--dashed:focus-visible,
 .x-btn--dashed.is-focus {
@@ -366,10 +400,16 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
   color: var(--dim);
   font-weight: 500;
 }
-.x-btn--ghost:hover:not(:disabled),
 .x-btn--ghost.is-hover {
   background: var(--hov);
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-btn--ghost:hover:not(:disabled) {
+    background: var(--hov);
+    color: var(--fg);
+  }
 }
 .x-btn--ghost:focus-visible,
 .x-btn--ghost.is-focus {
@@ -388,9 +428,14 @@ const linkAttrs = computed(() => (props.to ? { to: props.to } : props.href ? { h
   color: var(--err-t);
   font-weight: 500;
 }
-.x-btn--ghost-danger:hover:not(:disabled),
 .x-btn--ghost-danger.is-hover {
   background: var(--err-bg);
+}
+
+@media (hover: hover) {
+  .x-btn--ghost-danger:hover:not(:disabled) {
+    background: var(--err-bg);
+  }
 }
 .x-btn--ghost-danger:focus-visible,
 .x-btn--ghost-danger.is-focus {

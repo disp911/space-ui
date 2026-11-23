@@ -211,10 +211,16 @@ const canOpen = (row: T) => props.expandable?.(row) ?? false
   transition: background-color var(--t-fast), color var(--t-fast), transform var(--t-fast);
 }
 
-.x-expand__toggle:hover,
 .x-expand__toggle.is-hover {
   background: var(--press);
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-expand__toggle:hover {
+    background: var(--press);
+    color: var(--fg);
+  }
 }
 
 .x-expand__toggle:focus-visible,

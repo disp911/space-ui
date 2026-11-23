@@ -104,8 +104,10 @@ onBeforeUnmount(() => clearTimeout(timer))
   transform: scale(var(--press-scale-chip));
 }
 
-.x-value-chip:hover {
-  border-color: var(--field-hover);
+@media (hover: hover) {
+  .x-value-chip:hover {
+    border-color: var(--field-hover);
+  }
 }
 
 .x-value-chip:focus-visible {

@@ -82,9 +82,14 @@ onBeforeUnmount(() => clearTimeout(timer))
   transition: box-shadow var(--t-med);
 }
 
-.x-qr--copy:hover,
 .x-qr--copy:focus-visible {
   box-shadow: 0 0 0 2px var(--acc), 0 0 0 6px var(--acc-ring);
+}
+
+@media (hover: hover) {
+  .x-qr--copy:hover {
+    box-shadow: 0 0 0 2px var(--acc), 0 0 0 6px var(--acc-ring);
+  }
 }
 
 .x-qr__badge {

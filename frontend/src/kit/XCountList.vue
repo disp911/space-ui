@@ -92,9 +92,14 @@ const measure = (el: unknown) => {
   transition: filter var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
 }
 
-.x-count:hover,
 .x-count.is-hover {
   filter: brightness(1.15);
+}
+
+@media (hover: hover) {
+  .x-count:hover {
+    filter: brightness(1.15);
+  }
 }
 
 .x-count:focus-visible,
@@ -231,9 +236,11 @@ const measure = (el: unknown) => {
   outline: none;
 }
 
-.x-count__comment:hover {
-  background: var(--hov);
-  color: var(--fg);
+@media (hover: hover) {
+  .x-count__comment:hover {
+    background: var(--hov);
+    color: var(--fg);
+  }
 }
 
 .x-count__comment:focus-visible {

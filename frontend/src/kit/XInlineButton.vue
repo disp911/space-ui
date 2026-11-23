@@ -77,10 +77,16 @@ withDefaults(
   transform: scale(var(--press-scale-icon));
 }
 
-.x-inline-btn:hover:not(:disabled),
 .x-inline-btn.is-hover {
   background: var(--hov);
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-inline-btn:hover:not(:disabled) {
+    background: var(--hov);
+    color: var(--fg);
+  }
 }
 
 .x-inline-btn[aria-expanded='true'] {
@@ -97,9 +103,11 @@ withDefaults(
   color: var(--err-t);
 }
 
-.x-inline-btn--danger:hover:not(:disabled) {
-  background: var(--err-bg);
-  color: var(--err-t);
+@media (hover: hover) {
+  .x-inline-btn--danger:hover:not(:disabled) {
+    background: var(--err-bg);
+    color: var(--err-t);
+  }
 }
 
 .x-inline-btn:focus-visible,

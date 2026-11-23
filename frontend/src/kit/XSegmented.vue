@@ -188,9 +188,14 @@ function onKeydown(e: KeyboardEvent) {
   color: var(--dim);
 }
 
-.x-seg__item:hover:not(:disabled),
 .x-seg__item.is-hover {
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-seg__item:hover:not(:disabled) {
+    color: var(--fg);
+  }
 }
 
 .x-seg__item:focus-visible,

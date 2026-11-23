@@ -64,9 +64,11 @@ function toggle(v: T) {
   font-family: var(--font-mono);
 }
 
-.x-order__item:hover {
-  border-color: var(--field-hover);
-  color: var(--fg);
+@media (hover: hover) {
+  .x-order__item:hover {
+    border-color: var(--field-hover);
+    color: var(--fg);
+  }
 }
 
 .x-order__item:focus-visible {

@@ -68,8 +68,10 @@ function onInput(e: Event) {
   color: var(--faint);
 }
 
-.x-code__control:hover {
-  border-color: var(--field-hover);
+@media (hover: hover) {
+  .x-code__control:hover {
+    border-color: var(--field-hover);
+  }
 }
 
 .x-code__control:focus {

@@ -52,8 +52,10 @@ onBeforeUnmount(() => clearTimeout(timer))
   transition: filter var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
 }
 
-.x-copy-chip:hover {
-  filter: brightness(1.15);
+@media (hover: hover) {
+  .x-copy-chip:hover {
+    filter: brightness(1.15);
+  }
 }
 
 .x-copy-chip:focus-visible {

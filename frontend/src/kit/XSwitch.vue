@@ -100,9 +100,14 @@ const button = computed(() => ({
   outline: none;
 }
 
-.x-switch-box__help:hover,
 .x-switch-box__help:focus-visible {
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-switch-box__help:hover {
+    color: var(--fg);
+  }
 }
 
 /* The label and its ? sit together at the left; the switch keeps to the right. */
@@ -194,9 +199,14 @@ const button = computed(() => ({
   color: var(--acc);
 }
 
-.x-switch:hover:not(:disabled),
 .x-switch.is-hover {
   filter: brightness(1.12);
+}
+
+@media (hover: hover) {
+  .x-switch:hover:not(:disabled) {
+    filter: brightness(1.12);
+  }
 }
 
 .x-switch:active:not(:disabled) .x-switch__knob,

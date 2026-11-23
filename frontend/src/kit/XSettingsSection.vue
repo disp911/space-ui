@@ -71,8 +71,10 @@ const { t } = useI18n()
   transition: background-color var(--t-fast);
 }
 
-.x-settings__head:hover {
-  background: var(--hov);
+@media (hover: hover) {
+  .x-settings__head:hover {
+    background: var(--hov);
+  }
 }
 
 .x-settings__head:active {

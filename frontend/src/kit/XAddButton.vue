@@ -32,8 +32,10 @@ defineProps<{ label: string }>()
   transform: scale(var(--press-scale));
 }
 
-.x-add:hover {
-  background: var(--acc-soft);
+@media (hover: hover) {
+  .x-add:hover {
+    background: var(--acc-soft);
+  }
 }
 
 .x-add:focus-visible {

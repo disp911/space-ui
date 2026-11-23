@@ -64,9 +64,14 @@ const model = defineModel<boolean>({ default: false })
   transform: scale(var(--press-scale-icon));
 }
 
-.x-check:hover .x-check__box,
 .x-check.is-hover .x-check__box {
   border-color: var(--acc-line);
+}
+
+@media (hover: hover) {
+  .x-check:hover .x-check__box {
+    border-color: var(--acc-line);
+  }
 }
 
 .x-check__box.is-on {
@@ -102,9 +107,14 @@ const model = defineModel<boolean>({ default: false })
   transition: border-color var(--t-fast), box-shadow var(--t-fast);
 }
 
-.x-check--boxed:hover,
 .x-check--boxed.is-hover {
   border-color: var(--field-hover);
+}
+
+@media (hover: hover) {
+  .x-check--boxed:hover {
+    border-color: var(--field-hover);
+  }
 }
 
 .x-check--boxed:has(:focus-visible),

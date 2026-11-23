@@ -31,8 +31,10 @@ defineProps<{ label?: string }>()
   border-left-color: var(--field-line);
 }
 
-.x-btn-group > :deep(.x-btn.x-btn:hover:not(:disabled)) {
-  background: var(--hov);
+@media (hover: hover) {
+  .x-btn-group > :deep(.x-btn.x-btn:hover:not(:disabled)) {
+    background: var(--hov);
+  }
 }
 
 .x-btn-group > :deep(.x-btn:focus-visible) {

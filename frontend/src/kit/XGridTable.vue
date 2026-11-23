@@ -344,8 +344,10 @@ function rowStyle(k: number) {
   border-radius: 0 0 calc(var(--card-r) - 1px) calc(var(--card-r) - 1px);
 }
 
-.x-grid:not(.is-dragging) .x-grid__row:hover {
-  background: var(--hov);
+@media (hover: hover) {
+  .x-grid:not(.is-dragging) .x-grid__row:hover {
+    background: var(--hov);
+  }
 }
 
 .x-grid--center:not(.x-grid--phone) .x-grid__row {
@@ -408,11 +410,17 @@ function rowStyle(k: number) {
   color: var(--dim);
 }
 
-.x-grid__grip:hover,
-.x-grid__more:hover,
 .x-grid__more[aria-expanded='true'] {
   background: var(--hov);
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-grid__grip:hover,
+  .x-grid__more:hover {
+    background: var(--hov);
+    color: var(--fg);
+  }
 }
 
 .x-grid__grip:focus-visible,

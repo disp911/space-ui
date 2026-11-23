@@ -185,8 +185,10 @@ function drawEnd() {
   transition: color var(--t-med);
 }
 
-.x-pager__cell:hover:not(.is-current) {
-  color: var(--fg);
+@media (hover: hover) {
+  .x-pager__cell:hover:not(.is-current) {
+    color: var(--fg);
+  }
 }
 
 .x-pager__cell:focus-visible {
@@ -215,8 +217,10 @@ function drawEnd() {
   transition: border-color var(--t-fast), background-color var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
 }
 
-.x-pager__size:hover {
-  border-color: var(--field-hover);
+@media (hover: hover) {
+  .x-pager__size:hover {
+    border-color: var(--field-hover);
+  }
 }
 
 .x-pager__size:focus-visible {

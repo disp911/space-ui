@@ -36,10 +36,16 @@ defineProps<{ icon: IconName; label: string }>()
   transition: background-color var(--t-fast), color var(--t-fast);
 }
 
-.x-row-link:hover,
 .x-row-link.is-hover {
   background: var(--hov);
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-row-link:hover {
+    background: var(--hov);
+    color: var(--fg);
+  }
 }
 
 .x-row-link:active {

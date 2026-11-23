@@ -86,8 +86,10 @@ const template = computed(() => columns.value.map(track).join(' '))
   transition: background-color var(--t-fast);
 }
 
-.x-inner__row:hover {
-  background: var(--hov);
+@media (hover: hover) {
+  .x-inner__row:hover {
+    background: var(--hov);
+  }
 }
 
 .x-inner__cell {
@@ -122,7 +124,9 @@ const template = computed(() => columns.value.map(track).join(' '))
   padding: 0 8px 0 4px;
 }
 
-.x-inner--phone .x-inner__row:hover {
-  background: transparent;
+@media (hover: hover) {
+  .x-inner--phone .x-inner__row:hover {
+    background: transparent;
+  }
 }
 </style>

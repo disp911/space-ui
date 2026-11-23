@@ -24,9 +24,14 @@
   font-family: var(--font-code);
 }
 
-.x-field-box:hover,
 .x-field-box.is-hover {
   border-color: var(--field-hover);
+}
+
+@media (hover: hover) {
+  .x-field-box:hover {
+    border-color: var(--field-hover);
+  }
 }
 
 .x-field-box:focus-within,
@@ -125,11 +130,17 @@
   transition: background-color var(--t-fast);
 }
 
-.x-popup-item:hover,
 .x-popup-item.is-hover,
 .x-popup-item.is-active {
   background-color: var(--hov);
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-popup-item:hover {
+    background-color: var(--hov);
+    color: var(--fg);
+  }
 }
 
 .x-popup-item:active:not([aria-disabled='true']) {
@@ -158,9 +169,16 @@
 }
 
 /* None around the item under the pointer or keyboard: its capsule stands alone. */
-.x-popup-item:is(:hover, :focus-visible, .is-hover, .is-active):not([aria-disabled='true'])::before,
-.x-popup-item:is(:hover, :focus-visible, .is-hover, .is-active):not([aria-disabled='true']) + .x-popup-item::before {
+.x-popup-item:is(:focus-visible, .is-hover, .is-active):not([aria-disabled='true'])::before,
+.x-popup-item:is(:focus-visible, .is-hover, .is-active):not([aria-disabled='true']) + .x-popup-item::before {
   border-color: transparent;
+}
+
+@media (hover: hover) {
+  .x-popup-item:hover:not([aria-disabled='true'])::before,
+  .x-popup-item:hover:not([aria-disabled='true']) + .x-popup-item::before {
+    border-color: transparent;
+  }
 }
 
 .x-popup-item:focus-visible,
@@ -195,10 +213,15 @@
   color: var(--err-t);
 }
 
-.x-popup-item.is-danger:hover,
 .x-popup-item.is-danger.is-hover,
 .x-popup-item.is-danger.is-active {
   background-color: var(--err-bg);
+}
+
+@media (hover: hover) {
+  .x-popup-item.is-danger:hover {
+    background-color: var(--err-bg);
+  }
 }
 
 .x-popup-item[aria-disabled='true'] {
@@ -337,10 +360,16 @@
   transform: scale(var(--press-scale-icon));
 }
 
-.x-tag-chip__remove:hover,
 .x-tag-chip__remove:focus-visible {
   background: var(--press);
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-tag-chip__remove:hover {
+    background: var(--press);
+    color: var(--fg);
+  }
 }
 
 /* Monospace for technical values inside other text: dates, addresses, commands. */
@@ -445,8 +474,10 @@ html {
   background-clip: content-box;
 }
 
-*::-webkit-scrollbar-thumb:hover {
-  background-color: var(--scrollbar-hover);
+@media (hover: hover) {
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-hover);
+  }
 }
 
 /* Over a textarea's bars the arrow, not the text cursor: see scrollbarCursor.ts. */

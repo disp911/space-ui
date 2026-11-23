@@ -110,9 +110,11 @@ function set(i: number, k: 0 | 1, v: string) {
   transform: scale(var(--press-scale-icon));
 }
 
-.x-pairs__drop:hover {
-  border-color: var(--field-hover);
-  color: var(--fg);
+@media (hover: hover) {
+  .x-pairs__drop:hover {
+    border-color: var(--field-hover);
+    color: var(--fg);
+  }
 }
 
 .x-pairs__drop:focus-visible {

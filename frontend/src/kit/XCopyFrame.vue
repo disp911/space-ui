@@ -66,8 +66,10 @@ async function copy() {
   background-color: var(--press);
 }
 
-.x-copy-frame__text:hover {
-  border-color: var(--field-hover);
+@media (hover: hover) {
+  .x-copy-frame__text:hover {
+    border-color: var(--field-hover);
+  }
 }
 
 .x-copy-frame__text:focus-visible {

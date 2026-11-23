@@ -123,9 +123,14 @@ function onKeydown(e: KeyboardEvent, items: TabItem<K>[]) {
   opacity: .75;
 }
 
-.x-tabs__tab:hover:not(:disabled),
 .x-tabs__tab.is-current {
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-tabs__tab:hover:not(:disabled) {
+    color: var(--fg);
+  }
 }
 
 .x-tabs__tab:disabled {

@@ -91,9 +91,14 @@ const props = withDefaults(
   transition: filter var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
 }
 
-.x-chip--interactive:hover,
 .x-chip--interactive.is-hover {
   filter: brightness(1.15);
+}
+
+@media (hover: hover) {
+  .x-chip--interactive:hover {
+    filter: brightness(1.15);
+  }
 }
 
 .x-chip--interactive:focus-visible,

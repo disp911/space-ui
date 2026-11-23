@@ -141,8 +141,10 @@ const skeleton = [72, 58, 80, 64, 50, 76, 60, 68, 54, 74, 62, 70, 56, 66]
   transition: background-color var(--t-fast);
 }
 
-.x-table__row:hover {
-  background-color: var(--hov);
+@media (hover: hover) {
+  .x-table__row:hover {
+    background-color: var(--hov);
+  }
 }
 
 .x-table__row--err {

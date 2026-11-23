@@ -304,9 +304,11 @@ const reason = computed(() => (issue.value ? reasons.value[issue.value.kind] : '
   transition: background-color var(--t-fast), color var(--t-fast);
 }
 
-.x-code-editor__host :deep(.cm-x-mark:hover) {
-  background: var(--hov);
-  color: var(--fg);
+@media (hover: hover) {
+  .x-code-editor__host :deep(.cm-x-mark:hover) {
+    background: var(--hov);
+    color: var(--fg);
+  }
 }
 
 .x-code-editor__host :deep(.cm-x-mark--open svg) {
@@ -351,9 +353,11 @@ const reason = computed(() => (issue.value ? reasons.value[issue.value.kind] : '
   cursor: pointer;
 }
 
-.x-code-editor__host :deep(.cm-x-folded:hover) {
-  border-color: var(--field-hover);
-  color: var(--fg);
+@media (hover: hover) {
+  .x-code-editor__host :deep(.cm-x-folded:hover) {
+    border-color: var(--field-hover);
+    color: var(--fg);
+  }
 }
 
 .x-code-editor__host :deep(.cm-foldPlaceholder) {

@@ -74,9 +74,11 @@ const set = (i: number, v: string) => (values.value = values.value.map((x, j) =>
   transform: scale(var(--press-scale-icon));
 }
 
-.x-inputs__drop:hover:not(:disabled) {
-  border-color: var(--field-hover);
-  color: var(--fg);
+@media (hover: hover) {
+  .x-inputs__drop:hover:not(:disabled) {
+    border-color: var(--field-hover);
+    color: var(--fg);
+  }
 }
 
 .x-inputs__drop:focus-visible {

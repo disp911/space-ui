@@ -45,9 +45,14 @@ defineProps<{ icon: IconName; label: string; to?: RouteLocationRaw; danger?: boo
 }
 
 /* Only XNav's thumb has a box: hover lights the text and icon, a press dims them, as tabs and segments do. */
-.x-nav-item:hover,
 .x-nav-item.is-hover {
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-nav-item:hover {
+    color: var(--fg);
+  }
 }
 
 .x-nav-item:active {
@@ -69,9 +74,14 @@ defineProps<{ icon: IconName; label: string; to?: RouteLocationRaw; danger?: boo
   color: var(--dim);
 }
 
-.x-nav-item--danger:hover,
 .x-nav-item--danger.is-hover {
   color: var(--err-t);
+}
+
+@media (hover: hover) {
+  .x-nav-item--danger:hover {
+    color: var(--err-t);
+  }
 }
 
 @media (max-width: 767px) {

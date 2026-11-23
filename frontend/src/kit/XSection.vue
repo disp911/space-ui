@@ -78,9 +78,14 @@ const id = useId()
   transition: background-color var(--t-fast);
 }
 
-.x-section__head:hover,
 .x-section__head.is-hover {
   background: var(--hov);
+}
+
+@media (hover: hover) {
+  .x-section__head:hover {
+    background: var(--hov);
+  }
 }
 
 .x-section__head:active,

@@ -144,9 +144,14 @@ const describedBy = computed(() => (props.error || props.hint ? `${id}-note` : u
   outline: none;
 }
 
-.x-field__help:hover,
 .x-field__help:focus-visible {
   color: var(--fg);
+}
+
+@media (hover: hover) {
+  .x-field__help:hover {
+    color: var(--fg);
+  }
 }
 
 .x-field__action {
@@ -175,8 +180,10 @@ const describedBy = computed(() => (props.error || props.hint ? `${id}-note` : u
   cursor: progress;
 }
 
-.x-field__action:hover {
-  background: var(--acc-soft);
+@media (hover: hover) {
+  .x-field__action:hover {
+    background: var(--acc-soft);
+  }
 }
 
 .x-field__action:focus-visible {

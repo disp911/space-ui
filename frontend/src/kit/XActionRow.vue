@@ -96,10 +96,16 @@ const textId = useId()
   transform: scale(var(--press-scale-icon));
 }
 
-.x-action-row__icon:hover:not(:disabled),
 .x-action-row.is-hover .x-action-row__icon {
   background: var(--acc-hover);
   box-shadow: 0 0 0 4px var(--acc-ring), 0 0 18px var(--acc-glow);
+}
+
+@media (hover: hover) {
+  .x-action-row__icon:hover:not(:disabled) {
+    background: var(--acc-hover);
+    box-shadow: 0 0 0 4px var(--acc-ring), 0 0 18px var(--acc-glow);
+  }
 }
 
 .x-action-row__icon:focus-visible,

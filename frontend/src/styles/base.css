@@ -36,8 +36,10 @@ a {
   text-decoration: none;
 }
 
-a:hover {
-  color: var(--acc-hover);
+@media (hover: hover) {
+  a:hover {
+    color: var(--acc-hover);
+  }
 }
 
 code,
