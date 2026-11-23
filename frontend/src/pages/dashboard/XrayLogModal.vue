@@ -163,12 +163,14 @@ const columns = computed<TableColumn[]>(() => [
 
 const rows = computed(() =>
   (data.value?.entries ?? []).map((e, i) => {
-    // The server's own clock, as the day was cut by it: no conversion to this browser's zone.
-    const [, , month = '', dayOfMonth = '', clock = ''] = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2})/.exec(e.DateTime) ?? []
+    // In this browser's time zone, as every time in the panel: the server sends UTC.
+    const d = new Date(e.DateTime)
+    const two = (n: number) => String(n).padStart(2, '0')
+    const clock = `${two(d.getHours())}:${two(d.getMinutes())}:${two(d.getSeconds())}`
     const kind = byEvent[e.Event] ?? 'direct'
     return {
       id: i,
-      time: `${dayOfMonth}.${month} ${clock}`,
+      time: `${two(d.getDate())}.${two(d.getMonth() + 1)} ${clock}`,
       clock,
       from: e.FromAddress,
       to: e.ToAddress,
