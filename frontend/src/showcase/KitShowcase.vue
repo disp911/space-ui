@@ -37,6 +37,9 @@ const languages = [
 ]
 const strategies = ['AsIs', 'IPIfNonMatch', 'IPOnDemand'].map((v) => ({ value: v, label: v }))
 const badRouting = 'happ://routing/…'
+// A link as long as one with a post-quantum key: too dense for the small QR frame.
+const denseKey = Array.from({ length: 1580 }, (_, i) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'[(i * 37 + (i >> 3) * 11) % 64]).join('')
+const denseLink = `vless://0740d687-743b-4269-ad61-3b98734c039b@cdn.example.net:443?type=xhttp&encryption=mlkem768x25519plus.native.0rtt.${denseKey}&security=tls&path=%2Fmedia%2Fhls%2Fplaylist.m3u8#CDN-alice`
 const geo = ['geoip:private', 'geoip:ru', 'geosite:category-ads-all', 'geosite:google', 'geosite:telegram']
 
 const form = ref({
@@ -860,6 +863,7 @@ const spacing = [2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 56]
         <div class="demo-tiles">
           <XQrCard label="Подписка" tone="unl" value="https://de.example.net:2096/sub/06e819f5e0bcf42c" />
           <XQrCard label="Germany-VLESS-alice" value="vless://0740d687-743b-4269-ad61-3b98734c039b@de.example.net:443?type=tcp#Germany-VLESS-alice" />
+          <XQrCard label="CDN-alice" :value="denseLink" />
         </div>
         <XCopyBlock label="Subscription Link" tone="unl" text="https://de.example.net:2096/sub/06e819f5e0bcf42c" />
         <XCopyBlock label="Config" :text="'[Interface]\nPrivateKey = eCtXsJZ27+4PbhDkHnB923tkUn2Gj59wZw5wFA75MnU=\nAddress = 10.0.0.2/32'">

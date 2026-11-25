@@ -68,6 +68,8 @@ export const icons = {
   qr: path('M2.5 2.5h4v4h-4zM9.5 2.5h4v4h-4zM2.5 9.5h4v4h-4zM9.5 9.5h1.6v1.6H9.5zM12 12h1.5v1.5H12zM12 9.5h1.5M9.5 13.5h1.6'),
   comment: path('M2.6 3.2h10.8v7.2H7.4l-3 2.4v-2.4H2.6z'),
   copy: '<rect x="5.3" y="5.3" width="8" height="8" rx="1.8"/>' + path('M10.7 3.6V3.5a1.3 1.3 0 0 0-1.3-1.3H4a1.8 1.8 0 0 0-1.8 1.8v5.4c0 .7.6 1.3 1.3 1.3'),
+  // Enlarge: two arrows out to opposite corners.
+  expand: path('M9.4 2.6h4v4M13.4 2.6 9.2 6.8M6.6 13.4h-4v-4M2.6 13.4l4.2-4.2'),
   swap: path('M2.6 5.4h10.4M10.4 2.8 13 5.4 10.4 8M13.4 10.6H3M5.6 8 3 10.6l2.6 2.6'),
 } as const
 

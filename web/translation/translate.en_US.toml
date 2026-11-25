@@ -1094,6 +1094,7 @@
 "comment" = "Comment: {text}"
 "copy" = "Copy"
 "copied" = "Copied"
+"enlarge" = "Enlarge"
 "copyFailed" = "Could not copy"
 
 [units]

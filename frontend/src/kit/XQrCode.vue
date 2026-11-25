@@ -10,9 +10,10 @@ import { toast } from './toast'
  * A QR code on a white plate, black on white in both themes so cameras read
  * it. With copy, a click puts that text on the clipboard: the corner badge
  * turns from a copy sign into a check for a moment. quiet drops the badge and
- * says so in a toast instead, e.g. a row of QR codes to share.
+ * says so in a toast instead, e.g. a row of QR codes to share. fill takes
+ * the width of what holds it instead of size, e.g. a code shown large.
  */
-const props = withDefaults(defineProps<{ value: string; size?: number; copy?: string; copyLabel?: string; quiet?: boolean }>(), { size: 180 })
+const props = withDefaults(defineProps<{ value: string; size?: number; fill?: boolean; copy?: string; copyLabel?: string; quiet?: boolean }>(), { size: 180 })
 const emit = defineEmits<{ copied: [ok: boolean] }>()
 const { t } = useI18n()
 
@@ -43,8 +44,8 @@ onBeforeUnmount(() => clearTimeout(timer))
   <component
     :is="copy != null ? 'button' : 'div'"
     :type="copy != null ? 'button' : undefined"
-    :class="['x-qr', { 'x-qr--copy': copy != null }]"
-    :style="{ width: `${size}px`, height: `${size}px` }"
+    :class="['x-qr', { 'x-qr--copy': copy != null, 'x-qr--fill': fill }]"
+    :style="fill ? undefined : { width: `${size}px`, height: `${size}px` }"
     :title="copyLabel"
     :aria-label="copyLabel"
     @click="onCopy"
@@ -68,6 +69,11 @@ onBeforeUnmount(() => clearTimeout(timer))
   border-radius: var(--nest-r);
   background: #fff;
   box-shadow: 0 0 0 1px var(--line);
+}
+
+.x-qr--fill {
+  width: 100%;
+  aspect-ratio: 1;
 }
 
 .x-qr svg {

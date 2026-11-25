@@ -1021,6 +1021,7 @@ export interface MessageSchema {
     "comment": string
     "copy": string
     "copied": string
+    "enlarge": string
     "copyFailed": string
   }
 }
