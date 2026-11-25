@@ -6,6 +6,7 @@ import (
 
 	"github.com/disp911/space-ui/v3/database"
 	"github.com/disp911/space-ui/v3/database/model"
+	"github.com/disp911/space-ui/v3/xray"
 )
 
 func streamOf(t *testing.T, raw string) map[string]any {
@@ -65,6 +66,46 @@ func TestXhttpSiteRouteTakesTheLongestPath(t *testing.T) {
 	for p, want := range map[string]int{"/media/v2/up": 2, "/media/x": 1, "/other": 0} {
 		if got, _ := XhttpSiteRoute(p); got != want {
 			t.Errorf("XhttpSiteRoute(%q) = %d, want %d", p, got, want)
+		}
+	}
+}
+
+// TestSiteRoutesFollowTheAPI checks that an inbound the API adds to or
+// removes from the running Xray is served, or no longer, with no restart.
+func TestSiteRoutesFollowTheAPI(t *testing.T) {
+	siteTestDB(t)
+	t.Cleanup(func() { publishXhttpSiteRoutes(nil) })
+	inbound := func(tag, listen, path string) xray.InboundConfig {
+		l, _ := json.Marshal(listen)
+		return xray.InboundConfig{Tag: tag, Listen: l, Port: len(tag) + 8000,
+			StreamSettings: []byte(`{"network":"xhttp","security":"none","xhttpSettings":{"path":"` + path +
+				`","sessionIDPlacement":"query","seqPlacement":"query"}}`)}
+	}
+	route := func(p string) int { port, _ := XhttpSiteRoute(p); return port }
+
+	// While Xray is down the API changes nothing.
+	publishXhttpSiteRoutes(nil)
+	xray.InboundAdded(inbound("cdn", "127.0.0.1", "/media/"))
+	if route("/media/x") != 0 {
+		t.Error("a route appeared while Xray was down")
+	}
+
+	publishXhttpSiteRoutes(&xray.Config{InboundConfigs: []xray.InboundConfig{inbound("old", "127.0.0.1", "/old/")}})
+	xray.InboundAdded(inbound("cdn", "127.0.0.1", "/media/"))
+	xray.InboundAdded(inbound("public", "0.0.0.0", "/public/"))
+	xray.InboundAdded(inbound("panel", "127.0.0.1", "/secret/x"))
+	for p, want := range map[string]int{"/old/x": 8003, "/media/x": 8003, "/public/x": 0, "/secret/x": 0} {
+		if got := route(p); got != want {
+			t.Errorf("after adding, %s goes to %d, want %d", p, got, want)
+		}
+	}
+	// A change is a removal and an addition: the new path replaces the old.
+	xray.InboundRemoved("cdn")
+	xray.InboundAdded(inbound("cdn", "127.0.0.1", "/video/"))
+	xray.InboundRemoved("old")
+	for p, want := range map[string]int{"/media/x": 0, "/video/x": 8003, "/old/x": 0} {
+		if got := route(p); got != want {
+			t.Errorf("after changing, %s goes to %d, want %d", p, got, want)
 		}
 	}
 }

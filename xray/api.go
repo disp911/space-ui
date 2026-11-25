@@ -115,6 +115,14 @@ func (x *XrayAPI) Close() {
 	x.isConnected = false
 }
 
+// InboundAdded and InboundRemoved, when set, learn of every inbound the API
+// adds to or removes from the running Xray, so that what mirrors its inbounds
+// (the website's XHTTP routes) follows a change that restarts nothing.
+var (
+	InboundAdded   func(inbound InboundConfig)
+	InboundRemoved func(tag string)
+)
+
 // AddInbound adds a new inbound configuration to the Xray core via gRPC.
 func (x *XrayAPI) AddInbound(inbound []byte) error {
 	client := *x.HandlerServiceClient
@@ -133,7 +141,12 @@ func (x *XrayAPI) AddInbound(inbound []byte) error {
 	inboundConfig := command.AddInboundRequest{Inbound: config}
 
 	_, err = client.AddInbound(context.Background(), &inboundConfig)
-
+	if err == nil && InboundAdded != nil {
+		var added InboundConfig
+		if json.Unmarshal(inbound, &added) == nil {
+			InboundAdded(added)
+		}
+	}
 	return err
 }
 
@@ -143,6 +156,9 @@ func (x *XrayAPI) DelInbound(tag string) error {
 	_, err := client.RemoveInbound(context.Background(), &command.RemoveInboundRequest{
 		Tag: tag,
 	})
+	if err == nil && InboundRemoved != nil {
+		InboundRemoved(tag)
+	}
 	return err
 }
 

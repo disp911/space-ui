@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/disp911/space-ui/v3/database"
@@ -141,37 +143,107 @@ func (s *InboundService) guardSiteXhttpPath(next *model.Inbound) error {
 	return nil
 }
 
+// siteRoutes are the routes of the running Xray's inbounds by tag, nil
+// while Xray is down; xhttpSiteRoutes is published from them. A restart sets
+// them all, and every inbound the API adds or removes afterwards changes them
+// one by one, from the same config Xray got.
+// siteReserved are the website's own paths as the last restart read them:
+// the API's changes come in the middle of a database transaction, where the
+// settings are not read again (saving an inbound already refuses a path that
+// overlaps them).
+var (
+	siteRoutesMu sync.Mutex
+	siteRoutes   map[string]xhttpSiteRoute
+	siteReserved []string
+)
+
+func init() {
+	xray.InboundAdded = func(ib xray.InboundConfig) {
+		siteRoutesMu.Lock()
+		defer siteRoutesMu.Unlock()
+		if siteRoutes == nil {
+			return
+		}
+		delete(siteRoutes, ib.Tag)
+		if route, ok := siteRouteOf(ib, siteReserved); ok {
+			siteRoutes[ib.Tag] = route
+		}
+		storeSiteRoutes()
+	}
+	xray.InboundRemoved = func(tag string) {
+		siteRoutesMu.Lock()
+		defer siteRoutesMu.Unlock()
+		if _, ok := siteRoutes[tag]; ok {
+			delete(siteRoutes, tag)
+			storeSiteRoutes()
+		}
+	}
+}
+
 // publishXhttpSiteRoutes records the routes of the Xray config that now
-// runs, or none for nil. A route whose path the website keeps for itself is
-// left out, so the panel stays reachable whatever the template holds.
+// runs, or none for nil.
 func publishXhttpSiteRoutes(cfg *xray.Config) {
+	siteRoutesMu.Lock()
+	defer siteRoutesMu.Unlock()
 	if cfg == nil {
+		siteRoutes = nil
 		xhttpSiteRoutes.Store(nil)
 		return
 	}
-	reserved := siteReservedPaths(0)
-	var routes []xhttpSiteRoute
-next:
-	for _, ib := range cfg.InboundConfigs {
-		var listen string
-		json.Unmarshal(ib.Listen, &listen)
-		var stream map[string]any
-		if json.Unmarshal(ib.StreamSettings, &stream) != nil {
-			continue
-		}
-		path, ok := siteXhttpPath(listen, stream)
+	siteReserved = siteReservedPaths(0)
+	siteRoutes = map[string]xhttpSiteRoute{}
+	for i, ib := range cfg.InboundConfigs {
+		route, ok := siteRouteOf(ib, siteReserved)
 		if !ok {
 			continue
 		}
-		for _, p := range reserved {
-			if pathsOverlap(path, p) {
-				logger.Warningf("Website: XHTTP inbound %s is not served, its path %s overlaps %s", ib.Tag, path, p)
-				continue next
-			}
+		// The API reaches inbounds by tag; a template's untagged one stays as
+		// the restart left it.
+		key := ib.Tag
+		if key == "" {
+			key = "untagged:" + strconv.Itoa(i)
 		}
-		routes = append(routes, xhttpSiteRoute{path: path, port: ib.Port})
+		siteRoutes[key] = route
 	}
-	sort.SliceStable(routes, func(i, j int) bool { return len(routes[i].path) > len(routes[j].path) })
+	storeSiteRoutes()
+}
+
+// siteRouteOf is the route the website serves an inbound at, if any. A path
+// the website keeps for itself is left out, so the panel stays reachable
+// whatever an inbound or the template holds.
+func siteRouteOf(ib xray.InboundConfig, reserved []string) (xhttpSiteRoute, bool) {
+	var listen string
+	json.Unmarshal(ib.Listen, &listen)
+	var stream map[string]any
+	if json.Unmarshal(ib.StreamSettings, &stream) != nil {
+		return xhttpSiteRoute{}, false
+	}
+	path, ok := siteXhttpPath(listen, stream)
+	if !ok {
+		return xhttpSiteRoute{}, false
+	}
+	for _, p := range reserved {
+		if pathsOverlap(path, p) {
+			logger.Warningf("Website: XHTTP inbound %s is not served, its path %s overlaps %s", ib.Tag, path, p)
+			return xhttpSiteRoute{}, false
+		}
+	}
+	return xhttpSiteRoute{path: path, port: ib.Port}, true
+}
+
+// storeSiteRoutes publishes siteRoutes, longest path first. The caller
+// holds siteRoutesMu.
+func storeSiteRoutes() {
+	routes := make([]xhttpSiteRoute, 0, len(siteRoutes))
+	for _, r := range siteRoutes {
+		routes = append(routes, r)
+	}
+	sort.Slice(routes, func(i, j int) bool {
+		if len(routes[i].path) != len(routes[j].path) {
+			return len(routes[i].path) > len(routes[j].path)
+		}
+		return routes[i].path < routes[j].path
+	})
 	xhttpSiteRoutes.Store(&routes)
 }
 
