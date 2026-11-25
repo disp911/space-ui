@@ -48,46 +48,29 @@ func (lw *LogWriter) Write(m []byte) (n int, err error) {
 	for msg := range messages {
 		matches := regex.FindStringSubmatch(msg)
 
+		// A line Xray gave a level keeps it: a single connection that failed,
+		// e.g. a visitor REALITY passed on to the website, is Info to Xray, not
+		// an error of the panel's.
 		if len(matches) > 3 {
 			level := matches[2]
 			msgBody := matches[3]
-			msgBodyLower := strings.ToLower(msgBody)
-
-			if strings.Contains(msgBodyLower, "tls handshake error") ||
-				strings.Contains(msgBodyLower, "connection ends") {
+			switch level {
+			case "Debug":
 				logger.Debug("XRAY: " + msgBody)
-				lw.lastLine = ""
-				continue
-			}
-
-			if strings.Contains(msgBodyLower, "failed") {
+			case "Info":
+				logger.Info("XRAY: " + msgBody)
+			case "Warning":
+				logger.Warning("XRAY: " + msgBody)
+			case "Error":
 				logger.Error("XRAY: " + msgBody)
-			} else {
-				switch level {
-				case "Debug":
-					logger.Debug("XRAY: " + msgBody)
-				case "Info":
-					logger.Info("XRAY: " + msgBody)
-				case "Warning":
-					logger.Warning("XRAY: " + msgBody)
-				case "Error":
-					logger.Error("XRAY: " + msgBody)
-				default:
-					logger.Debug("XRAY: " + msg)
-				}
+			default:
+				logger.Debug("XRAY: " + msg)
 			}
 			lw.lastLine = ""
 		} else if msg != "" {
-			msgLower := strings.ToLower(msg)
-
-			if strings.Contains(msgLower, "tls handshake error") ||
-				strings.Contains(msgLower, "connection ends") {
-				logger.Debug("XRAY: " + msg)
-				lw.lastLine = msg
-				continue
-			}
-
-			if strings.Contains(msgLower, "failed") {
+			// A line without a level, e.g. from Xray's start, is an error when
+			// it says something failed.
+			if strings.Contains(strings.ToLower(msg), "failed") {
 				logger.Error("XRAY: " + msg)
 			} else {
 				logger.Debug("XRAY: " + msg)
