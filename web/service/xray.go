@@ -114,90 +114,82 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		if !inbound.Enable || !model.IsXrayProtocol(inbound.Protocol) {
 			continue
 		}
-		// get settings clients
-		settings := map[string]any{}
-		json.Unmarshal([]byte(inbound.Settings), &settings)
-		clients, ok := settings["clients"].([]any)
-		if ok {
-			// Fast O(N) lookup map for client traffic enablement
-			clientStats := inbound.ClientStats
-			enableMap := make(map[string]bool, len(clientStats))
-			for _, clientTraffic := range clientStats {
-				enableMap[clientTraffic.Email] = clientTraffic.Enable
-			}
-
-			// filter and clean clients
-			var final_clients []any
-			for _, client := range clients {
-				c, ok := client.(map[string]any)
-				if !ok {
-					continue
-				}
-
-				email, _ := c["email"].(string)
-
-				// check users active or not via stats
-				if enable, exists := enableMap[email]; exists && !enable {
-					logger.Infof("Remove Inbound User %s due to expiration or traffic limit", email)
-					continue
-				}
-
-				// check manual disabled flag
-				if manualEnable, ok := c["enable"].(bool); ok && !manualEnable {
-					continue
-				}
-
-				// clear client config for additional parameters
-				for key := range c {
-					if key != "email" && key != "id" && key != "password" && key != "flow" && key != "method" && key != "auth" && key != "reverse" {
-						delete(c, key)
-					}
-					if flow, ok := c["flow"].(string); ok && flow == "xtls-rprx-vision-udp443" {
-						c["flow"] = "xtls-rprx-vision"
-					}
-				}
-				final_clients = append(final_clients, any(c))
-			}
-
-			settings["clients"] = final_clients
-			modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
-			if err != nil {
-				return nil, err
-			}
-
-			inbound.Settings = string(modifiedSettings)
+		enabled := make(map[string]bool, len(inbound.ClientStats))
+		for _, clientTraffic := range inbound.ClientStats {
+			enabled[clientTraffic.Email] = clientTraffic.Enable
 		}
-
-		if len(inbound.StreamSettings) > 0 {
-			// Unmarshal stream JSON
-			var stream map[string]any
-			json.Unmarshal([]byte(inbound.StreamSettings), &stream)
-
-			// Remove the "settings" field under "tlsSettings" and "realitySettings"
-			tlsSettings, ok1 := stream["tlsSettings"].(map[string]any)
-			realitySettings, ok2 := stream["realitySettings"].(map[string]any)
-			if ok1 || ok2 {
-				if ok1 {
-					delete(tlsSettings, "settings")
-				} else if ok2 {
-					delete(realitySettings, "settings")
-				}
-			}
-
-			delete(stream, "externalProxy")
-			trustSiteForwardedFor(inbound.Listen, stream)
-
-			newStream, err := json.MarshalIndent(stream, "", "  ")
-			if err != nil {
-				return nil, err
-			}
-			inbound.StreamSettings = string(newStream)
+		runtimeInbound, err := xrayInbound(inbound, enabled)
+		if err != nil {
+			return nil, err
 		}
-
-		inboundConfig := inbound.GenXrayInboundConfig()
-		xrayConfig.InboundConfigs = append(xrayConfig.InboundConfigs, *inboundConfig)
+		xrayConfig.InboundConfigs = append(xrayConfig.InboundConfigs, *runtimeInbound.GenXrayInboundConfig())
 	}
 	return xrayConfig, nil
+}
+
+// xrayInbound is an inbound as Xray runs it, whether a restart writes it into
+// the config or the API adds it to the running Xray: only the clients that
+// are on (enabled tells those the traffic stats switched off), each with
+// just the fields Xray reads, and the transport without what only the panel
+// keeps (External Proxy, the TLS and REALITY forms' settings), trusting
+// X-Forwarded-For where the website serves the inbound. The inbound given
+// is left as it is.
+func xrayInbound(inbound *model.Inbound, enabled map[string]bool) (*model.Inbound, error) {
+	runtimeInbound := *inbound
+
+	settings := map[string]any{}
+	json.Unmarshal([]byte(inbound.Settings), &settings)
+	if clients, ok := settings["clients"].([]any); ok {
+		var finalClients []any
+		for _, client := range clients {
+			c, ok := client.(map[string]any)
+			if !ok {
+				continue
+			}
+			email, _ := c["email"].(string)
+			if enable, exists := enabled[email]; exists && !enable {
+				logger.Infof("Remove Inbound User %s due to expiration or traffic limit", email)
+				continue
+			}
+			if manualEnable, ok := c["enable"].(bool); ok && !manualEnable {
+				continue
+			}
+			kept := map[string]any{}
+			for _, key := range []string{"email", "id", "password", "flow", "method", "auth", "reverse"} {
+				if v, ok := c[key]; ok {
+					kept[key] = v
+				}
+			}
+			if flow, ok := kept["flow"].(string); ok && flow == "xtls-rprx-vision-udp443" {
+				kept["flow"] = "xtls-rprx-vision"
+			}
+			finalClients = append(finalClients, kept)
+		}
+		settings["clients"] = finalClients
+		modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		runtimeInbound.Settings = string(modifiedSettings)
+	}
+
+	if len(inbound.StreamSettings) > 0 {
+		var stream map[string]any
+		json.Unmarshal([]byte(inbound.StreamSettings), &stream)
+		if tlsSettings, ok := stream["tlsSettings"].(map[string]any); ok {
+			delete(tlsSettings, "settings")
+		} else if realitySettings, ok := stream["realitySettings"].(map[string]any); ok {
+			delete(realitySettings, "settings")
+		}
+		delete(stream, "externalProxy")
+		trustSiteForwardedFor(inbound.Listen, stream)
+		newStream, err := json.MarshalIndent(stream, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		runtimeInbound.StreamSettings = string(newStream)
+	}
+	return &runtimeInbound, nil
 }
 
 // GetXrayTraffic fetches the current traffic statistics from the running Xray process.

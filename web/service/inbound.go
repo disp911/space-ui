@@ -342,12 +342,14 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 	needRestart := false
 	if inbound.Enable && model.IsXrayProtocol(inbound.Protocol) {
 		s.xrayApi.Init(p.GetAPIPort())
-		inboundJson, err1 := json.MarshalIndent(inbound.GenXrayInboundConfig(), "", "  ")
-		if err1 != nil {
-			logger.Debug("Unable to marshal inbound config:", err1)
+		runtimeInbound, err1 := s.buildRuntimeInboundForAPI(tx, inbound)
+		var inboundJson []byte
+		if err1 == nil {
+			inboundJson, err1 = json.MarshalIndent(runtimeInbound.GenXrayInboundConfig(), "", "  ")
 		}
-
-		err1 = s.xrayApi.AddInbound(inboundJson)
+		if err1 == nil {
+			err1 = s.xrayApi.AddInbound(inboundJson)
+		}
 		if err1 == nil {
 			logger.Debug("New inbound added by api:", inbound.Tag)
 		} else {
@@ -667,22 +669,13 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 	return inbound, needRestart, tx.Save(oldInbound).Error
 }
 
+// buildRuntimeInboundForAPI is the inbound as the API puts it into the
+// running Xray: the same as a restart writes it (see xrayInbound), with its
+// clients' traffic stats read from tx.
 func (s *InboundService) buildRuntimeInboundForAPI(tx *gorm.DB, inbound *model.Inbound) (*model.Inbound, error) {
 	if inbound == nil {
 		return nil, fmt.Errorf("inbound is nil")
 	}
-
-	runtimeInbound := *inbound
-	settings := map[string]any{}
-	if err := json.Unmarshal([]byte(inbound.Settings), &settings); err != nil {
-		return nil, err
-	}
-
-	clients, ok := settings["clients"].([]any)
-	if !ok {
-		return &runtimeInbound, nil
-	}
-
 	var clientStats []xray.ClientTraffic
 	err := tx.Model(xray.ClientTraffic{}).
 		Where("inbound_id = ?", inbound.Id).
@@ -691,39 +684,11 @@ func (s *InboundService) buildRuntimeInboundForAPI(tx *gorm.DB, inbound *model.I
 	if err != nil {
 		return nil, err
 	}
-
-	enableMap := make(map[string]bool, len(clientStats))
+	enabled := make(map[string]bool, len(clientStats))
 	for _, clientTraffic := range clientStats {
-		enableMap[clientTraffic.Email] = clientTraffic.Enable
+		enabled[clientTraffic.Email] = clientTraffic.Enable
 	}
-
-	finalClients := make([]any, 0, len(clients))
-	for _, client := range clients {
-		c, ok := client.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		email, _ := c["email"].(string)
-		if enable, exists := enableMap[email]; exists && !enable {
-			continue
-		}
-
-		if manualEnable, ok := c["enable"].(bool); ok && !manualEnable {
-			continue
-		}
-
-		finalClients = append(finalClients, c)
-	}
-
-	settings["clients"] = finalClients
-	modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	runtimeInbound.Settings = string(modifiedSettings)
-
-	return &runtimeInbound, nil
+	return xrayInbound(inbound, enabled)
 }
 
 // updateClientTraffics syncs the ClientTraffic rows with the inbound's clients
