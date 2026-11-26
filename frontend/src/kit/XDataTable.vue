@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T">
-import { computed } from 'vue'
+import { computed, ref, type ToRefs } from 'vue'
 
 export interface TableColumn {
   key: string
@@ -22,11 +22,18 @@ export interface TableColumn {
 
 export type RowTone = 'err' | 'upload'
 
+/** What the table gives the page through a template ref. */
+export interface DataTableHandle {
+  /** The body, the box that scrolls. */
+  body: HTMLElement | null
+}
+
 /**
  * A monospace log table: a caps header and rows of one line that scroll inside
  * a box of fixed height. Rows can be tinted by tone. A cell shows row[key], or
  * the `cell-<key>` slot. While loading the rows are grey bars; with no rows the
- * empty slot fills the box.
+ * empty slot fills the box. Its body, the box that scrolls, is there for the
+ * page to read, e.g. a log that waits while the reader is down its rows.
  */
 const props = defineProps<{
   columns: TableColumn[]
@@ -56,6 +63,10 @@ const cellStyle = (c: TableColumn) =>
   c.width ? { flex: `0 1 ${c.width}px`, minWidth: minWidth(c) } : { flex: '1 1 0', minWidth: minWidth(c) }
 const value = (row: T, key: string) => (row as Record<string, unknown>)[key] as string
 
+const body = ref<HTMLElement | null>(null)
+const handle: ToRefs<DataTableHandle> = { body }
+defineExpose(handle)
+
 // Bar widths vary like real values.
 const skeleton = [72, 58, 80, 64, 50, 76, 60, 68, 54, 74, 62, 70, 56, 66]
 </script>
@@ -65,7 +76,7 @@ const skeleton = [72, 58, 80, 64, 50, 76, 60, 68, 54, 74, 62, 70, 56, 66]
     <div class="x-table__head x-table-head" role="row">
       <span v-for="c in columns" :key="c.key" class="x-table__cell x-ellipsis" role="columnheader" :style="cellStyle(c)">{{ c.label }}</span>
     </div>
-    <div class="x-table__body" :style="{ height: height ? `${height}px` : undefined }" tabindex="0" :aria-busy="loading || undefined">
+    <div ref="body" class="x-table__body" :style="{ height: height ? `${height}px` : undefined }" tabindex="0" :aria-busy="loading || undefined">
       <div v-if="loading" class="x-skeleton" aria-hidden="true">
         <div v-for="(w, i) in skeleton" :key="i" class="x-table__row">
           <span v-for="c in columns" :key="c.key" class="x-table__cell" :style="cellStyle(c)">

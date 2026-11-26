@@ -5,7 +5,7 @@ import { api, ApiError, saveFile } from '../../api'
 import { formatNumber } from '../../i18n/format'
 import {
   toast, usePhone, XButton, XCheckbox, XDataTable, XEmpty, XInput, XMenu, XModal, XPager, XRecordCard, XStatusDot,
-  type MenuItem, type RowTone, type TableColumn,
+  type DataTableHandle, type MenuItem, type RowTone, type TableColumn,
 } from '../../kit'
 import { atTop, useAutoRefresh } from './autoRefresh'
 
@@ -101,13 +101,13 @@ watch([date, client, shown], reload)
 
 // The newest connections come in every five seconds while the window shows
 // them: the latest day's first page, scrolled to its top. Older days do not change.
-const area = ref<HTMLElement | null>(null)
+const table = ref<DataTableHandle | null>(null)
 useAutoRefresh(
   open,
   () => load(true),
   () => {
     const d = data.value
-    return loading.value || page.value !== 1 || !d || d.date !== d.dates?.[0] || !atTop(area.value?.querySelector('.x-table__body')) || !atTop(cards.value)
+    return loading.value || page.value !== 1 || !d || d.date !== d.dates?.[0] || !atTop(table.value?.body) || !atTop(cards.value)
   },
 )
 
@@ -267,8 +267,9 @@ async function download() {
       <XButton icon="refresh" :label="t('dashboard.logRefresh')" :loading="loading" class="xlog-refresh" @click="load()" />
     </div>
 
-    <div ref="area" class="xlog-area">
+    <div class="xlog-area">
       <XDataTable
+        ref="table"
         class="xlog-wide"
         :columns="columns"
         :rows="rows"
