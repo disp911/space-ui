@@ -7,7 +7,7 @@
 import { api } from '../../api'
 import { wireguardKeys } from '../../wireguard'
 import { uuid } from '../xray/outbound'
-import type { DbInbound, Protocol } from './model'
+import { protocols, type DbInbound, type Protocol } from './model'
 
 type Json = Record<string, any>
 
@@ -659,11 +659,53 @@ function finalSettings(f: InboundForm): Json {
  * update/:id): its fields, and settings, streamSettings and sniffing as JSON
  * text, with the settings of the transport and the security in use only.
  */
-export function toForm(f: InboundForm): FormData {
+/**
+ * The inbound as Xray gets it, for the window's JSON: its address, port,
+ * protocol, settings with the clients, transport with External Proxy, and
+ * Sniffing; none of the panel's own fields, which the form keeps.
+ */
+export function xrayJson(f: InboundForm): Json {
   const st = f.streamSettings ? finalStream(f, f.streamSettings) : undefined
   const sniffing: Json = JSON.parse(JSON.stringify(f.sniffing))
   for (const k of ['ipsExcluded', 'domainsExcluded']) if (empty(sniffing[k])) delete sniffing[k]
+  return { listen: f.listen, port: f.port, protocol: f.protocol, settings: finalSettings(f), ...(st ? { streamSettings: st } : {}), sniffing }
+}
 
+/**
+ * The form from the window's JSON, read as a stored inbound is; the panel's
+ * own fields stay as the form has them. Null for what is not an object.
+ */
+export function fromXrayJson(f: InboundForm, j: unknown): InboundForm | null {
+  if (!j || typeof j !== 'object' || Array.isArray(j)) return null
+  const x = j as Json
+  const text = (v: unknown) => JSON.stringify(v && typeof v === 'object' ? v : {})
+  const read = fromDb({
+    id: f.id ?? 0,
+    up: f.up,
+    down: f.down,
+    total: f.total,
+    allTime: 0,
+    remark: f.remark,
+    enable: f.enable,
+    expiryTime: f.expiryTime,
+    trafficReset: f.trafficReset,
+    lastTrafficResetTime: f.lastTrafficResetTime,
+    clientStats: null,
+    listen: typeof x.listen === 'string' ? x.listen : '',
+    port: x.port as number,
+    protocol: (protocols as readonly string[]).includes(x.protocol) ? x.protocol : f.protocol,
+    settings: text(x.settings),
+    streamSettings: text(x.streamSettings),
+    tag: '',
+    sniffing: text(x.sniffing),
+  })
+  // A port Xray reads as a range or from an environment the form cannot hold.
+  read.port = Number.isInteger(x.port) ? x.port : null
+  return read
+}
+
+export function toForm(f: InboundForm): FormData {
+  const x = xrayJson(f)
   const fields: Record<string, unknown> = {
     up: f.up,
     down: f.down,
@@ -676,10 +718,10 @@ export function toForm(f: InboundForm): FormData {
     listen: f.listen,
     port: f.port ?? 0,
     protocol: f.protocol,
-    settings: JSON.stringify(finalSettings(f), null, 2),
-    sniffing: JSON.stringify(sniffing, null, 2),
+    settings: JSON.stringify(x.settings, null, 2),
+    sniffing: JSON.stringify(x.sniffing, null, 2),
   }
-  if (st) fields.streamSettings = JSON.stringify(st, null, 2)
+  if (x.streamSettings) fields.streamSettings = JSON.stringify(x.streamSettings, null, 2)
   const form = new FormData()
   for (const [k, v] of Object.entries(fields)) form.set(k, String(v))
   return form

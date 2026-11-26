@@ -3,12 +3,12 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../../api'
 import {
-  toast, XButton, XDateTime, XDivider, XField, XFieldGrid, XFieldNote, XInput, XModal, XNumber, XPlainTable, XSection, XSelect, XSwitch, type Option, type PlainColumn,
+  toast, XButton, XCodeEditor, XDateTime, XDivider, XField, XFieldGrid, XFieldNote, XInput, XModal, XNumber, XPlainTable, XSection, XSegmented, XSelect, XSwitch, type Option, type PlainColumn,
 } from '../../kit'
 import { formatDate } from '../../i18n/format'
 import { useInbounds } from '../../stores/inbounds'
 import { cause } from '../settings/form'
-import { canFlow, canStream, clientsOf, fromDb, newInbound, setProtocol, sourceDenyWrong, toForm, trafficResets, tunWrong, withClients, type InboundForm } from './inbound'
+import { canFlow, canStream, clientsOf, fromDb, fromXrayJson, newInbound, setProtocol, sourceDenyWrong, toForm, trafficResets, tunWrong, withClients, xrayJson, type InboundForm } from './inbound'
 import ClientFields from './ClientFields.vue'
 import InboundProtocol from './InboundProtocol.vue'
 import InboundStream from './InboundStream.vue'
@@ -24,7 +24,9 @@ import { customSockoptWrong } from '../xray/sockopt'
  * Window 11 of the mockup: a new inbound, or the stored one to change. It
  * opens centred and its body scrolls, as every window. Its fields stand in
  * one column, one under another, as the old panel's long window had them. The protocol of a
- * stored inbound stays; the panel serves one MTProto inbound only.
+ * stored inbound stays; the panel serves one MTProto inbound only. As the
+ * outbound window, it shows a form or the inbound's JSON as Xray gets it; the
+ * panel's own fields (remark, limits, expiry) stay in the form.
  */
 const props = defineProps<{ inbound: DbInbound | null }>()
 const open = defineModel<boolean>('open', { default: false })
@@ -40,7 +42,40 @@ watch(open, (on) => {
   f.value = props.inbound ? fromDb(props.inbound) : newInbound()
   clientOpen.value = !props.inbound
   sniffingOpen.value = false
+  mode.value = 'form'
 })
+
+// --- JSON ---------------------------------------------------------------------------
+
+const mode = ref<'form' | 'json'>('form')
+const modes = [
+  { value: 'form' as const, label: 'Form' },
+  { value: 'json' as const, label: 'JSON' },
+]
+const json = ref('')
+/** The JSON is not an inbound the form can take; the form keeps the last that was. */
+const jsonWrong = ref(false)
+/** The JSON names another protocol for a stored inbound, which keeps its own. */
+const protocolKept = ref(false)
+
+watch(mode, (m) => {
+  if (m !== 'json') return
+  json.value = JSON.stringify(xrayJson(f.value), null, 2)
+  jsonWrong.value = protocolKept.value = false
+})
+
+function onJson(text: string) {
+  json.value = text
+  let read: InboundForm | null = null
+  try {
+    read = fromXrayJson(f.value, JSON.parse(text))
+  } catch {
+    // The editor marks the mistake.
+  }
+  protocolKept.value = !!read && editing.value && read.protocol !== props.inbound!.protocol
+  jsonWrong.value = !read || protocolKept.value
+  if (!jsonWrong.value) f.value = read!
+}
 
 const editing = computed(() => !!props.inbound)
 const mtprotoTaken = computed(() => !editing.value && store.list.some((ib) => ib.protocol === 'mtproto'))
@@ -120,7 +155,7 @@ const plainPublic = computed<string[]>(() => {
 
 const portValid = computed(() => !!f.value.port && f.value.port >= 1 && f.value.port <= 65535)
 const valid = computed(
-  () => portValid.value && !(f.value.protocol === 'mtproto' && mtprotoTaken.value) && !sessionIdWrong(f.value.streamSettings?.xhttpSettings) && !customSockoptWrong(f.value.streamSettings?.sockopt) && !(f.value.protocol === 'tun' && tunWrong(f.value.settings)) && !(f.value.protocol === 'mtproto' && (f.value.settings.clients ?? []).some((c: { sourceDeny?: unknown }) => sourceDenyWrong(c.sourceDeny))),
+  () => !(mode.value === 'json' && jsonWrong.value) && portValid.value && !(f.value.protocol === 'mtproto' && mtprotoTaken.value) && !sessionIdWrong(f.value.streamSettings?.xhttpSettings) && !customSockoptWrong(f.value.streamSettings?.sockopt) && !(f.value.protocol === 'tun' && tunWrong(f.value.settings)) && !(f.value.protocol === 'mtproto' && (f.value.settings.clients ?? []).some((c: { sourceDeny?: unknown }) => sourceDenyWrong(c.sourceDeny))),
 )
 
 async function save() {
@@ -141,62 +176,73 @@ async function save() {
 <template>
   <XModal v-model:open="open" :title="editing ? t('inbounds.editTitle') : t('inbounds.addTitle')" size="md" cancel scroll-body stack :dismissible="!saving">
     <div class="inbound">
-      <XSwitch v-model="f.enable" boxed :label="t('inbounds.enable')" />
-      <XFieldGrid>
-        <XField v-slot="a" :label="t('inbounds.colRemark')">
-          <XInput v-bind="a" v-model.trim="f.remark" />
-        </XField>
-        <XField v-slot="a" :label="t('inbounds.colProtocol')">
-          <XSelect v-bind="a" v-model="protocol" :options="protocolOptions" :disabled="editing" mono />
-        </XField>
-      </XFieldGrid>
-      <!-- Address and port share a line, in a window that stacks its fields too. -->
-      <XFieldGrid columns="minmax(0, 1fr) 120px" phone-columns="minmax(0, 1fr) 120px">
-        <XField v-slot="a" :label="t('inbounds.listen')" :help="t('inbounds.listenHelp')">
-          <XInput v-bind="a" v-model.trim="f.listen" mono />
-        </XField>
-        <XField v-slot="a" :label="t('inbounds.colPort')">
-          <XNumber v-bind="a" v-model="f.port" block :min="1" :max="65535" :invalid="!portValid" />
-        </XField>
-      </XFieldGrid>
-      <XFieldGrid :cols="3">
-        <XField v-slot="a" :label="t('inbounds.totalFlow')" :help="t('inbounds.totalHelp')">
-          <XNumber v-bind="a" v-model="totalGb" block decimal :min="0" :unit="t('inbounds.gb')" />
-        </XField>
-        <XField v-slot="a" :label="t('inbounds.trafficReset')" :help="resetHelp">
-          <XSelect v-bind="a" v-model="f.trafficReset" :options="resetOptions" />
-        </XField>
-        <XField v-slot="a" :label="t('inbounds.colExpiry')" :help="t('inbounds.expiryHelp')">
-          <XDateTime v-bind="a" v-model="f.expiryTime" />
-        </XField>
-      </XFieldGrid>
+      <div class="inbound__mode">
+        <XSegmented v-model="mode" :options="modes" block :label="editing ? t('inbounds.editTitle') : t('inbounds.addTitle')" />
+      </div>
 
-      <template v-if="hasClients">
-        <XSection v-if="!editing && clients[0]" v-model:open="clientOpen" :title="t('inbounds.client')" card>
-          <ClientFields :client="clients[0]" :protocol="f.protocol" :method="f.settings.method" :flow="canFlow(f)" />
-        </XSection>
-        <XSection v-else-if="editing" v-model:open="clientOpen" :title="`${t('inbounds.clientCount')} : ${clients.length}`" card>
-          <XPlainTable :columns="clientColumns" :rows="clients" :row-key="(c, i) => `${i}-${c.email}`" :height="280" :phone-height="320">
-            <template #cell-email="{ row }">{{ row.email }}</template>
-            <template #cell-key="{ row }"><span class="inbound__key x-ellipsis">{{ keyOf(row) }}</span></template>
-            <template #cell-security="{ row }"><span class="inbound__key x-ellipsis">{{ row.security }}</span></template>
-          </XPlainTable>
-        </XSection>
+      <template v-if="mode === 'json'">
+        <XCodeEditor :model-value="json" :height="560" :phone-height="420" label="JSON" @update:model-value="onJson" />
+        <XFieldNote v-if="protocolKept">{{ t('inbounds.jsonProtocolKept', { p: props.inbound!.protocol }) }}</XFieldNote>
       </template>
 
-      <InboundProtocol :f="f" />
-      <InboundStream v-if="canStream(f.protocol)" :f="f" />
-      <template v-if="canStream(f.protocol) || f.protocol === 'mtproto'">
-        <XDivider spaced />
-        <InboundExternal :f="f" />
-      </template>
-      <InboundSecurity v-if="canStream(f.protocol)" :f="f" />
-      <XFieldNote v-if="plainPublic.length">
-        {{ t('inbounds.plainOpen', { p: f.protocol === 'vless' ? 'VLESS' : 'Trojan', addrs: plainPublic.join(', ') }) }}
-      </XFieldNote>
-      <template v-if="f.protocol !== 'mtproto'">
-        <XDivider spaced />
-        <InboundSniffing v-model:open="sniffingOpen" :f="f" />
+      <template v-else>
+        <XSwitch v-model="f.enable" boxed :label="t('inbounds.enable')" />
+        <XFieldGrid>
+          <XField v-slot="a" :label="t('inbounds.colRemark')">
+            <XInput v-bind="a" v-model.trim="f.remark" />
+          </XField>
+          <XField v-slot="a" :label="t('inbounds.colProtocol')">
+            <XSelect v-bind="a" v-model="protocol" :options="protocolOptions" :disabled="editing" mono />
+          </XField>
+        </XFieldGrid>
+        <!-- Address and port share a line, in a window that stacks its fields too. -->
+        <XFieldGrid columns="minmax(0, 1fr) 120px" phone-columns="minmax(0, 1fr) 120px">
+          <XField v-slot="a" :label="t('inbounds.listen')" :help="t('inbounds.listenHelp')">
+            <XInput v-bind="a" v-model.trim="f.listen" mono />
+          </XField>
+          <XField v-slot="a" :label="t('inbounds.colPort')">
+            <XNumber v-bind="a" v-model="f.port" block :min="1" :max="65535" :invalid="!portValid" />
+          </XField>
+        </XFieldGrid>
+        <XFieldGrid :cols="3">
+          <XField v-slot="a" :label="t('inbounds.totalFlow')" :help="t('inbounds.totalHelp')">
+            <XNumber v-bind="a" v-model="totalGb" block decimal :min="0" :unit="t('inbounds.gb')" />
+          </XField>
+          <XField v-slot="a" :label="t('inbounds.trafficReset')" :help="resetHelp">
+            <XSelect v-bind="a" v-model="f.trafficReset" :options="resetOptions" />
+          </XField>
+          <XField v-slot="a" :label="t('inbounds.colExpiry')" :help="t('inbounds.expiryHelp')">
+            <XDateTime v-bind="a" v-model="f.expiryTime" />
+          </XField>
+        </XFieldGrid>
+
+        <template v-if="hasClients">
+          <XSection v-if="!editing && clients[0]" v-model:open="clientOpen" :title="t('inbounds.client')" card>
+            <ClientFields :client="clients[0]" :protocol="f.protocol" :method="f.settings.method" :flow="canFlow(f)" />
+          </XSection>
+          <XSection v-else-if="editing" v-model:open="clientOpen" :title="`${t('inbounds.clientCount')} : ${clients.length}`" card>
+            <XPlainTable :columns="clientColumns" :rows="clients" :row-key="(c, i) => `${i}-${c.email}`" :height="280" :phone-height="320">
+              <template #cell-email="{ row }">{{ row.email }}</template>
+              <template #cell-key="{ row }"><span class="inbound__key x-ellipsis">{{ keyOf(row) }}</span></template>
+              <template #cell-security="{ row }"><span class="inbound__key x-ellipsis">{{ row.security }}</span></template>
+            </XPlainTable>
+          </XSection>
+        </template>
+
+        <InboundProtocol :f="f" />
+        <InboundStream v-if="canStream(f.protocol)" :f="f" />
+        <template v-if="canStream(f.protocol) || f.protocol === 'mtproto'">
+          <XDivider spaced />
+          <InboundExternal :f="f" />
+        </template>
+        <InboundSecurity v-if="canStream(f.protocol)" :f="f" />
+        <XFieldNote v-if="plainPublic.length">
+          {{ t('inbounds.plainOpen', { p: f.protocol === 'vless' ? 'VLESS' : 'Trojan', addrs: plainPublic.join(', ') }) }}
+        </XFieldNote>
+        <template v-if="f.protocol !== 'mtproto'">
+          <XDivider spaced />
+          <InboundSniffing v-model:open="sniffingOpen" :f="f" />
+        </template>
       </template>
     </div>
 
@@ -213,6 +259,11 @@ async function save() {
   gap: 12px;
 }
 
+.inbound__mode {
+  width: 220px;
+  max-width: 100%;
+}
+
 .inbound__key {
   display: block;
   max-width: 420px;
@@ -221,6 +272,10 @@ async function save() {
 }
 
 @media (max-width: 767px) {
+  .inbound__mode {
+    width: 100%;
+  }
+
   .inbound__key {
     max-width: 170px;
   }

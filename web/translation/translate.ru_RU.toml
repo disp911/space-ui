@@ -799,6 +799,7 @@
 "outTestError" = "Не удалось протестировать исходящее подключение: {error}"
 
 [inbounds]
+"jsonProtocolKept" = "Протокол сохранённого подключения не меняется: в JSON должен остаться «{p}»."
 "ownSite" = "Свой сайт"
 "ownSiteHelp" = "Target — сайт панели, SNI — его домен {domain}"
 "title" = "Подключения"
