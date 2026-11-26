@@ -7,6 +7,7 @@ import {
   toast, usePhone, XButton, XCheckbox, XDataTable, XEmpty, XInput, XMenu, XModal, XPager, XRecordCard, XStatusDot,
   type MenuItem, type RowTone, type TableColumn,
 } from '../../kit'
+import { atTop, useAutoRefresh } from './autoRefresh'
 
 /** Connections Xray wrote to its access log, a day at a time: filters, search, pages of 200. */
 const open = defineModel<boolean>('open', { default: false })
@@ -67,15 +68,21 @@ function form(withPage: boolean) {
 }
 
 let request = 0
-async function load() {
+/** quiet: the five-second refresh, which keeps the rows in view on screen and says nothing of a failure. */
+async function load(quiet = false) {
   const id = ++request
-  loading.value = true
-  failed.value = ''
+  if (!quiet) {
+    loading.value = true
+    failed.value = ''
+  }
   try {
     const reply = await api.post<LogPage>('panel/api/server/xraylogs', form(true))
-    if (id === request) data.value = reply
+    if (id === request) {
+      data.value = reply
+      failed.value = ''
+    }
   } catch (e) {
-    if (id !== request) return
+    if (id !== request || quiet) return
     data.value = null
     failed.value = e instanceof ApiError ? e.message : String(e)
   } finally {
@@ -91,6 +98,18 @@ function reload() {
 
 watch(open, (on) => on && reload(), { immediate: true })
 watch([date, client, shown], reload)
+
+// The newest connections come in every five seconds while the window shows
+// them: the latest day's first page, scrolled to its top. Older days do not change.
+const area = ref<HTMLElement | null>(null)
+useAutoRefresh(
+  open,
+  () => load(true),
+  () => {
+    const d = data.value
+    return loading.value || page.value !== 1 || !d || d.date !== d.dates?.[0] || !atTop(area.value?.querySelector('.x-table__body')) || !atTop(cards.value)
+  },
+)
 
 // Search waits for a pause in typing.
 let typing: ReturnType<typeof setTimeout> | undefined
@@ -245,10 +264,10 @@ async function download() {
         {{ t('dashboard.logDownload') }}
       </XButton>
 
-      <XButton icon="refresh" :label="t('dashboard.logRefresh')" :loading="loading" class="xlog-refresh" @click="load" />
+      <XButton icon="refresh" :label="t('dashboard.logRefresh')" :loading="loading" class="xlog-refresh" @click="load()" />
     </div>
 
-    <div class="xlog-area">
+    <div ref="area" class="xlog-area">
       <XDataTable
         class="xlog-wide"
         :columns="columns"
@@ -263,7 +282,7 @@ async function download() {
         </template>
         <template #empty>
           <XEmpty v-if="failed" :title="t('dashboard.logFailed', { error: failed })">
-            <XButton size="sm" icon="refresh" @click="load">{{ t('dashboard.retry') }}</XButton>
+            <XButton size="sm" icon="refresh" @click="load()">{{ t('dashboard.retry') }}</XButton>
           </XEmpty>
           <XEmpty v-else-if="!data?.dates?.length" :title="t('dashboard.logEmpty')" />
           <XEmpty v-else :title="t('dashboard.xlogNothing')" :hint="t('dashboard.xlogNothingHint')" />
@@ -287,7 +306,7 @@ async function download() {
           />
         </template>
         <XEmpty v-else-if="failed" :title="t('dashboard.logFailed', { error: failed })">
-          <XButton size="sm" icon="refresh" @click="load">{{ t('dashboard.retry') }}</XButton>
+          <XButton size="sm" icon="refresh" @click="load()">{{ t('dashboard.retry') }}</XButton>
         </XEmpty>
         <XEmpty v-else-if="!data?.dates?.length" :title="t('dashboard.logEmpty')" />
         <XEmpty v-else :title="t('dashboard.xlogNothing')" :hint="t('dashboard.xlogNothingHint')" />

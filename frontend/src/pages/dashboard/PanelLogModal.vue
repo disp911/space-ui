@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api, ApiError, saveFile } from '../../api'
 import { XButton, XCheckbox, XEmpty, XMenu, XModal, XStatusDot, type MenuItem } from '../../kit'
+import { atTop, useAutoRefresh } from './autoRefresh'
 
 /** The panel's own log, or the space-ui unit's journal with SysLog on. */
 const open = defineModel<boolean>('open', { default: false })
@@ -43,18 +44,24 @@ const rows = computed(() =>
 )
 
 let request = 0
-async function load() {
+/** quiet: the five-second refresh, which keeps the lines in view on screen and says nothing of a failure. */
+async function load(quiet = false) {
   const id = ++request
-  loading.value = true
-  failed.value = ''
+  if (!quiet) {
+    loading.value = true
+    failed.value = ''
+  }
   const body = new FormData()
   body.set('level', level.value)
   body.set('syslog', String(syslog.value))
   try {
     const reply = await api.post<string[] | null>(`panel/api/server/logs/${count.value}`, body)
-    if (id === request) lines.value = (reply ?? []).filter((l) => l.trim())
+    if (id === request) {
+      lines.value = (reply ?? []).filter((l) => l.trim())
+      failed.value = ''
+    }
   } catch (e) {
-    if (id !== request) return
+    if (id !== request || quiet) return
     lines.value = []
     failed.value = e instanceof ApiError ? e.message : String(e)
   } finally {
@@ -64,6 +71,10 @@ async function load() {
 
 watch(open, (on) => on && load(), { immediate: true })
 watch([count, level, syslog], () => open.value && load())
+
+// The newest lines come in every five seconds, unless the reader has scrolled down to older ones.
+const scroller = ref<HTMLElement | null>(null)
+useAutoRefresh(open, () => load(true), () => loading.value || !atTop(scroller.value))
 
 function download() {
   saveFile(lines.value.join('\n'), 'space-ui.log')
@@ -98,12 +109,12 @@ const skeleton = [62, 48, 71, 55, 38, 66, 52, 44, 69, 58, 41, 63]
         {{ t('dashboard.logDownload') }}
       </XButton>
 
-      <XButton icon="refresh" :label="t('dashboard.logRefresh')" :loading="loading" class="log-refresh" @click="load" />
+      <XButton icon="refresh" :label="t('dashboard.logRefresh')" :loading="loading" class="log-refresh" @click="load()" />
     </div>
 
     <div class="log-area">
       <div class="log-box">
-        <div class="log-scroll" tabindex="0" :aria-busy="loading || undefined">
+        <div ref="scroller" class="log-scroll" tabindex="0" :aria-busy="loading || undefined">
           <div v-if="loading" class="x-skeleton log-skeleton" aria-hidden="true">
             <div v-for="w in skeleton" :key="w" class="log-skeleton__row">
               <span class="x-skeleton__bar" style="width: 30%; max-width: 132px" />
