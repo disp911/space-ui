@@ -799,6 +799,7 @@
 "outTestError" = "Failed to test outbound: {error}"
 
 [inbounds]
+"limits" = "Limits"
 "jsonProtocolKept" = "A saved inbound keeps its protocol: the JSON must name {p}."
 "ownSite" = "Own website"
 "ownSiteHelp" = "Target is the panel's website, SNI its domain {domain}"

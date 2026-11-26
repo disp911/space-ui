@@ -710,6 +710,7 @@ export interface MessageSchema {
     "outTestError": string
   }
   "inbounds": {
+    "limits": string
     "jsonProtocolKept": string
     "ownSite": string
     "ownSiteHelp": string

@@ -41,6 +41,7 @@ watch(open, (on) => {
   if (!on) return
   f.value = props.inbound ? fromDb(props.inbound) : newInbound()
   clientOpen.value = !props.inbound
+  limitsOpen.value = false
   sniffingOpen.value = false
   mode.value = 'form'
 })
@@ -116,6 +117,8 @@ const totalGb = computed({
 
 const clientOpen = ref(true)
 const sniffingOpen = ref(false)
+/** The inbound's limits: traffic, its reset and the expiry, in a card that starts closed. */
+const limitsOpen = ref(false)
 const hasClients = computed(() => withClients(f.value.protocol, f.value.settings))
 const clients = computed(() => clientsOf(f.value))
 
@@ -204,18 +207,6 @@ async function save() {
             <XNumber v-bind="a" v-model="f.port" block :min="1" :max="65535" :invalid="!portValid" />
           </XField>
         </XFieldGrid>
-        <XFieldGrid :cols="3">
-          <XField v-slot="a" :label="t('inbounds.totalFlow')" :help="t('inbounds.totalHelp')">
-            <XNumber v-bind="a" v-model="totalGb" block decimal :min="0" :unit="t('inbounds.gb')" />
-          </XField>
-          <XField v-slot="a" :label="t('inbounds.trafficReset')" :help="resetHelp">
-            <XSelect v-bind="a" v-model="f.trafficReset" :options="resetOptions" />
-          </XField>
-          <XField v-slot="a" :label="t('inbounds.colExpiry')" :help="t('inbounds.expiryHelp')">
-            <XDateTime v-bind="a" v-model="f.expiryTime" />
-          </XField>
-        </XFieldGrid>
-
         <template v-if="hasClients">
           <XSection v-if="!editing && clients[0]" v-model:open="clientOpen" :title="t('inbounds.client')" card>
             <ClientFields :client="clients[0]" :protocol="f.protocol" :method="f.settings.method" :flow="canFlow(f)" />
@@ -239,10 +230,21 @@ async function save() {
         <XFieldNote v-if="plainPublic.length">
           {{ t('inbounds.plainOpen', { p: f.protocol === 'vless' ? 'VLESS' : 'Trojan', addrs: plainPublic.join(', ') }) }}
         </XFieldNote>
-        <template v-if="f.protocol !== 'mtproto'">
-          <XDivider spaced />
-          <InboundSniffing v-model:open="sniffingOpen" :f="f" />
-        </template>
+        <XDivider spaced />
+        <XSection v-model:open="limitsOpen" :title="t('inbounds.limits')" card>
+          <XFieldGrid :cols="3">
+            <XField v-slot="a" :label="t('inbounds.totalFlow')" :help="t('inbounds.totalHelp')">
+              <XNumber v-bind="a" v-model="totalGb" block decimal :min="0" :unit="t('inbounds.gb')" />
+            </XField>
+            <XField v-slot="a" :label="t('inbounds.trafficReset')" :help="resetHelp">
+              <XSelect v-bind="a" v-model="f.trafficReset" :options="resetOptions" />
+            </XField>
+            <XField v-slot="a" :label="t('inbounds.colExpiry')" :help="t('inbounds.expiryHelp')">
+              <XDateTime v-bind="a" v-model="f.expiryTime" />
+            </XField>
+          </XFieldGrid>
+        </XSection>
+        <InboundSniffing v-if="f.protocol !== 'mtproto'" v-model:open="sniffingOpen" :f="f" />
       </template>
     </div>
 
